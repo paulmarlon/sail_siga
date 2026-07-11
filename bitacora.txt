@@ -1,0 +1,77 @@
+BITÁCORA DE PROYECTO: SIGA (Laravel 13 + AdminLTE)
+1. Resumen de Componentes Instalados
+
+    Framework Backend: Laravel 13.
+
+    Gestión de Infraestructura: Laravel Sail (Docker Compose - Nginx, PHP-FPM, PostgreSQL 18).
+
+    Panel de Administración: jeroennoten/laravel-adminlte (Plantilla visual).
+
+    Autenticación: Laravel Breeze (Motor de seguridad) + Vistas integradas de AdminLTE.
+
+    Dependencias Adicionales: laravel/ui (Requerido para el sistema de rutas de autenticación).
+
+2. Guía de Arranque y Cierre
+A. Arrancar el sistema (Iniciar Docker y Servicios)
+
+Para encender todo el entorno de trabajo, ejecuta en la raíz de tu proyecto:
+Bash
+
+# Iniciar contenedores en segundo plano
+./vendor/bin/sail up -d
+
+    Servidor Web: Disponible en http://localhost.
+
+    Panel Administrativo: Disponible al iniciar sesión en /login y acceder a /.
+
+B. Cerrar el sistema (Apagar Docker)
+
+Para detener los contenedores y liberar los recursos de tu máquina:
+Bash
+
+# Apagar contenedores y limpiar
+./vendor/bin/sail down
+
+3. Registro de Comandos de Instalación (Historial)
+
+Esta es la secuencia que seguimos para configurar el entorno:
+
+    Instalación del núcleo: php artisan serve (Descartado en favor de Sail).
+
+    Instalación de AdminLTE:
+
+        composer require jeroennoten/laravel-adminlte
+
+        php artisan adminlte:install
+
+        php artisan adminlte:install --only=auth_views
+
+    Instalación de Autenticación:
+
+        composer require laravel/ui
+
+        composer require laravel/breeze --dev
+
+        php artisan breeze:install blade
+
+    Configuración de Rutas:
+
+        Se configuró routes/web.php para integrar Auth::routes().
+
+        Se movió/ocultó la carpeta resources/views/auth para forzar el uso de las vistas de AdminLTE.
+
+        Se configuró el App\Http\Controllers para delegar la autenticación.
+
+4. Notas de Mantenimiento
+
+    Servidor Web: El sistema utiliza Nginx (definido en el contenedor laravel.test de tu archivo compose.yaml).
+
+    Comando Maestro: Recuerda usar siempre ./vendor/bin/sail antes de cualquier comando artisan, composer o npm.
+
+    Limpieza ante errores: Si el sistema falla tras una instalación, usa:
+
+        ./vendor/bin/sail artisan route:clear
+
+        ./vendor/bin/sail artisan view:clear
+
+        ./vendor/bin/sail artisan config:clear
