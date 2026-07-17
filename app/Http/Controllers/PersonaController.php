@@ -26,20 +26,19 @@ class PersonaController extends Controller
 
     public function store(Request $request)
     {
-        // 1. ETIQUETA: Usamos una transacción para asegurar integridad total
         DB::transaction(function () use ($request) {
-
-            // 2. ETIQUETA: Pre-procesamiento de datos (Convertir a MAYÚSCULAS)
+            // 1. Procesamiento de datos (incluyendo el manejo de fotos)
             $data = $request->all();
-            $camposMayus = ['nombres', 'ap_paterno', 'ap_materno', 'pais', 'departamento', 'ciudad', 'zona', 'avenida', 'referencia'];
 
+            // Transformar a mayúsculas
+            $camposMayus = ['nombres', 'ap_paterno', 'ap_materno', 'pais', 'departamento', 'ciudad', 'zona', 'avenida', 'referencia'];
             foreach ($camposMayus as $campo) {
                 if (isset($data[$campo])) {
                     $data[$campo] = strtoupper($data[$campo]);
                 }
             }
 
-            // 3. ETIQUETA: Lógica de creación del Domicilio
+            // 2. Lógica de creación del Domicilio
             $domicilioId = null;
             $datosDomicilio = array_intersect_key($data, array_flip([
                 'pais',
@@ -54,32 +53,37 @@ class PersonaController extends Controller
                 'tipo_domicilio'
             ]));
 
-            // Creamos domicilio si hay datos (excluyendo campos vacíos)
             if (!empty(array_filter($datosDomicilio))) {
-                // Asegurar valor por defecto para el ENUM
                 $datosDomicilio['tipo_domicilio'] = $datosDomicilio['tipo_domicilio'] ?? 'RESIDENCIA';
-
                 $domicilio = Domicilio::create($datosDomicilio);
                 $domicilioId = $domicilio->id;
             }
 
-            // 4. ETIQUETA: Manejo de archivo y creación de Persona
+            // 3. Manejo de foto y creación de Persona
+            // Pasamos el request al método handleFoto
             $fotoPath = $this->handleFoto($request);
 
-            // Fusionamos datos procesados (nombres, etc) con los campos técnicos (foto, domicilio)
-            $datosPersona = array_merge(
-                array_intersect_key($data, array_flip(['ci', 'nombres', 'ap_paterno', 'ap_materno', 'fecha_nacimiento', 'sexo', 'celular', 'email_personal'])),
-                [
-                    'foto_path' => $fotoPath,
-                    'domicilio_id' => $domicilioId,
-                ]
-            );
+            // Creamos la persona directamente con los campos filtrados
+            $camposPersona = array_intersect_key($data, array_flip([
+                'ci',
+                'nombres',
+                'ap_paterno',
+                'ap_materno',
+                'fecha_nacimiento',
+                'sexo',
+                'celular',
+                'email_personal'
+            ]));
 
-            Persona::create($datosPersona);
+            Persona::create(array_merge($camposPersona, [
+                'foto_path' => $fotoPath,
+                'domicilio_id' => $domicilioId
+            ]));
         });
 
-        // 5. ETIQUETA: Respuesta exitosa
-        return redirect()->route('admin.personas.index')->with('mensaje', 'Persona creada correctamente.')->with('icon', 'success');
+        return redirect()->route('admin.personas.index')
+            ->with('mensaje', 'Persona creada correctamente.')
+            ->with('icon', 'success');
     }
 
     public function show(Persona $persona)
@@ -97,15 +101,16 @@ class PersonaController extends Controller
     public function update(Request $request, Persona $persona)
     {
         // 1. Manejo de la foto
+        $fotoPath = $persona->foto_path; // Guardamos el valor actual por defecto
+
         if ($request->hasFile('foto_path')) {
             if ($persona->foto_path) {
                 Storage::disk('public')->delete($persona->foto_path);
             }
-            $persona->foto_path = $request->file('foto_path')->store('fotos', 'public');
+            $fotoPath = $request->file('foto_path')->store('fotos', 'public');
         }
 
         // 2. PREPARACIÓN DE DATOS CON MAYÚSCULAS
-        // Obtenemos todos los datos y los transformamos
         $data = $request->all();
         $camposMayus = ['nombres', 'ap_paterno', 'ap_materno', 'pais', 'departamento', 'ciudad', 'zona', 'avenida', 'referencia'];
 
@@ -115,7 +120,7 @@ class PersonaController extends Controller
             }
         }
 
-        // 3. Actualizar el domicilio (usando el array transformado $data)
+        // 3. Actualizar el domicilio
         $datosDomicilio = [
             'pais',
             'departamento',
@@ -130,7 +135,6 @@ class PersonaController extends Controller
         ];
 
         if ($persona->domicilio) {
-            // Filtramos $data para pasar solo los campos de domicilio
             $persona->domicilio->update(array_intersect_key($data, array_flip($datosDomicilio)));
         } else {
             $domicilio = \App\Models\Domicilio::create(array_intersect_key($data, array_flip($datosDomicilio)));
@@ -138,8 +142,8 @@ class PersonaController extends Controller
         }
 
         // 4. Actualizar datos de la persona
-        // Nota: $persona->foto_path ya fue asignada manualmente arriba
-        $persona->update($data);
+        // Fusionamos los datos del request con la variable $fotoPath calculada
+        $persona->update(array_merge($data, ['foto_path' => $fotoPath]));
 
         return redirect()->route('admin.personas.index')->with('mensaje', 'Actualizado')->with('icon', 'success');
     }
@@ -147,25 +151,23 @@ class PersonaController extends Controller
     // Método para mostrar los registros eliminados
     public function papelera()
     {
-        $personas = Persona::onlyTrashed()->get();
+        // Traemos las personas con su domicilio cargado, incluso si están borrados
+        $personas = Persona::onlyTrashed()->with('domicilio')->get();
         return view('admin.personas.papelera', compact('personas'));
     }
 
     // Método para restaurar un registro
     public function restaurar(int $id)
     {
-        // 1. Buscamos a la persona en la papelera
         $persona = Persona::onlyTrashed()->findOrFail($id);
 
         DB::transaction(function () use ($persona) {
-
-            // 2. Restauramos primero el domicilio si existe y está borrado
-            // Usamos la relación 'domicilio()' para buscar en los registros eliminados
+            // Restauramos primero el domicilio si existe y fue borrado
             if ($persona->domicilio()->onlyTrashed()->exists()) {
                 $persona->domicilio()->restore();
             }
 
-            // 3. Restauramos a la persona
+            // Restauramos a la persona
             $persona->restore();
         });
 
@@ -180,10 +182,11 @@ class PersonaController extends Controller
         $persona = Persona::findOrFail($id);
 
         DB::transaction(function () use ($persona) {
+            // El borrado lógico de la persona dispara la lógica de domicilio
             if ($persona->domicilio) {
-                $persona->domicilio->delete(); // Borrado lógico del domicilio
+                $persona->domicilio->delete();
             }
-            $persona->delete(); // Borrado lógico de la persona
+            $persona->delete();
         });
 
         return redirect()->route('admin.personas.index')
@@ -194,15 +197,17 @@ class PersonaController extends Controller
     private function handleFoto(Request $request, ?Persona $persona = null)
     {
         if ($request->hasFile('foto_path')) {
-            // Si hay una foto anterior y existe, la eliminamos
+            // 1. Eliminar foto anterior si existe
             if ($persona && $persona->foto_path) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($persona->foto_path);
             }
 
-            // Guardamos en 'personas/fotos' con un nombre único
+            // 2. Guardar con nombre único generado automáticamente (hash)
+            // 'personas/fotos' es la carpeta, 'public' es el disco
             return $request->file('foto_path')->store('personas/fotos', 'public');
         }
 
+        // Si no hay archivo nuevo, mantenemos el path actual o null
         return $persona ? $persona->foto_path : null;
     }
 }

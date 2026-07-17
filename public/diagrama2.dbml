@@ -1,7 +1,6 @@
 // -----------------------------------------------------------------------------
 // NIVEL 1: CATÁLOGOS BASE E INFRAESTRUCTURA INDEPENDIENTE
 // -----------------------------------------------------------------------------
-
 Table domicilio {
   id int [pk, increment]
   pais varchar [default: 'Bolivia']
@@ -11,9 +10,9 @@ Table domicilio {
   avenida varchar
   numero varchar
   referencia text
-  latitud decimal(10, 8) // Mejor precisión para coordenadas
+  latitud decimal(10, 8)
   longitud decimal(11, 8)
-  tipo_domicilio varchar // O enum('Residencia', 'Trabajo', 'Referencia')
+  tipo_domicilio varchar
   deleted_at timestamp
 }
 
@@ -25,53 +24,33 @@ Table estado {
   permite_login boolean [default: true]
   permite_procesos_academicos boolean [default: true]
   color_hex varchar
-  Note: 'La combinación (slug, contexto) debería ser única para evitar duplicados lógicos.'
-  Indexes {
-    (slug, contexto) [unique]
-  }
+Indexes { (slug, contexto) [unique] }
 
 }
-
-Table user {
-  id int [pk, increment]
-  persona_id int [ref: > persona.id, unique, not null]
-  estado_id int [ref: > estado.id]
-  email varchar [unique]
-  password varchar
-  remember_token varchar
-  created_at timestamp
-  Note: 'VISTA: admin.users.index'
-}
-
 
 Table nivel {
   id int [pk, increment]
   nombre varchar [note: 'Pregrado, Posgrado, Técnico']
-  Note: 'VISTA: admin.catalogos.index | ESTRATEGIA: Modal simple.'
 }
 
 Table turno {
   id int [pk, increment]
   nombre varchar
-  Note: 'VISTA: admin.catalogos.index | ESTRATEGIA: Modal simple.'
 }
 
 Table paralelo {
   id int [pk, increment]
   nombre varchar
-  Note: 'VISTA: admin.paralelos.index | ESTRATEGIA: Modal (ACTIVO por defecto).'
 }
 
 // -----------------------------------------------------------------------------
-// NIVEL 2: ENTIDADES DE CONFIGURACIÓN Y PERSONAS (DEPENDE DE NIVEL 1)
+// NIVEL 2: ENTIDADES DE CONFIGURACIÓN Y PERSONAS
 // -----------------------------------------------------------------------------
 Table gestion {
   id int [pk, increment]
   nombre varchar(4) [unique]
   estado_id int [ref: > estado.id]
-  Note: 'VISTA: admin.gestiones.index'
 }
-
 
 Table periodo {
   id int [pk, increment]
@@ -80,9 +59,7 @@ Table periodo {
   fecha_inicio date
   fecha_fin date
   estado_id int [ref: > estado.id]
-  Note: 'VISTA: admin.periodos.index'
 }
-
 
 Table materia {
   id int [pk, increment]
@@ -92,9 +69,7 @@ Table materia {
   tipo_materia varchar [note: 'Teorica, Practica, Teorica-Practica']
   es_comun boolean [default: false]
   estado_id int [ref: > estado.id]
-  Note: 'VISTA: admin.materias.index'
 }
-
 
 Table grado {
   id int [pk, increment]
@@ -103,9 +78,7 @@ Table grado {
   ciclo int [default: 1, note: '1: Tronco Común, 2: Especialidad']
   nivel_id int [ref: > nivel.id]
   estado_id int [ref: > estado.id]
-  Note: 'VISTA: admin.grados.index'
 }
-
 
 Table configuracion {
   id int [pk, increment]
@@ -119,9 +92,7 @@ Table configuracion {
   logo_path varchar
   divisa varchar [default: 'BOB']
   gestion_actual_id int [ref: > gestion.id]
-  Note: 'VISTA: admin.configuracion.edit'
 }
-
 
 Table persona {
   id int [pk, increment]
@@ -135,24 +106,27 @@ Table persona {
   email_personal varchar
   foto_path varchar
   domicilio_id int [ref: - domicilio.id, null]
-  deleted_at timestamp // Importante si usas SoftDeletes
-  Note: 'VISTA: admin.personas.create/edit | ESTRATEGIA: Full Page.'
+  deleted_at timestamp
 }
-
-
 
 Table ppff {
   id int [pk, increment]
-  persona_id int [ref: > persona.id, unique, note: 'Relación 1:1 con la tabla persona']
-  parentesco enum('Padre', 'Madre', 'Tutor', 'Apoderado') [note: 'Valores fijos para integridad de datos']
-
-  Note: 'VISTA: @include("admin.estudiantes._form_ppff") | ESTRATEGIA: Registro opcional en el alta del estudiante.'
+  persona_id int [ref: > persona.id, unique]
+  parentesco varchar [note: 'Padre, Madre, Tutor, Apoderado']
 }
 
 // -----------------------------------------------------------------------------
-// NIVEL 3: SEGURIDAD, USUARIOS Y RECURSOS HUMANOS (DEPENDE DE NIVEL 2)
+// NIVEL 3: SEGURIDAD, USUARIOS Y RECURSOS HUMANOS
 // -----------------------------------------------------------------------------
-
+Table user {
+  id int [pk, increment]
+  persona_id int [ref: - persona.id, unique, not null]
+  estado_id int [ref: > estado.id]
+  email varchar [unique]
+  password varchar
+  remember_token varchar
+  created_at timestamp
+}
 
 Table personal {
   id int [pk, increment]
@@ -161,7 +135,6 @@ Table personal {
   tipo varchar [note: 'docente, administrativo']
   profesion varchar
   estado_id int [ref: > estado.id]
-  Note: 'VISTA: admin.personal.edit'
 }
 
 Table formacion {
@@ -172,13 +145,11 @@ Table formacion {
   nivel_formacion varchar
   fecha_graduacion date
   archivo_path varchar
-  Note: 'VISTA: admin.personal.partials._formacion'
 }
 
 // -----------------------------------------------------------------------------
-// NIVEL 4: CARRERAS, MALLAS ACADÉMICAS Y ESTUDIANTES (DEPENDE DE NIVELES 1-3)
+// NIVEL 4: CARRERAS, MALLAS ACADÉMICAS Y ESTUDIANTES
 // -----------------------------------------------------------------------------
-
 Table carrera {
   id int [pk, increment]
   carrera_base_id int [ref: > carrera.id, null]
@@ -190,9 +161,7 @@ Table carrera {
   nivel_id int [ref: > nivel.id]
   es_tronco_comun boolean [default: false]
   estado_id int [ref: > estado.id]
-  Note: 'VISTA: admin.carreras.edit'
 }
-
 
 Table pensum {
   id int [pk, increment]
@@ -201,19 +170,22 @@ Table pensum {
   grado_id int [ref: > grado.id]
   es_obligatoria boolean [default: true]
   estado_id int [ref: > estado.id]
-  Note: 'VISTA: admin.carreras.mallas'
 }
-
-
 
 Table estudiante {
   id int [pk, increment]
   persona_id int [ref: > persona.id, unique, not null]
-  ppff_id int [ref: > ppff.id, null, note: 'Opcional para mayores de edad']
-  registro_historico varchar [unique]
+  registro_universitario varchar [unique]
   estado_id int [ref: > estado.id]
+}
 
-  Note: 'VISTA: admin.estudiantes.show | El ppff_id se genera antes que el estudiante si el tutor es nuevo.'
+Table estudiante_ppff {
+  estudiante_id int [ref: > estudiante.id]
+  ppff_id int [ref: > ppff.id]
+  parentesco varchar
+  es_tutor_principal boolean [default: true]
+Indexes { (estudiante_id, ppff_id) [pk] }
+
 }
 
 Table inscripcion_carrera {
@@ -227,9 +199,8 @@ Table inscripcion_carrera {
 }
 
 // -----------------------------------------------------------------------------
-// NIVEL 5: GESTIÓN OPERATIVA Y EXÁMENES (DEPENDE DE NIVEL 4)
+// NIVEL 5: GESTIÓN OPERATIVA Y EXÁMENES
 // -----------------------------------------------------------------------------
-
 Table oferta_academica {
   id int [pk, increment]
   periodo_id int [ref: > periodo.id]
@@ -253,7 +224,7 @@ Table matriculacion_materia {
 Table programacion_examen {
   id int [pk, increment]
   oferta_id int [ref: > oferta_academica.id]
-  instancia varchar [note: 'P1, P2, EF, 2T, RJ']
+  instancia varchar
   modalidad varchar
   tipo_proceso varchar [default: 'Ordinario']
   fecha_programada datetime
@@ -263,9 +234,8 @@ Table programacion_examen {
 }
 
 // -----------------------------------------------------------------------------
-// NIVEL 6: EVALUACIÓN, ASISTENCIA, TITULACIÓN Y AUDITORÍA (DEPENDE DE NIVEL 5)
+// NIVEL 6: EVALUACIÓN, ASISTENCIA, TITULACIÓN Y AUDITORÍA
 // -----------------------------------------------------------------------------
-
 Table asistencia {
   id int [pk, increment]
   matriculacion_id int [ref: > matriculacion_materia.id]
@@ -303,7 +273,7 @@ Table titulacion {
   id int [pk, increment]
   estudiante_id int [ref: > estudiante.id]
   carrera_id int [ref: > carrera.id]
-  modalidad enum('Tesis', 'Examen de Grado', 'Proyecto de Grado', 'Excelencia')
+  modalidad varchar
   fecha_inicio date
   fecha_defensa date
   nota_defensa float

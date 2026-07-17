@@ -1,0 +1,129 @@
+
+// NIVEL 0: CATÁLOGOS DE CONTROL
+
+// -----------------------------------------------------------------------------
+
+Table estado {
+
+  id int [pk, increment]
+
+  nombre varchar
+
+  slug varchar
+
+  contexto varchar
+
+}
+
+
+// -----------------------------------------------------------------------------
+
+// NIVEL 1: NÚCLEO DE IDENTIDAD
+
+// -----------------------------------------------------------------------------
+
+Table persona {
+
+  id int [pk, increment]
+
+  ci varchar [unique]
+
+  nombres varchar
+
+  ap_paterno varchar
+
+  ap_materno varchar
+
+  deleted_at timestamp
+
+}
+
+
+// -----------------------------------------------------------------------------
+
+// NIVEL 2: ACCESO Y SEGURIDAD
+
+// -----------------------------------------------------------------------------
+
+Table user {
+
+  id int [pk, increment]
+
+  persona_id int [ref: - persona.id, unique, not null]
+
+  email varchar [unique]
+
+  password varchar
+
+  estado_id int [ref: > estado.id]
+
+  last_login_at timestamp
+
+}
+
+
+// -----------------------------------------------------------------------------
+
+// NIVEL 3: ROLES (COMPOSICIÓN DE LA IDENTIDAD)
+
+// -----------------------------------------------------------------------------
+
+Table estudiante {
+
+  id int [pk, increment]
+
+  persona_id int [ref: > persona.id]
+
+  registro_historico varchar [unique]
+
+  estado_id int [ref: > estado.id]
+
+}
+
+
+
+Table personal {
+
+  id int [pk, increment]
+
+  persona_id int [ref: > persona.id]
+
+  tipo varchar // 'Docente', 'Administrativo', 'Directivo'
+
+  profesion varchar
+
+  estado_id int [ref: > estado.id]
+
+}
+
+
+Table ppff {
+
+  id int [pk, increment]
+
+  persona_id int [ref: > persona.id]
+
+  // La información de parentesco y orden de prioridad vive en la tabla relacional
+
+}
+
+// TABLA INTERMEDIA (EL PUENTE)
+
+Table estudiante_ppff {
+
+  estudiante_id int [ref: > estudiante.id]
+
+  ppff_id int [ref: > ppff.id]
+
+  parentesco varchar // 'Padre', 'Madre', 'Tutor'
+
+  es_tutor_principal boolean [default: true] // Útil para envío de notificaciones
+
+
+  Indexes {
+
+    (estudiante_id, ppff_id) [pk]
+
+  }
+
+}

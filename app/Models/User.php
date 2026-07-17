@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['persona_id', 'email', 'password'])] // Cambiamos name por persona_id
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -18,10 +18,23 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Definimos la relación con Persona
      */
+    public function persona(): BelongsTo
+    {
+        return $this->belongsTo(Persona::class);
+    }
+
+    /**
+     * Accesor para que Auth::user()->name siga funcionando en tu dashboard
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->persona
+            ? "{$this->persona->nombres} {$this->persona->ap_paterno}"
+            : 'Sin nombre';
+    }
+
     protected function casts(): array
     {
         return [
