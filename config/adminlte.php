@@ -94,9 +94,6 @@ return [
         ],
     ],
 
-    'login_url' => 'login',
-    'register_url' => 'register',
-    'logout_url' => 'logout',
 
     /*
     |--------------------------------------------------------------------------
@@ -305,43 +302,30 @@ return [
     'menu' => [
         // Navbar items:
         [
-            'type' => 'navbar-search',
-            'text' => 'search',
-            'topnav_right' => true,
+            'text' => 'Configuración',
+            'url' => 'admin/configuracion/edit',
+            'icon' => 'fas fa-fw fa-cogs',
+            'classes' => 'bg-blue text-white',
         ],
         [
-            'type' => 'fullscreen-widget',
-            'topnav_right' => true,
+            'text' => 'Gestiones',
+            'url'  => 'admin/gestiones',
+            'icon' => 'fas fa-fw fa-tasks',
+            'classes' => 'bg-blue text-white',
+        ],
+        [
+            'text' => 'Niveles',
+            'url'  => 'admin/niveles',
+            'icon' => 'fas fa-fw fa-layer-group',
+            'classes' => 'bg-blue text-white',
+        ],
+        [
+            'text' => 'Personas',
+            'url'  => 'admin/personas',
+            'icon' => 'fas fa-fw fa-users',
+            'classes' => 'bg-blue text-white',
         ],
 
-        // Sidebar items:
-        [
-            'type' => 'sidebar-menu-search',
-            'text' => 'search',
-        ],
-        [
-            'text' => 'blog',
-            'url' => 'admin/blog',
-            'can' => 'manage-blog',
-        ],
-        [
-            'text' => 'pages',
-            'url' => 'admin/pages',
-            'icon' => 'far fa-fw fa-file',
-            'label' => 4,
-            'label_color' => 'success',
-        ],
-        ['header' => 'account_settings'],
-        [
-            'text' => 'profile',
-            'url' => 'admin/settings',
-            'icon' => 'fas fa-fw fa-user',
-        ],
-        [
-            'text' => 'change_password',
-            'url' => 'admin/settings',
-            'icon' => 'fas fa-fw fa-lock',
-        ],
         [
             'text' => 'multilevel',
             'icon' => 'fas fa-fw fa-share',
@@ -434,73 +418,43 @@ return [
 
     'plugins' => [
         'Datatables' => [
-            'active' => false,
+            'active' => true,
             'files' => [
-                [
-                    'type' => 'js',
-                    'asset' => false,
-                    'location' => '//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js',
-                ],
-                [
-                    'type' => 'js',
-                    'asset' => false,
-                    'location' => '//cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js',
-                ],
-                [
-                    'type' => 'css',
-                    'asset' => false,
-                    'location' => '//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css',
-                ],
+                // Core
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js'],
+                ['type' => 'css', 'asset' => false, 'location' => 'https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css'],
+                // Buttons
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap4.min.js'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js'],
+                ['type' => 'css', 'asset' => false, 'location' => 'https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap4.min.css'],
+                // Export Libs
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js'],
             ],
         ],
         'Select2' => [
-            'active' => false,
+            'active' => true,
             'files' => [
-                [
-                    'type' => 'js',
-                    'asset' => false,
-                    'location' => '//cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js',
-                ],
-                [
-                    'type' => 'css',
-                    'asset' => false,
-                    'location' => '//cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.css',
-                ],
-            ],
-        ],
-        'Chartjs' => [
-            'active' => false,
-            'files' => [
-                [
-                    'type' => 'js',
-                    'asset' => false,
-                    'location' => '//cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.bundle.min.js',
-                ],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js'],
+                ['type' => 'css', 'asset' => false, 'location' => 'https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css'],
             ],
         ],
         'Sweetalert2' => [
-            'active' => false,
+            'active' => true,
             'files' => [
-                [
-                    'type' => 'js',
-                    'asset' => false,
-                    'location' => '//cdn.jsdelivr.net/npm/sweetalert2@8',
-                ],
+                ['type' => 'css', 'asset' => false, 'location' => 'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css'],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdn.jsdelivr.net/npm/sweetalert2@11'],
             ],
         ],
-        'Pace' => [
-            'active' => false,
+        'Inputmask' => [
+            'active' => true,
             'files' => [
-                [
-                    'type' => 'css',
-                    'asset' => false,
-                    'location' => '//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/themes/blue/pace-theme-center-radar.min.css',
-                ],
-                [
-                    'type' => 'js',
-                    'asset' => false,
-                    'location' => '//cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js',
-                ],
+                ['type' => 'js', 'asset' => false, 'location' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js'],
             ],
         ],
     ],

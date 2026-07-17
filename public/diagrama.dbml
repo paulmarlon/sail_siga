@@ -1,0 +1,327 @@
+// -----------------------------------------------------------------------------
+// NIVEL 1: CATÁLOGOS BASE E INFRAESTRUCTURA INDEPENDIENTE
+// -----------------------------------------------------------------------------
+
+Table domicilio {
+  id int [pk, increment]
+  pais varchar [default: 'Bolivia']
+  departamento varchar
+  ciudad varchar
+  ciudad varchar
+  zona varchar
+  avenida varchar
+  numero varchar
+  referencia text
+  latitud decimal(10, 8) // Mejor precisión para coordenadas
+  longitud decimal(11, 8)
+  tipo_domicilio varchar // O enum('Residencia', 'Trabajo', 'Referencia')
+  deleted_at timestamp
+}
+
+Table estado {
+  id int [pk, increment]
+  nombre varchar [unique]
+  slug varchar [unique]
+  contexto varchar [note: 'Ej: user, academico, proceso, global']
+  permite_login boolean [default: true]
+  permite_procesos_academicos boolean [default: true]
+  color_hex varchar
+  Note: 'La combinación (slug, contexto) debería ser única para evitar duplicados lógicos.'
+  Indexes {
+    (slug, contexto) [unique]
+  }
+
+}
+
+Table user {
+  id int [pk, increment]
+  persona_id int [ref: > persona.id, unique, not null]
+  estado_id int [ref: > estado.id]
+  email varchar [unique]
+  password varchar
+  remember_token varchar
+  created_at timestamp
+  Note: 'VISTA: admin.users.index'
+}
+
+
+Table nivel {
+  id int [pk, increment]
+  nombre varchar [note: 'Pregrado, Posgrado, Técnico']
+  Note: 'VISTA: admin.catalogos.index | ESTRATEGIA: Modal simple.'
+}
+
+Table turno {
+  id int [pk, increment]
+  nombre varchar
+  Note: 'VISTA: admin.catalogos.index | ESTRATEGIA: Modal simple.'
+}
+
+Table paralelo {
+  id int [pk, increment]
+  nombre varchar
+  Note: 'VISTA: admin.paralelos.index | ESTRATEGIA: Modal (ACTIVO por defecto).'
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 2: ENTIDADES DE CONFIGURACIÓN Y PERSONAS (DEPENDE DE NIVEL 1)
+// -----------------------------------------------------------------------------
+Table gestion {
+  id int [pk, increment]
+  nombre varchar(4) [unique]
+  estado_id int [ref: > estado.id]
+  Note: 'VISTA: admin.gestiones.index'
+}
+
+
+Table periodo {
+  id int [pk, increment]
+  nombre varchar
+  gestion_id int [ref: > gestion.id]
+  fecha_inicio date
+  fecha_fin date
+  estado_id int [ref: > estado.id]
+  Note: 'VISTA: admin.periodos.index'
+}
+
+
+Table materia {
+  id int [pk, increment]
+  sigla varchar [unique]
+  nombre varchar
+  horas_academicas int
+  tipo_materia varchar [note: 'Teorica, Practica, Teorica-Practica']
+  es_comun boolean [default: false]
+  estado_id int [ref: > estado.id]
+  Note: 'VISTA: admin.materias.index'
+}
+
+
+Table grado {
+  id int [pk, increment]
+  nombre varchar
+  orden int
+  ciclo int [default: 1, note: '1: Tronco Común, 2: Especialidad']
+  nivel_id int [ref: > nivel.id]
+  estado_id int [ref: > estado.id]
+  Note: 'VISTA: admin.grados.index'
+}
+
+
+Table configuracion {
+  id int [pk, increment]
+  nombre_institucion varchar
+  sigla_institucion varchar
+  nit varchar
+  domicilio_id int [ref: - domicilio.id, unique]
+  telefono varchar
+  email_contacto varchar
+  web varchar
+  logo_path varchar
+  divisa varchar [default: 'BOB']
+  gestion_actual_id int [ref: > gestion.id]
+  Note: 'VISTA: admin.configuracion.edit'
+}
+
+
+Table persona {
+  id int [pk, increment]
+  ci varchar [unique]
+  nombres varchar
+  ap_paterno varchar
+  ap_materno varchar
+  fecha_nacimiento date
+  sexo char(1)
+  celular varchar
+  email_personal varchar
+  foto_path varchar
+  domicilio_id int [ref: - domicilio.id, null]
+  deleted_at timestamp // Importante si usas SoftDeletes
+  Note: 'VISTA: admin.personas.create/edit | ESTRATEGIA: Full Page.'
+}
+
+
+
+Table ppff {
+  id int [pk, increment]
+  persona_id int [ref: > persona.id, unique, note: 'Relación 1:1 con la tabla persona']
+  parentesco enum('Padre', 'Madre', 'Tutor', 'Apoderado') [note: 'Valores fijos para integridad de datos']
+
+  Note: 'VISTA: @include("admin.estudiantes._form_ppff") | ESTRATEGIA: Registro opcional en el alta del estudiante.'
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 3: SEGURIDAD, USUARIOS Y RECURSOS HUMANOS (DEPENDE DE NIVEL 2)
+// -----------------------------------------------------------------------------
+
+
+Table personal {
+  id int [pk, increment]
+  persona_id int [ref: > persona.id]
+  usuario_id int [ref: > user.id]
+  tipo varchar [note: 'docente, administrativo']
+  profesion varchar
+  estado_id int [ref: > estado.id]
+  Note: 'VISTA: admin.personal.edit'
+}
+
+Table formacion {
+  id int [pk, increment]
+  personal_id int [ref: > personal.id]
+  titulo varchar
+  institucion varchar
+  nivel_formacion varchar
+  fecha_graduacion date
+  archivo_path varchar
+  Note: 'VISTA: admin.personal.partials._formacion'
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 4: CARRERAS, MALLAS ACADÉMICAS Y ESTUDIANTES (DEPENDE DE NIVELES 1-3)
+// -----------------------------------------------------------------------------
+
+Table carrera {
+  id int [pk, increment]
+  carrera_base_id int [ref: > carrera.id, null]
+  nombre varchar
+  sigla varchar [unique]
+  resolucion varchar
+  duracion int
+  titulo varchar
+  nivel_id int [ref: > nivel.id]
+  es_tronco_comun boolean [default: false]
+  estado_id int [ref: > estado.id]
+  Note: 'VISTA: admin.carreras.edit'
+}
+
+
+Table pensum {
+  id int [pk, increment]
+  carrera_id int [ref: > carrera.id]
+  materia_id int [ref: > materia.id]
+  grado_id int [ref: > grado.id]
+  es_obligatoria boolean [default: true]
+  estado_id int [ref: > estado.id]
+  Note: 'VISTA: admin.carreras.mallas'
+}
+
+
+
+Table estudiante {
+  id int [pk, increment]
+  persona_id int [ref: > persona.id, unique, not null]
+  ppff_id int [ref: > ppff.id, null, note: 'Opcional para mayores de edad']
+  registro_historico varchar [unique]
+  estado_id int [ref: > estado.id]
+
+  Note: 'VISTA: admin.estudiantes.show | El ppff_id se genera antes que el estudiante si el tutor es nuevo.'
+}
+
+Table inscripcion_carrera {
+  id int [pk, increment]
+  estudiante_id int [ref: > estudiante.id]
+  carrera_id int [ref: > carrera.id]
+  periodo_id int [ref: > periodo.id]
+  fecha_inscripcion date
+  es_especialidad_activa boolean [default: true]
+  estado_id int [ref: > estado.id]
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 5: GESTIÓN OPERATIVA Y EXÁMENES (DEPENDE DE NIVEL 4)
+// -----------------------------------------------------------------------------
+
+Table oferta_academica {
+  id int [pk, increment]
+  periodo_id int [ref: > periodo.id]
+  paralelo_id int [ref: > paralelo.id]
+  turno_id int [ref: > turno.id]
+  pensum_id int [ref: > pensum.id]
+  docente_id int [ref: > personal.id]
+  cupo_maximo int [default: 80]
+  estado_id int [ref: > estado.id]
+}
+
+Table matriculacion_materia {
+  id int [pk, increment]
+  estudiante_id int [ref: > estudiante.id]
+  oferta_id int [ref: > oferta_academica.id]
+  fecha_registro timestamp [default: `now()`]
+  costo_matricula decimal(10,2)
+  estado_id int [ref: > estado.id]
+}
+
+Table programacion_examen {
+  id int [pk, increment]
+  oferta_id int [ref: > oferta_academica.id]
+  instancia varchar [note: 'P1, P2, EF, 2T, RJ']
+  modalidad varchar
+  tipo_proceso varchar [default: 'Ordinario']
+  fecha_programada datetime
+  responsable_id int [ref: > personal.id]
+  bloqueado boolean [default: false]
+  observaciones_legales text
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 6: EVALUACIÓN, ASISTENCIA, TITULACIÓN Y AUDITORÍA (DEPENDE DE NIVEL 5)
+// -----------------------------------------------------------------------------
+
+Table asistencia {
+  id int [pk, increment]
+  matriculacion_id int [ref: > matriculacion_materia.id]
+  fecha date
+  estado_id int [ref: > estado.id]
+  observacion varchar
+}
+
+Table folio_examen {
+  id int [pk, increment]
+  programacion_id int [ref: > programacion_examen.id]
+  codigo_folio varchar [unique]
+  estudiante_id int [ref: > estudiante.id]
+  estado_folio varchar [default: 'Entregado']
+}
+
+Table calificacion_final {
+  id int [pk, increment]
+  matriculacion_id int [ref: > matriculacion_materia.id]
+  programacion_id int [ref: > programacion_examen.id]
+  folio_id int [ref: > folio_examen.id, null]
+  tp_raw float [default: 0]
+  tp_sellado boolean [default: false]
+  exam_raw float [default: 0]
+  exam_sellado boolean [default: false]
+  nota_definitiva float
+  estado_aprobacion varchar
+  registrado_por_user_id int [ref: > user.id]
+  log_auditoria json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table titulacion {
+  id int [pk, increment]
+  estudiante_id int [ref: > estudiante.id]
+  carrera_id int [ref: > carrera.id]
+  modalidad enum('Tesis', 'Examen de Grado', 'Proyecto de Grado', 'Excelencia')
+  fecha_inicio date
+  fecha_defensa date
+  nota_defensa float
+  estado_titulacion_id int [ref: > estado.id]
+  archivo_resolucion_path varchar
+  observaciones_auditoria text
+}
+
+Table auditoria {
+  id int [pk, increment]
+  user_id int [ref: > user.id]
+  auditable_id int
+  auditable_type varchar
+  accion varchar
+  valores_anteriores json
+  valores_nuevos json
+  ip_address varchar(45)
+  user_agent text
+  created_at timestamp [default: `now()`]
+}
