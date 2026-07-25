@@ -210,4 +210,21 @@ class PersonaController extends Controller
         // Si no hay archivo nuevo, mantenemos el path actual o null
         return $persona ? $persona->foto_path : null;
     }
+    public function buscarAutocomplete(Request $request)
+    {
+        $query = $request->input('query');
+
+        // Cargamos la relación 'personal' para saber si ya existe
+        $personas = Persona::with('personal')
+            ->where(function ($q) use ($query) {
+                $q->where('ci', 'LIKE', "%{$query}%")
+                    ->orWhere('nombres', 'LIKE', "%{$query}%")
+                    ->orWhere('ap_paterno', 'LIKE', "%{$query}%")
+                    ->orWhere('ap_materno', 'LIKE', "%{$query}%");
+            })
+            ->limit(10)
+            ->get();
+
+        return response()->json($personas);
+    }
 }

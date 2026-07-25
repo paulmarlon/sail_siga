@@ -33,6 +33,19 @@
                                     @enderror
                                 </div>
                             </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Estado</label>
+                                    <select name="estado_id" class="form-control" required>
+                                        @foreach ($estados as $estado)
+                                            <option value="{{ $estado->id }}"
+                                                {{ old('estado_id', $gestion->estado_id) == $estado->id ? 'selected' : '' }}>
+                                                {{ $estado->nombre }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12">

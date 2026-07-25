@@ -325,6 +325,60 @@ return [
             'icon' => 'fas fa-fw fa-users',
             'classes' => 'bg-blue text-white',
         ],
+        [
+            'text' => 'Turnos',
+            'url'  => 'admin/turnos',
+            'icon' => 'fas fa-fw fa-clock', // Icono de reloj para turnos
+            'classes' => 'bg-blue text-white',
+        ],
+        [
+            'text' => 'Paralelos',
+            'url'  => 'admin/paralelos',
+            'icon' => 'fas fa-fw fa-users', // Icono de grupo para paralelos
+            'classes' => 'bg-blue text-white',
+        ],
+        [
+            'text' => 'Periodos',
+            'url'  => 'admin/periodos',
+            'icon' => 'fas fa-fw fa-calendar-alt', // Icono de calendario para representar periodos
+            'classes' => 'bg-green text-white',    // Puedes cambiar el color para diferenciarlo de Paralelos
+        ],
+        [
+            'text' => 'Materias',
+            'url'  => 'admin/materias',
+            'icon' => 'fas fa-fw fa-book',
+            'classes' => 'bg-info text-white', // 'bg-info' combina bien con el azul de paralelos
+        ],
+        [
+            'text' => 'Grados',
+            'url'  => 'admin/grados',
+            'icon' => 'fas fa-fw fa-graduation-cap',
+            'classes' => 'bg-primary text-white',
+        ],
+        [
+            'text' => 'Carreras',
+            'url'  => 'admin/carreras',
+            'icon' => 'fas fa-fw fa-graduation-cap', // O también 'fas fa-fw fa-university'
+            'classes' => 'bg-navy text-white',
+        ],
+        [
+            'text' => 'Pensum',
+            'url'  => 'admin/pensums', // O la ruta que estés usando para tu gestor drag & drop
+            'icon' => 'fas fa-fw fa-clipboard-list',
+            'classes' => 'bg-blue text-white',
+        ],
+        [
+            'text'    => 'Roles',
+            'url'     => 'admin/roles',
+            'icon'    => 'fas fa-fw fa-user-check',
+            'classes' => 'bg-blue text-white',
+        ],
+        [
+            'text'    => 'Personal',
+            'icon'    => 'fas fa-fw fa-users',
+            'url'     => 'admin/personal',
+        ],
+
 
         [
             'text' => 'multilevel',
@@ -455,6 +509,41 @@ return [
             'active' => true,
             'files' => [
                 ['type' => 'js', 'asset' => false, 'location' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.8/jquery.inputmask.min.js'],
+            ],
+        ],
+        'AntiBack' => [
+            'active' => true,
+            'files' => [
+                [
+                    'type' => 'js',
+                    'asset' => false,
+                    'location' => 'data:text/javascript;base64,' . base64_encode('
+                        // 1. Interceptar el botón Back a nivel de historial nativo
+                        history.pushState(null, null, location.href);
+                        window.addEventListener("popstate", function () {
+                            window.location.href = "/login";
+                        });
+
+                        // 2. Verificar en tiempo real con el servidor si la sesión sigue activa al volver a enfocar la pestaña o usar bfcache
+                        window.addEventListener("pageshow", function(e) {
+                            if (e.persisted || (performance.navigation && performance.navigation.type === 2)) {
+                                window.location.href = "/login";
+                            }
+                        });
+
+                        // 3. Verificación activa silenciosa contra el servidor cada vez que la página recupera el foco
+                        window.addEventListener("focus", function() {
+                            fetch("/admin/configuracion/edit", { method: "HEAD", redirect: "manual" })
+                                .then(response => {
+                                    if (response.status === 401 || response.status === 302 || response.type === "opaqueredirect") {
+                                        window.location.href = "/login";
+                                    }
+                                }).catch(() => {
+                                    // Si hay error de red o sesión muerta, forzar login
+                                });
+                        });
+                    ')
+                ],
             ],
         ],
     ],

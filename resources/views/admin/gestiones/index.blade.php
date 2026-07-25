@@ -18,6 +18,13 @@
                         <span class="info-box-text">Gestión</span>
                         <span class="info-box-number"
                             style="color:rgb(0, 149, 255);font-size:20px">{{ $gestion->nombre }}</span>
+                        @if ($gestion->estado)
+                            <span class="badge" style="background-color: {{ $gestion->estado->color_hex }}; color: #fff;">
+                                {{ $gestion->estado->nombre }}
+                            </span>
+                        @else
+                            <span class="badge badge-secondary">Sin estado</span>
+                        @endif
                         <div class="row">
                             @if ($gestion->trashed())
                                 <div class="col-12 mt-1">

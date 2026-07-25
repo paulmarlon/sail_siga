@@ -13,4 +13,15 @@ class Nivel extends Model
     protected $fillable = [
         'nombre'
     ];
+    /**
+     * Un nivel tiene muchas carreras.
+     */
+    public function carreras()
+    {
+        return $this->hasMany(Carrera::class);
+    }
+    public function grados()
+    {
+        return $this->hasMany(Grado::class);
+    }
 }

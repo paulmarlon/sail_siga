@@ -12,7 +12,9 @@ class GestionController extends Controller
      */
     public function index()
     {
-        $gestiones = Gestion::orderBy('nombre', 'ASC')->get();
+        // Usamos with('estado') para traer la información del estado junto con la gestión
+        $gestiones = Gestion::with('estado')->orderBy('nombre', 'ASC')->get();
+
         return view('admin.gestiones.index', compact('gestiones'));
     }
 
@@ -21,7 +23,9 @@ class GestionController extends Controller
      */
     public function create()
     {
-        return view('admin.gestiones.create');
+        $estados = \App\Models\Estado::where('contexto', 'academico')->get();
+
+        return view('admin.gestiones.create', compact('estados'));
     }
 
     /**
@@ -29,14 +33,15 @@ class GestionController extends Controller
      */
     public function store(Request $request)
     {
-        //$datos = request()->all();
-        //return response()->json($datos);
         $request->validate([
             'nombre' => 'required|integer|digits:4|min:2025|max:2030|unique:gestions,nombre',
         ]);
+
         $gestion = new Gestion();
         $gestion->nombre = $request->nombre;
+        $gestion->estado_id = 1; // Asigna el ID del estado "Activo" o el que prefieras
         $gestion->save();
+
         return redirect()->route('admin.gestiones.index')
             ->with('mensaje', 'Gestión creada exitosamente.')
             ->with('icon', 'success');
@@ -55,7 +60,8 @@ class GestionController extends Controller
      */
     public function edit(Gestion $gestion)
     {
-        return view('admin.gestiones.edit', compact('gestion'));
+        $estados = \App\Models\Estado::where('contexto', 'academico')->get();
+        return view('admin.gestiones.edit', compact('gestion', 'estados'));
     }
 
     /**
@@ -65,13 +71,16 @@ class GestionController extends Controller
     {
         $request->validate([
             'nombre' => 'required|integer|digits:4|min:2025|max:2030|unique:gestions,nombre,' . $gestion->id,
+            // Si vas a permitir cambiar el estado desde el formulario:
+            'estado_id' => 'required|exists:estados,id',
         ]);
 
         $gestion->nombre = $request->nombre;
+        $gestion->estado_id = $request->estado_id; // <-- Asigna el valor
         $gestion->save();
 
         return redirect()->route('admin.gestiones.index')
-            ->with('mensaje', 'Gestión actualizada exitosamente.')
+            ->with('mensaje', 'Gestión actualizada.')
             ->with('icon', 'success');
     }
 

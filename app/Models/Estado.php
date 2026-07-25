@@ -21,4 +21,24 @@ class Estado extends Model
         'permite_procesos_academicos',
         'color_hex'
     ];
+    public function carreras()
+    {
+        return $this->hasMany(Carrera::class);
+    }
+    public function materias()
+    {
+        return $this->hasMany(Materia::class, 'estado_id');
+    }
+    public function grados()
+    {
+        return $this->hasMany(Grado::class);
+    }
+    public function pensums()
+    {
+        return $this->hasMany(Pensum::class);
+    }
+    public function personals()
+    {
+        return $this->hasMany(Personal::class);
+    }
 }

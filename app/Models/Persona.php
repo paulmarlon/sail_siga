@@ -22,9 +22,20 @@ class Persona extends Model
         'foto_path',
         'domicilio_id'
     ];
+    // Si manejas domicilios
 
     public function domicilio()
     {
         return $this->belongsTo(Domicilio::class, 'domicilio_id');
+    }
+    // Una persona puede tener un usuario del sistema (relación 1 a 1 inversa)
+    public function user()
+    {
+        return $this->hasOne(User::class, 'persona_id');
+    }
+    // Una persona puede ser parte del personal (docente/administrativo)
+    public function personal()
+    {
+        return $this->hasOne(Personal::class, 'persona_id');
     }
 }

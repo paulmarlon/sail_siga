@@ -8,21 +8,23 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles; // Si usas Spatie para roles y permisos
 
 #[Fillable(['persona_id', 'email', 'password'])] // Cambiamos name por persona_id
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
-     * Definimos la relación con Persona
+     * Un usuario pertenece a una persona biográfica.
      */
     public function persona(): BelongsTo
     {
-        return $this->belongsTo(Persona::class);
+        return $this->belongsTo(Persona::class, 'persona_id');
     }
 
     /**
@@ -41,5 +43,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function personal(): HasOne
+    {
+        return $this->hasOne(Personal::class, 'usuario_id');
     }
 }

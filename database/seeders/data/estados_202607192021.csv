@@ -1,0 +1,7 @@
+"id","nombre","slug","contexto","permite_login","permite_procesos_academicos","color_hex"
+1,Activo,activo,user,true,true,#28a745
+2,Suspendido,suspendido,user,false,false,#dc3545
+3,En Curso,en-curso,academico,true,true,#007bff
+4,Finalizado,finalizado,academico,true,false,#6c757d
+5,Vigente,vigente,academico,true,true,#17a2b8
+6,Descontinuada,descontinuada,academico,true,false,#343a40

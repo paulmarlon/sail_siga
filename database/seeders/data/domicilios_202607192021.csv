@@ -1,0 +1,3 @@
+"id","pais","departamento","ciudad","zona","avenida","numero","referencia","latitud","longitud","tipo_domicilio","created_at","updated_at","deleted_at"
+1,Bolivia,La Paz,La Paz,,,,,,,RESIDENCIA,2026-07-19 12:25:05.000,2026-07-19 12:25:05.000,
+2,BOLIVIA,LA PAZ,LA PAZ,VILLA NUEVA POTOSI,LUCIANO ALCOREZA,"1370",BIBLIOTECA,-16.50619100,-68.14863400,TRABAJO,2026-07-19 22:29:31.000,2026-07-19 22:31:14.000,

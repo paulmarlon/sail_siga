@@ -65,6 +65,7 @@ Table materia {
   id int [pk, increment]
   sigla varchar [unique]
   nombre varchar
+  descripcion varchar
   horas_academicas int
   tipo_materia varchar [note: 'Teorica, Practica, Teorica-Practica']
   es_comun boolean [default: false]
@@ -130,8 +131,8 @@ Table user {
 
 Table personal {
   id int [pk, increment]
-  persona_id int [ref: > persona.id]
-  usuario_id int [ref: > user.id]
+  persona_id int [ref: > persona.id, unique, not null] // Vínculo obligatorio a la persona biográfica
+  usuario_id int [ref: - user.id, null] // Opcional: solo si el empleado usa el sistema
   tipo varchar [note: 'docente, administrativo']
   profesion varchar
   estado_id int [ref: > estado.id]
@@ -174,7 +175,8 @@ Table pensum {
 
 Table estudiante {
   id int [pk, increment]
-  persona_id int [ref: > persona.id, unique, not null]
+  persona_id int [ref: > persona.id, unique, not null] // Vínculo obligatorio a la persona biográfica
+  usuario_id int [ref: - user.id, null] // Opcional: solo si el estudiante usa el portal web
   registro_universitario varchar [unique]
   estado_id int [ref: > estado.id]
 }
@@ -208,6 +210,7 @@ Table oferta_academica {
   turno_id int [ref: > turno.id]
   pensum_id int [ref: > pensum.id]
   docente_id int [ref: > personal.id]
+  contrato_id int [ref: > contrato.id, null]
   cupo_maximo int [default: 80]
   estado_id int [ref: > estado.id]
 }

@@ -1,0 +1,3 @@
+"id","nombre","orden","ciclo","nivel_id","estado_id","created_at","updated_at","deleted_at"
+1,"1er semestre",1,1,1,5,2026-07-19 15:57:48.000,2026-07-19 15:58:30.000,
+2,"2do semestre",2,1,1,5,2026-07-19 17:20:58.000,2026-07-19 17:22:12.000,

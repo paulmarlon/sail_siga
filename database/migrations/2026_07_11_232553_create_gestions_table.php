@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('gestions', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 4)->unique();
+            $table->foreignId('estado_id')->constrained('estados');
             $table->timestamps();
             $table->softDeletes();
         });

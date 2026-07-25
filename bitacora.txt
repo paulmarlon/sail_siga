@@ -75,3 +75,26 @@ Esta es la secuencia que seguimos para configurar el entorno:
         ./vendor/bin/sail artisan view:clear
 
         ./vendor/bin/sail artisan config:clear
+
+
+
+
+
+
+========================================
+RESUMEN DE COMANDOS DOCKER (POSTGRESQL & LARAVEL)
+========================================
+
+1. APAGAR EL SISTEMA (Apaga Laravel, PostgreSQL y contenedores)
+   Comando: docker compose down
+
+2. PRENDER EL SISTEMA (Inicia Laravel, PostgreSQL y contenedores)
+   Comando: docker compose up -d
+
+3. VERIFICAR ESTADO (Ver qué contenedores están corriendo)
+   Comando: docker compose ps
+
+4. VER LOGS / ERRORES (Monitoreo en tiempo real)
+   Comando: docker compose logs -f
+
+========================================
