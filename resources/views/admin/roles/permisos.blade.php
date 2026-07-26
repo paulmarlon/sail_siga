@@ -14,9 +14,9 @@
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
-                    <form action="{{ url('/admin/roles/' . $rol->id) }}" method="POST">
+                    <form action="{{ route('admin.roles.update_permisos', $rol->id) }}" method="POST">
                         @csrf
-                        @method('PUT')
+
                         <div class="row">
                             @foreach ($permisos as $modulo => $grupoPermisos)
                                 <div class="col-md-3">

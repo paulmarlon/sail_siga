@@ -65,7 +65,7 @@ class RoleController extends Controller
 
         return redirect()->route('admin.roles.index')->with('mensaje', 'Se eliminó el rol de la manera correcta')->with('icono', 'success');
     }
-    public function permisos($id)
+    public function permisos(string $id)
     {
         $rol = Role::findOrFail($id);
 
@@ -80,12 +80,18 @@ class RoleController extends Controller
         return view('admin.roles.permisos', compact('rol', 'permisos'));
     }
 
-    public function update_permisos(Request $request, $id)
+    public function update_permisos(Request $request, string  $id)
     {
         $rol = Role::findOrFail($id);
 
-        // Sincroniza los permisos seleccionados mediante los checkboxes del formulario
-        $rol->permissions()->sync($request->input('permisos', []));
+        // Obtenemos los IDs de los permisos seleccionados en el formulario
+        $permisosIds = $request->input('permisos', []);
+
+        // Sincronizamos usando la relación Eloquent (que acepta IDs numéricos)
+        $rol->permissions()->sync($permisosIds);
+
+        // Limpiamos la caché de permisos de Spatie para que tome efecto de inmediato
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         return redirect()->route('admin.roles.index')->with([
             'mensaje' => 'Se actualizó los permisos del rol correctamente',
