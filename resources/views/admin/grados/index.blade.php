@@ -40,21 +40,29 @@
                             <td>
                                 <div class="btn-group">
                                     @if ($g->trashed())
-                                        <form action="{{ route('admin.grados.restaurar', $g->id) }}" method="POST">
-                                            @csrf @method('POST')
-                                            <button type="submit" class="btn btn-xs btn-info"><i
-                                                    class="fas fa-trash-restore"></i></button>
+                                        {{-- Formulario de Restaurar con SweetAlert --}}
+                                        <form action="{{ route('admin.grados.restaurar', $g->id) }}" method="POST"
+                                            id="formRestaurar{{ $g->id }}">
+                                            @csrf
+                                            <button type="button" class="btn btn-xs btn-info"
+                                                onclick="confirmarRestauracion({{ $g->id }})" title="Restaurar">
+                                                <i class="fas fa-trash-restore"></i>
+                                            </button>
                                         </form>
                                     @else
                                         <button class="btn btn-xs btn-success" data-toggle="modal"
                                             data-target="#ModalUpdate{{ $g->id }}"><i
                                                 class="fas fa-edit"></i></button>
+
+                                        {{-- Formulario de Eliminar con SweetAlert --}}
                                         <form action="{{ route('admin.grados.destroy', $g->id) }}" method="POST"
-                                            class="ml-1">
+                                            class="ml-1" id="formEliminar{{ $g->id }}">
                                             @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-xs btn-danger"
-                                                onclick="return confirm('¿Enviar a papelera?')"><i
-                                                    class="fas fa-trash"></i></button>
+                                            <button type="button" class="btn btn-xs btn-danger"
+                                                onclick="confirmarEliminacion({{ $g->id }})"
+                                                title="Enviar a papelera">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                         </form>
                                         @include('admin.grados.modal_edit', ['grado' => $g])
                                     @endif
@@ -72,11 +80,58 @@
 @section('js')
     @include('admin.alertas')
     <script>
-        $('#grados-table').DataTable({
-            "responsive": true,
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json"
-            }
+        $(document).ready(function() {
+            $('#grados-table').DataTable({
+                "responsive": true,
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json"
+                }
+            });
+
+            // Lógica para abrir el modal automáticamente si hay errores de validación
+            @if ($errors->any())
+                @if (session('modal_id'))
+                    $('#ModalUpdate{{ session('modal_id') }}').modal('show');
+                @else
+                    $('#ModalCreate').modal('show');
+                @endif
+            @endif
         });
+
+        // Función de SweetAlert2 para enviar a papelera
+        function confirmarEliminacion(id) {
+            Swal.fire({
+                title: '¿Enviar a papelera?',
+                text: "El grado será movido a la papelera.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, enviar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formEliminar' + id).submit();
+                }
+            });
+        }
+
+        // Función de SweetAlert2 para restaurar registro
+        function confirmarRestauracion(id) {
+            Swal.fire({
+                title: '¿Desea restaurar este grado?',
+                text: "El grado volverá a estar activo en el sistema.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#17a2b8',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, restaurar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formRestaurar' + id).submit();
+                }
+            });
+        }
     </script>
 @stop

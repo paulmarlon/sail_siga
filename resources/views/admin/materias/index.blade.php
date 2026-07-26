@@ -54,9 +54,11 @@
                                 <div class="btn-group">
                                     @if ($m->trashed())
                                         {{-- Botón para restaurar --}}
-                                        <form action="{{ route('admin.materias.restaurar', $m->id) }}" method="POST">
+                                        <form action="{{ route('admin.materias.restaurar', $m->id) }}" method="POST"
+                                            id="formRestaurar{{ $m->id }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-xs btn-info" title="Restaurar">
+                                            <button type="button" class="btn btn-xs btn-info"
+                                                onclick="confirmarRestauracion({{ $m->id }})" title="Restaurar">
                                                 <i class="fas fa-trash-restore"></i>
                                             </button>
                                         </form>
@@ -67,10 +69,11 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form action="{{ route('admin.materias.destroy', $m->id) }}" method="POST"
-                                            class="ml-1">
+                                            class="ml-1" id="formEliminar{{ $m->id }}">
                                             @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-xs btn-danger"
-                                                onclick="return confirm('¿Enviar a papelera?')">
+                                            <button type="button" class="btn btn-xs btn-danger"
+                                                onclick="confirmarEliminacion({{ $m->id }})"
+                                                title="Enviar a papelera">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -166,13 +169,48 @@
             // 2. Lógica inteligente de modales (Fix para edición vs creación)
             @if ($errors->any())
                 @if (session('modal_id'))
-                    // Si el controlador guardó el ID de la materia que falló al editar
                     $('#ModalUpdate{{ session('modal_id') }}').modal('show');
                 @else
-                    // Si falló el registro inicial
                     $('#ModalCreate').modal('show');
                 @endif
             @endif
         });
+
+        // ==========================================
+        // 3. LA FUNCIÓN DE SWEETALERT VA AQUÍ AFUERA
+        // ==========================================
+        function confirmarEliminacion(id) {
+            Swal.fire({
+                title: '¿Enviar a papelera?',
+                text: "La materia será movida a la papelera.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, enviar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formEliminar' + id).submit();
+                }
+            });
+        }
+        // Función de SweetAlert2 para confirmar la restauración
+        function confirmarRestauracion(id) {
+            Swal.fire({
+                title: '¿Desea restaurar este registro?',
+                text: "La materia volverá a estar activa en el sistema.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#17a2b8', // Color info / celeste de AdminLTE
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, restaurar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formRestaurar' + id).submit();
+                }
+            });
+        }
     </script>
 @stop

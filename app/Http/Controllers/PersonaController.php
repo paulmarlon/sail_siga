@@ -26,8 +26,19 @@ class PersonaController extends Controller
 
     public function store(Request $request)
     {
+        // 1. VALIDACIÓN PREVIA (Evita que la base de datos falle por CI duplicado)
+        $request->validate([
+            'ci' => 'required|string|max:20|unique:personas,ci',
+            'email_personal' => 'nullable|email|max:255',
+            'fecha_nacimiento' => 'required|date',
+            'sexo' => 'required|in:M,F',
+        ], [
+            'ci.unique' => 'El número de CI ya se encuentra registrado en el sistema.',
+            'ci.required' => 'El campo CI es obligatorio.',
+        ]);
+
         DB::transaction(function () use ($request) {
-            // 1. Procesamiento de datos (incluyendo el manejo de fotos)
+            // 2. Procesamiento de datos (incluyendo el manejo de fotos)
             $data = $request->all();
 
             // Transformar a mayúsculas
@@ -38,7 +49,7 @@ class PersonaController extends Controller
                 }
             }
 
-            // 2. Lógica de creación del Domicilio
+            // 3. Lógica de creación del Domicilio
             $domicilioId = null;
             $datosDomicilio = array_intersect_key($data, array_flip([
                 'pais',
@@ -59,7 +70,7 @@ class PersonaController extends Controller
                 $domicilioId = $domicilio->id;
             }
 
-            // 3. Manejo de foto y creación de Persona
+            // 4. Manejo de foto y creación de Persona
             // Pasamos el request al método handleFoto
             $fotoPath = $this->handleFoto($request);
 

@@ -35,12 +35,15 @@ Route::middleware('auth')->group(function () {
         // Gestiones
         Route::get('gestiones/papelera', [GestionController::class, 'papelera'])->name('gestiones.papelera')->middleware('can:admin.gestiones.index');
         Route::post('gestiones/{id}/restaurar', [GestionController::class, 'restaurar'])->name('gestiones.restaurar')->middleware('can:admin.gestiones.edit');
-        Route::resource('gestiones', GestionController::class)->middleware('can:admin.gestiones.index');
+        Route::resource('gestiones', GestionController::class)->parameters(['gestiones' => 'gestion'])->middleware('can:admin.gestiones.index');
 
         // Niveles
         Route::get('niveles/papelera', [NivelController::class, 'papelera'])->name('niveles.papelera')->middleware('can:admin.niveles.index');
         Route::post('niveles/{id}/restaurar', [NivelController::class, 'restaurar'])->name('niveles.restaurar')->middleware('can:admin.niveles.edit');
-        Route::resource('niveles', NivelController::class)->only(['index', 'store', 'edit', 'update', 'destroy'])->middleware('can:admin.niveles.index');
+        Route::resource('niveles', NivelController::class)
+            ->parameters(['nivels' => 'nivel']) // <--- ¡Agrégalo aquí!
+            ->only(['index', 'store', 'edit', 'update', 'destroy'])
+            ->middleware('can:admin.niveles.index');
 
         // Configuración
         Route::get('configuracion/edit', [ConfiguracionController::class, 'edit'])->name('configuracion.edit')->middleware('can:admin.configuracion.edit');
@@ -88,10 +91,20 @@ Route::middleware('auth')->group(function () {
         Route::post('carreras/{id}/restaurar', [CarreraController::class, 'restaurar'])->name('carreras.restaurar')->middleware('can:admin.carreras.edit');
         Route::resource('carreras', CarreraController::class)->middleware('can:admin.carreras.index');
 
-        // Pensums
-        Route::get('pensums/{carrera_id?}', [PensumController::class, 'index'])->name('pensums.index')->middleware('can:admin.pensums.index');
+        // 1. Rutas específicas de la papelera y restauración (SIEMPRE antes del resource)
+        Route::get('pensums/{carrera_id}/papelera', [PensumController::class, 'papelera'])->name('pensums.papelera');
+        Route::post('pensums/{id}/restaurar', [PensumController::class, 'restaurar'])->name('pensums.restaurar');
+
+        // 2. Ruta GET estática explícita (soluciona el error 405 del conflicto con el POST del resource)
+        Route::get('pensums', [PensumController::class, 'index'])->name('pensums.index')->middleware('can:admin.pensums.index');
+
+        // 3. (Opcional) Si en algún lugar accedes entrando directamente a /admin/pensums/1
+        Route::get('pensums/carrera/{carrera_id}', [PensumController::class, 'index'])->whereNumber('carrera_id')->name('pensums.carrera')->middleware('can:admin.pensums.index');
+
+        // 4. Rutas de actualización y resource
         Route::post('pensums/update-grado', [PensumController::class, 'updateGrado'])->name('pensums.update-grado')->middleware('can:admin.pensums.edit');
         Route::resource('pensums', PensumController::class)->except(['index'])->middleware('can:admin.pensums.index');
+
         // --- GESTIÓN DE ROLES Y PERMISOS ---
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index')->middleware('can:admin.roles.index');
         Route::get('roles/create', [RoleController::class, 'create'])->name('roles.create')->middleware('can:admin.roles.create');

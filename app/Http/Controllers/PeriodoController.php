@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\{Periodo, Gestion, Estado};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule; // <--- 1. IMPORTANTE: Importamos la clase Rule
 
 class PeriodoController extends Controller
 {
@@ -25,7 +26,15 @@ class PeriodoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre_create' => 'required|string|max:255',
+            // 2. Validación única compuesta para STORE (único por gestion_id)
+            'nombre_create' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('periodos', 'nombre')->where(function ($query) use ($request) {
+                    return $query->where('gestion_id', $request->gestion_id);
+                }),
+            ],
             'gestion_id'    => 'required|exists:gestions,id',
             'estado_id' => [
                 'required',
@@ -41,13 +50,15 @@ class PeriodoController extends Controller
             ],
             'fecha_inicio' => 'required|date',
             'fecha_fin'    => 'required|date|after:fecha_inicio',
+        ], [
+            'nombre_create.unique' => 'Ya existe un período con este nombre en la gestión seleccionada.',
         ]);
 
         // Usamos el estado_id que viene del formulario validado
         Periodo::create([
             'nombre'       => strtoupper($request->nombre_create),
             'gestion_id'   => $request->gestion_id,
-            'estado_id'    => $request->estado_id, // Usar el valor del request
+            'estado_id'    => $request->estado_id,
             'fecha_inicio' => $request->fecha_inicio,
             'fecha_fin'    => $request->fecha_fin,
         ]);
@@ -66,9 +77,17 @@ class PeriodoController extends Controller
             'nombre_update' => strtoupper($request->nombre_update),
         ]);
 
-        // 1. Validamos incluyendo estado_id y la restricción de contexto
+        // 1. Validamos incluyendo estado_id y la restricción compuesta con Rule::unique
         $validator = Validator::make($request->all(), [
-            'nombre_update' => 'required|string|max:255|unique:periodos,nombre,' . $periodo->id,
+            'nombre_update' => [
+                'required',
+                'string',
+                'max:255',
+                // Validación única compuesta para UPDATE (ignorando el ID actual y filtrando por gestión)
+                Rule::unique('periodos', 'nombre')->where(function ($query) use ($request) {
+                    return $query->where('gestion_id', $request->gestion_id);
+                })->ignore($periodo->id),
+            ],
             'gestion_id'    => 'required|exists:gestions,id',
             'estado_id'     => [
                 'required',
@@ -84,6 +103,8 @@ class PeriodoController extends Controller
             ],
             'fecha_inicio'  => 'required|date',
             'fecha_fin'     => 'required|date|after_or_equal:fecha_inicio',
+        ], [
+            'nombre_update.unique' => 'Ya existe un período con este nombre en la gestión seleccionada.',
         ]);
 
         if ($validator->fails()) {
@@ -96,7 +117,7 @@ class PeriodoController extends Controller
         // 2. Actualizamos incluyendo estado_id
         $periodo->nombre = $request->nombre_update;
         $periodo->gestion_id = $request->gestion_id;
-        $periodo->estado_id = $request->estado_id; // <--- ¡Esto faltaba!
+        $periodo->estado_id = $request->estado_id;
         $periodo->fecha_inicio = $request->fecha_inicio;
         $periodo->fecha_fin = $request->fecha_fin;
         $periodo->save();
@@ -127,7 +148,7 @@ class PeriodoController extends Controller
     {
         $periodos = Periodo::onlyTrashed()->with('gestion')->get();
         $gestiones = Gestion::all();
-        $estados = \App\Models\Estado::where('contexto', 'academico')->get(); // <--- ESTO FALTA
+        $estados = \App\Models\Estado::where('contexto', 'academico')->get();
         return view('admin.periodos.index', compact('periodos', 'gestiones', 'estados'));
     }
 

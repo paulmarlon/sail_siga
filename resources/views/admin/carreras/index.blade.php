@@ -55,13 +55,17 @@
                             <td>
                                 <div class="btn-group">
                                     @if ($c->trashed())
-                                        <form action="{{ route('admin.carreras.restaurar', $c->id) }}" method="POST">
+                                        {{-- Formulario Restaurar con SweetAlert --}}
+                                        <form action="{{ route('admin.carreras.restaurar', $c->id) }}" method="POST"
+                                            id="formRestaurar{{ $c->id }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-xs btn-info" title="Restaurar"><i
-                                                    class="fas fa-trash-restore"></i></button>
+                                            <button type="button" class="btn btn-xs btn-info"
+                                                onclick="confirmarRestauracion({{ $c->id }})" title="Restaurar">
+                                                <i class="fas fa-trash-restore"></i>
+                                            </button>
                                         </form>
                                     @else
-                                        <!-- Botón Editar con todos los datos necesarios -->
+                                        <!-- Botón Editar -->
                                         <button type="button" class="btn btn-xs btn-success btn-edit" data-toggle="modal"
                                             data-target="#ModalUpdate" data-id="{{ $c->id }}"
                                             data-sigla="{{ $c->sigla }}" data-resolucion="{{ $c->resolucion }}"
@@ -73,11 +77,13 @@
                                             <i class="fas fa-edit"></i>
                                         </button>
 
+                                        {{-- Formulario Eliminar con SweetAlert --}}
                                         <form action="{{ route('admin.carreras.destroy', $c->id) }}" method="POST"
-                                            class="ml-1">
+                                            class="ml-1" id="formEliminar{{ $c->id }}">
                                             @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-xs btn-danger"
-                                                onclick="return confirm('¿Enviar a papelera?')">
+                                            <button type="button" class="btn btn-xs btn-danger"
+                                                onclick="confirmarEliminacion({{ $c->id }})"
+                                                title="Enviar a papelera">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -218,14 +224,13 @@
     @include('admin.alertas')
     <script>
         $(document).ready(function() {
-            // DataTables
             // Inicialización de DataTables con botones
             $('#carreras-table').DataTable({
                 "responsive": true,
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json"
                 },
-                "dom": 'Bfrtip', // Habilita la fila de botones
+                "dom": 'Bfrtip',
                 "buttons": [{
                         extend: 'excel',
                         text: '<i class="fas fa-file-excel"></i> Excel',
@@ -244,11 +249,12 @@
                     {
                         extend: 'colvis',
                         text: '<i class="fas fa-columns"></i> Columnas',
-                        className: 'btn btn-sm btn-secondary' // Asegúrate de incluir 'btn'
+                        className: 'btn btn-sm btn-secondary'
                     }
                 ]
             });
 
+            // Lógica para llenar el Modal Único
             // Lógica para llenar el Modal Único
             $(document).on('click', '.btn-edit', function() {
                 let id = $(this).data('id');
@@ -262,11 +268,50 @@
                 $('#m_titulo').val($(this).data('titulo'));
                 $('#m_nivel_id').val($(this).data('nivel_id'));
                 $('#m_estado_id').val($(this).data('estado_id'));
-                $('#m_carrera_base_id').val($(this).data('carrera_base_id'));
+
+                // Asignación correcta de la Carrera Base
+                let carreraBaseId = $(this).data('carrera_base_id');
+                $('#m_carrera_base_id').val(carreraBaseId ? carreraBaseId : '');
 
                 // Marcar checkbox
                 $('#m_es_tronco_comun').prop('checked', $(this).data('es_tronco_comun') == 1);
             });
         });
+
+        // Función de SweetAlert2 para enviar a papelera
+        function confirmarEliminacion(id) {
+            Swal.fire({
+                title: '¿Enviar a papelera?',
+                text: "La carrera será movida a la papelera de reciclaje.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, enviar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formEliminar' + id).submit();
+                }
+            });
+        }
+
+        // Función de SweetAlert2 para restaurar registro
+        function confirmarRestauracion(id) {
+            Swal.fire({
+                title: '¿Desea restaurar esta carrera?',
+                text: "La carrera volverá a estar activa en el sistema.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#17a2b8',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, restaurar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formRestaurar' + id).submit();
+                }
+            });
+        }
     </script>
 @stop

@@ -157,4 +157,26 @@ class PensumController extends Controller
 
         return response()->json(['message' => 'Materia removida con éxito']);
     }
+    public function papelera(int $carrera_id)
+    {
+        $carrera = Carrera::findOrFail($carrera_id);
+
+        // Obtenemos solo los registros que están eliminados (soft deletes) para esta carrera
+        $eliminados = Pensum::onlyTrashed()
+            ->with('materia', 'grado')
+            ->where('carrera_id', $carrera_id)
+            ->get();
+
+        return response()->json($eliminados);
+    }
+
+    public function restaurar(int $id)
+    {
+        $pensum = Pensum::onlyTrashed()->findOrFail($id);
+        $pensum->restore();
+
+        return response()->json([
+            'message' => 'Materia restaurada con éxito a la malla'
+        ]);
+    }
 }

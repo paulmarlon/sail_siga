@@ -1,5 +1,7 @@
 @extends('adminlte::page')
 @section('title', 'Registrar Persona')
+{{-- 1. HABILITAMOS EL PLUGIN DE SWEETALERT2 --}}
+@section('plugins.Sweetalert2', true)
 
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -42,8 +44,12 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-2"><label>CI</label><input type="text" name="ci"
-                                        class="form-control form-control-sm" value="{{ old('ci') }}" required></div>
+                                <div class="col-md-2">
+                                    <label>CI</label>
+                                    <input type="text" name="ci"
+                                        class="form-control form-control-sm @error('ci') is-invalid @enderror"
+                                        value="{{ old('ci') }}" required>
+                                </div>
                                 <div class="col-md-4"><label>Nombres</label><input type="text" name="nombres"
                                         class="form-control form-control-sm" value="{{ old('nombres') }}" required></div>
                                 <div class="col-md-6"><label>Apellidos</label>
@@ -173,5 +179,16 @@
                 map.invalidateSize();
             });
         });
+
+        {{-- 2. ALERTA AUTOMÁTICA DE SWEETALERT SI HAY UN ERROR (EJ. CI DUPLICADO) --}}
+        @if ($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: '¡Atención!',
+                text: 'El número de CI ya está registrado o hay campos requeridos pendientes.',
+                confirmButtonColor: '#007bff',
+                confirmButtonText: 'Entendido'
+            });
+        @endif
     </script>
 @stop

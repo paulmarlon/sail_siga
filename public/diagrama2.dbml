@@ -209,10 +209,20 @@ Table oferta_academica {
   paralelo_id int [ref: > paralelo.id]
   turno_id int [ref: > turno.id]
   pensum_id int [ref: > pensum.id]
-  docente_id int [ref: > personal.id]
-  contrato_id int [ref: > contrato.id, null]
   cupo_maximo int [default: 80]
   estado_id int [ref: > estado.id]
+}
+
+Table oferta_docente_historial {
+  id int [pk, increment]
+  oferta_id int [ref: > oferta_academica.id]
+  docente_id int [ref: > personal.id]
+  contrato_id varchar [null]
+  fecha_inicio date
+  fecha_fin date [null]
+  motivo_cambio varchar
+  estado_id int [ref: > estado.id] // Ej: Vigente, Suspendido, Concluido, Anulado
+  registrado_por_user_id int [ref: > user.id]
 }
 
 Table matriculacion_materia {

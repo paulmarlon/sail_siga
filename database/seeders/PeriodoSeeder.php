@@ -30,14 +30,14 @@ class PeriodoSeeder extends Seeder
 
         $periodos = [
             [
-                'nombre'       => '1er Semestre',
+                'nombre'       => 'PRIMER PERIODO',
                 'gestion_id'   => $gestionActual->id,
                 'fecha_inicio' => '2026-02-01',
                 'fecha_fin'    => '2026-06-30',
                 'estado_id'    => $estadoFinalizado ? $estadoFinalizado->id : $estadoVigente->id,
             ],
             [
-                'nombre'       => '2do Semestre',
+                'nombre'       => 'SEGUNDO PERIODO',
                 'gestion_id'   => $gestionActual->id,
                 'fecha_inicio' => '2026-08-01',
                 'fecha_fin'    => '2026-12-15',

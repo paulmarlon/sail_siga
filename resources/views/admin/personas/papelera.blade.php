@@ -25,11 +25,9 @@
         </div>
 
         {{-- Tabla de registros eliminados --}}
-        {{-- Tabla de registros eliminados --}}
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <!-- AGREGUÉ EL ID AQUÍ ABAJO -->
                     <table id="papelera-table" class="table table-hover table-striped mb-0" style="font-size: 0.9rem;">
                         <thead class="bg-light text-secondary">
                             <tr>
@@ -40,7 +38,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($personas as $p)
+                            @foreach ($personas as $p)
                                 <tr>
                                     <td class="align-middle font-weight-bold">
                                         {{ $p->nombres }} {{ $p->ap_paterno }} {{ $p->ap_materno }}
@@ -52,22 +50,18 @@
                                         </span>
                                     </td>
                                     <td class="align-middle text-center">
+                                        {{-- Formulario con ID dinámico --}}
                                         <form action="{{ route('admin.personas.restaurar', $p->id) }}" method="POST"
-                                            onsubmit="return confirm('¿Restaurar a esta persona?')">
+                                            id="formRestaurar{{ $p->id }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-xs btn-success shadow-sm">
+                                            <button type="button" class="btn btn-xs btn-success shadow-sm"
+                                                onclick="confirmarRestauracion({{ $p->id }})">
                                                 <i class="fas fa-undo mr-1"></i> RESTAURAR
                                             </button>
                                         </form>
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">
-                                        <i class="fas fa-box-open fa-2x mb-2 d-block"></i> La papelera está vacía.
-                                    </td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -88,10 +82,11 @@
         }
     </style>
 @stop
+
 @section('js')
     <script>
         $(document).ready(function() {
-            // Como ya habilitaste el plugin en AdminLTE, solo inicializamos la tabla
+            // Inicializar DataTables
             $('#papelera-table').DataTable({
                 "responsive": true,
                 "autoWidth": false,
@@ -103,5 +98,25 @@
                 ]
             });
         });
+
+        // Función de SweetAlert2 para la restauración
+        function confirmarRestauracion(id) {
+            Swal.fire({
+                title: '¿Desea restaurar a esta persona?',
+                text: "El registro volverá a estar activo en el sistema.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, restaurar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formRestaurar' + id).submit();
+                }
+            });
+        }
     </script>
+
+    @include('admin.alertas')
 @stop

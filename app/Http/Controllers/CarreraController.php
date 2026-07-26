@@ -87,8 +87,17 @@ class CarreraController extends Controller
 
     public function destroy(Carrera $carrera)
     {
+        // Verificar si existen carreras hijas (especialidades) que dependan de esta carrera base
+        $tieneEspecialidades = Carrera::where('carrera_base_id', $carrera->id)->exists();
+
+        if ($tieneEspecialidades) {
+            return redirect()->route('admin.carreras.index')
+                ->with('mensaje', 'No se puede enviar a la papelera esta carrera porque tiene especialidades dependiendo de ella.')
+                ->with('icon', 'error');
+        }
+
         $carrera->delete();
-        return redirect()->route('admin.carreras.index')->with('info', 'Carrera enviada a papelera.');
+        return redirect()->route('admin.carreras.index')->with('mensaje', 'Carrera enviada a papelera exitosamente.')->with('icon', 'success');
     }
 
     public function restaurar(int $id)

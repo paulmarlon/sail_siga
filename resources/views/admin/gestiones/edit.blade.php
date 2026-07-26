@@ -13,7 +13,7 @@
                     <h3 class="card-title">Llene los datos del formulario</h3>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.gestiones.update', $gestion->id) }}" method="POST">
+                    <form action="{{ route('admin.gestiones.update', $gestion) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="row">

@@ -8,7 +8,6 @@
             display: flex;
             flex-direction: column;
             height: calc(100vh - 140px);
-            /* Volvemos a fijar el alto de la pantalla del AdminLTE */
             background: #fff;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -21,6 +20,7 @@
             flex-grow: 1;
             overflow: hidden;
             width: 100%;
+            position: relative;
         }
 
         .malla-section-container {
@@ -49,6 +49,7 @@
             min-width: 0;
             overflow: hidden;
             border-left: none;
+            opacity: 0;
         }
 
         .columna-grado {
@@ -60,7 +61,6 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            /* La columna ocupa toda la altura disponible sin desbordarse */
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
@@ -77,10 +77,8 @@
             padding: 6px;
             flex-grow: 1;
             overflow-y: auto;
-            /* Activa el scroll SOLO si superan el espacio estimado de las 13 materias */
             min-height: 100px;
             max-height: calc(100vh - 230px);
-            /* Límite perfecto para que entren las 13 a la vista */
             scrollbar-width: thin;
         }
 
@@ -89,7 +87,6 @@
             border-radius: 3px;
             padding: 4px 8px;
             margin-bottom: 4px;
-            /* Espaciado compacto para acomodar las 13 materias */
             font-size: 0.7rem;
             border-left: 4px solid #007bff;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -139,8 +136,11 @@
         <h1 class="h4 mb-0"><i class="fas fa-project-diagram mr-2"></i> Pensum: <span
                 class="text-primary">{{ $carrera->nombre }}</span></h1>
         <div class="btn-group">
-            <button id="btn-toggle-catalogo" class="btn btn-sm btn-info">
-                <i class="fas fa-list"></i> <span id="toggle-text">Catálogo</span>
+            <button id="btn-toggle-catalogo" class="btn btn-sm btn-info" title="Mostrar/Ocultar Catálogo">
+                <i class="fas fa-columns"></i> <span id="toggle-text">Catálogo</span>
+            </button>
+            <button id="btn-papelera" class="btn btn-sm btn-warning text-white" title="Ver Papelera">
+                <i class="fas fa-trash-restore"></i> Papelera
             </button>
             <a href="{{ route('admin.carreras.index') }}" class="btn btn-sm btn-secondary">VOLVER</a>
         </div>
@@ -237,22 +237,21 @@
             $('#btn-toggle-catalogo').on('click', function() {
                 $('#catalogo-section').toggleClass('collapsed');
                 const isCollapsed = $('#catalogo-section').hasClass('collapsed');
-                $('#toggle-text').text(isCollapsed ? 'Mostrar Catálogo' : 'Catálogo');
-                $(this).find('i').toggleClass('fa-list fa-plus-circle');
+                $('#toggle-text').text(isCollapsed ? 'Ver Catálogo' : 'Catálogo');
+                $(this).find('i').toggleClass('fa-columns fa-indent');
             });
 
-            // Configurar el Catálogo (Limpiamos cualquier data-id heredado al clonar)
+            // Configurar el Catálogo
             new Sortable(document.getElementById('catalogo-list'), {
                 group: {
                     name: 'malla',
-                    pull: 'clone', // 'clone' evita que el catálogo pierda el elemento original al arrastrarlo
+                    pull: 'clone',
                     put: false
                 },
                 sort: false,
                 animation: 150,
                 ghostClass: 'ghost-class',
                 onClone: function(evt) {
-                    // Nos aseguramos de que el elemento clonado nazca completamente limpio de IDs previos
                     $(evt.clone).removeAttr('data-id');
                 }
             });
@@ -279,22 +278,17 @@
             function gestionarCambio(evt) {
                 const itemEl = evt.item;
                 const nuevoGradoId = evt.to.dataset.gradoId;
-
-                // Leemos el ID actual si lo tuviera
                 const pensumId = itemEl.getAttribute('data-id');
 
-                // Si viene del catálogo, tendrá el atributo data-materia-id
                 let materiaId = itemEl.getAttribute('data-materia-id');
                 if (!materiaId) {
                     materiaId = $(itemEl).data('materia-id');
                 }
 
-                // SI el elemento tiene un data-materia-id explícito, significa que SE ACABA DE CLONAR DEL CATÁLOGO
                 if (materiaId && itemEl.hasAttribute('data-materia-id')) {
                     $(itemEl).css('border-left-color', '#007bff').css('cursor', 'grab');
                     crearAsignacion(materiaId, nuevoGradoId, itemEl);
                 } else if (pensumId && pensumId !== "") {
-                    // Si ya existía en otra columna de la malla y solo cambió de grado
                     actualizarGrado(pensumId, nuevoGradoId);
                 } else {
                     console.error("No se pudo detectar el origen de la materia:", itemEl);
@@ -335,9 +329,7 @@
 
                     toastr.success('Asignación exitosa');
                 }).fail(err => {
-                    // Si el servidor falla, removemos el elemento fantasma visualmente
                     $el.remove();
-
                     console.error("DETALLE DEL ERROR:", err.responseText);
                     const msg = err.responseJSON && err.responseJSON.message ? err.responseJSON.message :
                         'Error en el servidor';
@@ -369,32 +361,106 @@
                 });
             });
 
+            // Abrir Modal de Papelera con SweetAlert2
+            $('#btn-papelera').on('click', function() {
+                $.get("{{ route('admin.pensums.papelera', $carrera->id) }}", function(data) {
+                    if (data.length === 0) {
+                        Swal.fire({
+                            title: 'Papelera vacía',
+                            text: 'No hay materias eliminadas en esta carrera.',
+                            icon: 'info',
+                            confirmButtonColor: '#003366'
+                        });
+                        return;
+                    }
+
+                    let htmlList =
+                        '<div class="table-responsive"><table class="table table-sm text-left"><thead><tr><th>Materia</th><th>Grado Anterior</th><th>Acción</th></tr></thead><tbody>';
+
+                    data.forEach(item => {
+                        htmlList += `
+                            <tr>
+                                <td><strong>${item.materia.sigla}</strong> - ${item.materia.nombre}</td>
+                                <td><span class="badge badge-secondary">${item.grado ? item.grado.nombre : 'N/A'}</span></td>
+                                <td>
+                                    <button class="btn btn-xs btn-success btn-restaurar" data-id="${item.id}">
+                                        <i class="fas fa-undo"></i> Restaurar
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    htmlList += '</tbody></table></div>';
+
+                    Swal.fire({
+                        title: 'Papelera de Materias',
+                        html: htmlList,
+                        width: '600px',
+                        showCloseButton: true,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            $('.btn-restaurar').on('click', function() {
+                                const id = $(this).data('id');
+                                $.post(`/admin/pensums/${id}/restaurar`, {
+                                    _token: "{{ csrf_token() }}"
+                                }).done(res => {
+                                    Swal.close();
+                                    toastr.success(res.message);
+                                    setTimeout(() => location.reload(),
+                                        1000);
+                                }).fail(err => {
+                                    toastr.error(
+                                        'Error al restaurar la materia'
+                                        );
+                                });
+                            });
+                        }
+                    });
+                }).fail(() => {
+                    toastr.error('No se pudo cargar la papelera');
+                });
+            });
+
+            // Eliminar materia con SweetAlert2 (reemplazando el confirm nativo)
             $(document).on('click', '.btn-eliminar', function() {
                 const btn = $(this);
                 const id = btn.data('id');
 
-                if (confirm('¿Deseas quitar esta materia de la malla?')) {
-                    $.ajax({
-                        url: `/admin/pensums/${id}`,
-                        type: 'DELETE',
-                        data: {
-                            _token: "{{ csrf_token() }}",
-                            carrera_contexto_id: "{{ $carrera->id }}"
-                        },
-                        success: function(res) {
-                            btn.closest('.materia-card').fadeOut(function() {
-                                $(this).remove();
-                            });
-                            toastr.warning('Materia removida de la malla');
-                        },
-                        error: function(err) {
-                            const msg = err.responseJSON ? err.responseJSON.message :
-                                'Error desconocido';
-                            toastr.error(msg);
-                        }
-                    });
-                }
+                Swal.fire({
+                    title: '¿Quitar materia?',
+                    text: "La materia se enviará a la papelera de reciclaje.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, quitar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: `/admin/pensums/${id}`,
+                            type: 'DELETE',
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                carrera_contexto_id: "{{ $carrera->id }}"
+                            },
+                            success: function(res) {
+                                btn.closest('.materia-card').fadeOut(function() {
+                                    $(this).remove();
+                                });
+                                toastr.warning('Materia enviada a la papelera');
+                            },
+                            error: function(err) {
+                                const msg = err.responseJSON ? err.responseJSON
+                                    .message :
+                                    'Error desconocido';
+                                toastr.error(msg);
+                            }
+                        });
+                    }
+                });
             });
+
         });
     </script>
 @stop

@@ -184,6 +184,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MateriaSeeder::class,
             CarreraSeeder::class,
+
+        ]);
+        $this->call([
+            PensumSeeder::class,
         ]);
     }
 }
