@@ -14,7 +14,8 @@ use App\Http\Controllers\{
     CarreraController,
     PensumController,
     RoleController,
-    PersonalController
+    PersonalController,
+    OfertaAcademicaController
 };
 use Illuminate\Support\Facades\Route;
 
@@ -75,7 +76,14 @@ Route::middleware('auth')->group(function () {
         Route::get('periodos/papelera', [PeriodoController::class, 'papelera'])->name('periodos.papelera')->middleware('can:admin.periodos.index');
         Route::post('periodos/{id}/restaurar', [PeriodoController::class, 'restaurar'])->name('periodos.restaurar')->middleware('can:admin.periodos.edit');
         Route::resource('periodos', PeriodoController::class)->middleware('can:admin.periodos.index');
+        // Oferta Académica
+        // Oferta Académica
+        Route::get('oferta-academica/papelera', [OfertaAcademicaController::class, 'papelera'])->name('oferta-academica.papelera')->middleware('can:admin.oferta-academica.index');
+        Route::post('oferta-academica/{id}/restaurar', [OfertaAcademicaController::class, 'restaurar'])->name('oferta-academica.restaurar')->middleware('can:admin.oferta-academica.edit');
 
+        Route::resource('oferta-academica', OfertaAcademicaController::class)
+            ->parameters(['oferta-academica' => 'oferta_academica'])
+            ->middleware('can:admin.oferta-academica.index');
         // Materias
         Route::get('materias/papelera', [MateriaController::class, 'papelera'])->name('materias.papelera')->middleware('can:admin.materias.index');
         Route::post('materias/{id}/restaurar', [MateriaController::class, 'restaurar'])->name('materias.restaurar')->middleware('can:admin.materias.edit');

@@ -41,4 +41,9 @@ class Estado extends Model
     {
         return $this->hasMany(Personal::class);
     }
+    // Relación con Oferta Académica
+    public function ofertasAcademicas()
+    {
+        return $this->hasMany(OfertaAcademica::class);
+    }
 }

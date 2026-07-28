@@ -378,6 +378,11 @@ return [
             'icon'    => 'fas fa-fw fa-users',
             'url'     => 'admin/personal',
         ],
+        [
+            'text'    => 'Oferta Académica',
+            'icon'    => 'fas fa-fw fa-graduation-cap',
+            'url'     => 'admin/oferta-academica',
+        ],
 
 
         [

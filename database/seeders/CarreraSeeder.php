@@ -30,8 +30,8 @@ class CarreraSeeder extends Seeder
         $troncoComun = Carrera::updateOrCreate(
             ['sigla' => 'BAS-POL'],
             [
-                'sigla'           => 'BAS-POL',
-                'nombre'          => 'BASE LICENCIATURA EN CIENCIAS POLICIALES',
+                'sigla'           => 'FB',
+                'nombre'          => 'FORMACION BASE CIENCIAS POLICIALES',
                 'resolucion'      => 'RES-MIN-000/2026',
                 'duracion'        => 2, // Semestres iniciales compartidos
                 'titulo'          => 'CERTIFICADO NOTAS',

@@ -11,4 +11,9 @@ class Turno extends Model
 {
     use HasFactory, SoftDeletes;
     protected $fillable = ['nombre'];
+    // Relación con Oferta Académica
+    public function ofertasAcademicas()
+    {
+        return $this->hasMany(OfertaAcademica::class);
+    }
 }

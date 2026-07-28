@@ -11,4 +11,8 @@ class Paralelo extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = ['nombre'];
+    public function ofertasAcademicas()
+    {
+        return $this->hasMany(OfertaAcademica::class);
+    }
 }

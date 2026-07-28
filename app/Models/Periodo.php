@@ -20,4 +20,9 @@ class Periodo extends Model
     {
         return $this->belongsTo(Estado::class, 'estado_id');
     }
+    // Relación con Oferta Académica
+    public function ofertasAcademicas()
+    {
+        return $this->hasMany(OfertaAcademica::class);
+    }
 }
