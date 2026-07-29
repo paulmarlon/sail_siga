@@ -2,16 +2,41 @@
 
 @section('title', 'Gestión General de Personal')
 
+<!-- Activamos los plugins globales definidos en config/adminlte.php -->
+@section('plugins.Datatables', true)
+@section('plugins.Sweetalert2', true)
+
+@section('css')
+    <style>
+        /* Interlineado compacto y profesional */
+        #tabla-personal th,
+        #tabla-personal td {
+            padding: 0.45rem !important;
+            vertical-align: middle !important;
+        }
+
+        /* Ajuste estético para los botones de exportación */
+        .dt-buttons {
+            margin-bottom: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .dt-buttons {
+                float: left;
+            }
+        }
+    </style>
+@stop
+
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
         <h1>Gestión General de <b>Personal</b></h1>
         <div>
-            <!-- Botón para ir a la Papelera general -->
-            <a href="{{ route('admin.personal.trashed', $tipo ?? 'docente') }}" class="btn btn-secondary">
+            <a href="{{ route('admin.personal.trashed', $tipo ?? 'docente') }}" class="btn btn-secondary btn-sm"
+                id="btn-papelera">
                 <i class="fas fa-trash"></i> Papelera
             </a>
-            <!-- Botón para crear nuevo registro -->
-            <a href="{{ route('admin.personal.create') }}" class="btn btn-primary">
+            <a href="{{ route('admin.personal.create', $tipo ?? 'docente') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Nuevo Personal
             </a>
         </div>
@@ -34,32 +59,34 @@
         </div>
         <div class="card-body">
 
-            <!-- FILTRO RÁPIDO POR TIPO (DataTables) -->
+            <!-- FILTRO RÁPIDO POR TIPO -->
             <div class="row mb-3">
                 <div class="col-md-3">
                     <label for="filtro_tipo"><i class="fas fa-filter"></i> Filtrar por Tipo:</label>
                     <select id="filtro_tipo" class="form-control form-control-sm">
                         <option value="">-- Todos los Tipos --</option>
-                        <option value="docente">Docentes</option>
-                        <option value="administrativo">Administrativos</option>
-                        <option value="planta">Personal de Planta</option>
+                        <option value="docente" {{ isset($tipo) && $tipo == 'docente' ? 'selected' : '' }}>Docentes
+                        </option>
+                        <option value="administrativo" {{ isset($tipo) && $tipo == 'administrativo' ? 'selected' : '' }}>
+                            Administrativos</option>
+                        <option value="planta" {{ isset($tipo) && $tipo == 'planta' ? 'selected' : '' }}>Personal de
+                            Planta</option>
                     </select>
                 </div>
             </div>
 
-            <table id="tabla-personal" class="table table-bordered table-striped">
+            <table id="tabla-personal" class="table table-bordered table-striped table-sm">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Foto</th>
-                        <th>Tipo</th> <!-- Añadido para que el filtro de la columna funcione visualmente -->
+                        <th>Tipo</th>
                         <th>Apellidos y Nombres</th>
                         <th>CI</th>
                         <th>Profesión</th>
-                        <th>Celular / Email</th>
-                        <th>Usuario / Rol</th>
+                        <th>Celular / Correo Personal</th>
                         <th>Estado</th>
-                        <th style="width: 150px">Acciones</th>
+                        <th style="width: 130px">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -69,11 +96,11 @@
                             <td class="text-center">
                                 @if ($personal->persona && $personal->persona->foto_path)
                                     <img src="{{ asset($personal->persona->foto_path) }}" alt="Foto"
-                                        class="img-circle shadow-sm" width="40" height="40"
+                                        class="img-circle shadow-sm" width="32" height="32"
                                         style="object-fit: cover;">
                                 @else
                                     <img src="{{ asset('vendor/adminlte/dist/img/user2-160x160.jpg') }}" alt="Default"
-                                        class="img-circle shadow-sm" width="40" height="40">
+                                        class="img-circle shadow-sm" width="32" height="32">
                                 @endif
                             </td>
                             <td>
@@ -84,42 +111,29 @@
                                 {{ $personal->persona->nombres ?? '' }}
                             </td>
                             <td>{{ $personal->persona->ci ?? 'N/A' }}</td>
-                            <td>{{ $personal->profesion }}</td>
+                            <td>{{ $personal->profesion ?? 'No especificada' }}</td>
                             <td>
                                 {{ $personal->persona->celular ?? 'Sin celular' }}<br>
-                                <small
-                                    class="text-muted">{{ $personal->usuario->email ?? ($personal->persona->email_personal ?? 'Sin correo') }}</small>
-                            </td>
-                            <td>
-                                @if ($personal->usuario && $personal->usuario->roles->isNotEmpty())
-                                    @foreach ($personal->usuario->roles as $role)
-                                        <span class="badge badge-info">{{ $role->name }}</span>
-                                    @endforeach
-                                @else
-                                    <span class="badge badge-secondary">Sin Rol</span>
-                                @endif
+                                <small class="text-muted">{{ $personal->persona->email_personal ?? 'Sin correo' }}</small>
                             </td>
                             <td>
                                 <span class="badge badge-success">{{ $personal->estado->nombre ?? 'Vigente' }}</span>
                             </td>
                             <td class="text-center">
-                                <div class="btn-group">
-                                    <!-- Ver -->
-                                    <a href="{{ route('admin.personal.show', $personal->id) }}"
-                                        class="btn btn-default btn-sm" title="Ver">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('admin.personal.show', $personal->id) }}" class="btn btn-default"
+                                        title="Ver detalles">
                                         <i class="fas fa-eye text-primary"></i>
                                     </a>
-                                    <!-- Editar -->
-                                    <a href="{{ route('admin.personal.edit', $personal->id) }}"
-                                        class="btn btn-default btn-sm" title="Editar">
+                                    <a href="{{ route('admin.personal.edit', $personal->id) }}" class="btn btn-default"
+                                        title="Editar datos laborales">
                                         <i class="fas fa-edit text-success"></i>
                                     </a>
-                                    <!-- Eliminar (Soft Delete) -->
                                     <form action="{{ route('admin.personal.destroy', $personal->id) }}" method="POST"
                                         class="d-inline form-eliminar">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-default btn-sm" title="Enviar a papelera">
+                                        <button type="submit" class="btn btn-default" title="Enviar a papelera">
                                             <i class="fas fa-trash text-danger"></i>
                                         </button>
                                     </form>
@@ -136,24 +150,73 @@
 @section('js')
     <script>
         $(document).ready(function() {
-            // Inicialización de DataTable
+            // Como los plugins ya están cargados globalmente, inicializamos directamente DataTables con los botones
             var table = $('#tabla-personal').DataTable({
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json"
                 },
                 "responsive": true,
                 "autoWidth": false,
+                "dom": "<'row'<'col-md-3'l><'col-md-5'B><'col-md-4'f>>" +
+                    "<'row'<'col-md-12'tr>>" +
+                    "<'row'<'col-md-5'i><'col-md-7'p>>",
+                "buttons": [{
+                        extend: 'copy',
+                        text: '<i class="fas fa-copy"></i>',
+                        titleAttr: 'Copiar',
+                        className: 'btn btn-secondary btn-sm'
+                    },
+                    {
+                        extend: 'excel',
+                        text: '<i class="fas fa-file-excel"></i>',
+                        titleAttr: 'Exportar a Excel',
+                        className: 'btn btn-success btn-sm'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="fas fa-file-pdf"></i>',
+                        titleAttr: 'Exportar a PDF',
+                        className: 'btn btn-danger btn-sm'
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i>',
+                        titleAttr: 'Imprimir',
+                        className: 'btn btn-info btn-sm'
+                    },
+                    {
+                        extend: 'colvis',
+                        text: '<i class="fas fa-columns"></i>',
+                        titleAttr: 'Columnas',
+                        className: 'btn btn-warning btn-sm'
+                    }
+                ]
             });
 
-            // Filtro dinámico por Tipo (Columna 2 de la tabla)
+            // Filtro por tipo URL inicial
+            var tipoUrl = "{{ $tipo ?? '' }}";
+            if (tipoUrl) {
+                table.column(2).search('^' + tipoUrl + '$', true, false).draw();
+            }
+
+            // Filtro dinámico por Tipo
             $('#filtro_tipo').on('change', function() {
-                var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                table.column(2).search(val ? '^' + val + '$' : '', true, false).draw();
+                var val = $(this).val();
+                var escapedVal = $.fn.dataTable.util.escapeRegex(val);
+
+                table.column(2).search(escapedVal ? '^' + escapedVal + '$' : '', true, false).draw();
+
+                if (val) {
+                    $('#btn-papelera').attr('href', "{{ url('admin/personal/trashed') }}/" + val);
+                } else {
+                    $('#btn-papelera').attr('href', "{{ route('admin.personal.trashed', 'docente') }}");
+                }
             });
 
-            // Confirmación con SweetAlert2 para enviar a la papelera
-            $('.form-eliminar').submit(function(e) {
+            // Confirmación con SweetAlert2 centralizado
+            $(document).on('submit', '.form-eliminar', function(e) {
                 e.preventDefault();
+                var form = this;
                 Swal.fire({
                     title: '¿Estás seguro?',
                     text: "El registro será enviado a la papelera.",
@@ -165,7 +228,7 @@
                     cancelButtonText: 'Cancelar'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        this.submit();
+                        form.submit();
                     }
                 })
             });

@@ -28,18 +28,23 @@
 
             {{-- SECCIÓN DE FILTROS SUPERIORES POR SELECT --}}
             <div class="row mx-0 mb-3 p-2 bg-light rounded border">
-                <div class="col-md-4 mb-2 mb-md-0">
+                <div class="col-md-3 mb-2 mb-md-0">
                     <label class="small font-weight-bold text-secondary mb-1">Filtrar por Periodo:</label>
                     <div id="filtro-periodo-container"></div>
                 </div>
-                <div class="col-md-4 mb-2 mb-md-0">
-                    <label class="small font-weight-bold text-secondary mb-1">Filtrar por Turno:</label>
-                    <div id="filtro-turno-container"></div>
+                <div class="col-md-3">
+                    <label class="small font-weight-bold text-secondary mb-1">Filtrar por Grado:</label>
+                    <div id="filtro-grado-container"></div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3 mb-2 mb-md-0">
                     <label class="small font-weight-bold text-secondary mb-1">Filtrar por Paralelo:</label>
                     <div id="filtro-paralelo-container"></div>
                 </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                    <label class="small font-weight-bold text-secondary mb-1">Filtrar por Turno:</label>
+                    <div id="filtro-turno-container"></div>
+                </div>
+
             </div>
 
             <div class="table-responsive">
@@ -49,6 +54,7 @@
                         <tr class="text-center">
                             <th style="width: 40px;">ID</th>
                             <th>Carrera / Pensum</th>
+                            <th>Grado</th>
                             <th>Materia</th>
                             <th>Periodo</th>
                             <th>Turno</th>
@@ -63,6 +69,9 @@
                             <tr>
                                 <td class="text-center font-weight-bold">{{ $oferta->id }}</td>
                                 <td>{{ $oferta->pensum->materia->sigla ?? 'N/A' }}</td>
+                                <td class="text-center">
+                                    <span class="badge badge-primary">{{ $oferta->pensum->grado->nombre ?? 'N/A' }}</span>
+                                </td>
                                 <td><strong>{{ $oferta->pensum->materia->nombre ?? 'N/A' }}</strong></td>
                                 <td class="text-center">
                                     {{ $oferta->periodo->nombre ?? 'N/A' }} - {{ $oferta->periodo->gestion->nombre ?? '' }}
@@ -102,7 +111,9 @@
         </div>
     </div>
 @endsection
+
 @section('js')
+    @include('admin.alertas')
     <script>
         $(document).ready(function() {
             var table = $('#tabla-ofertas').DataTable({
@@ -151,14 +162,16 @@
                     // Forzar tamaño compacto de paginación
                     $('.dataTables_paginate ul.pagination').addClass('pagination-sm');
 
-                    // Crear los selectores dinámicos basados en el contenido de las columnas
-                    this.api().columns([3, 4, 5]).every(function(index) {
+                    // Crear los selectores dinámicos basados en los índices de las columnas:
+                    // 2: Grado, 4: Periodo, 5: Turno, 6: Paralelo
+                    this.api().columns([4, 5, 6, 2]).every(function(index) {
                         var column = this;
                         var containerId = '';
 
-                        if (index === 3) containerId = '#filtro-periodo-container';
-                        if (index === 4) containerId = '#filtro-turno-container';
-                        if (index === 5) containerId = '#filtro-paralelo-container';
+                        if (index === 4) containerId = '#filtro-periodo-container';
+                        if (index === 5) containerId = '#filtro-turno-container';
+                        if (index === 6) containerId = '#filtro-paralelo-container';
+                        if (index === 2) containerId = '#filtro-grado-container';
 
                         var select = $(
                                 '<select class="form-control form-control-sm"><option value="">-- Todos --</option></select>'
@@ -166,7 +179,6 @@
                             .appendTo($(containerId))
                             .on('change', function() {
                                 var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                // Búsqueda exacta para el periodo y gestión seleccionados
                                 column.search(val ? '^' + val + '$' : '', true, false)
                                     .draw();
                             });
@@ -185,9 +197,24 @@
                 }
             });
 
-            // Notificación Toastr si existe un mensaje de éxito
-            @if (session('success'))
-                toastr.success("{{ session('success') }}");
+            // Notificación Toast flotante usando la variable de sesión 'mensaje'
+            @if (session('mensaje'))
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3500,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+
+                Toast.fire({
+                    icon: '{{ session('icon') ?? 'success' }}',
+                    title: '{{ session('mensaje') }}'
+                });
             @endif
 
             // Confirmación con SweetAlert para enviar a papelera

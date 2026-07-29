@@ -16,9 +16,6 @@ return new class extends Migration
             // Vínculo obligatorio a la persona biográfica (una persona es personal)
             $table->foreignId('persona_id')->unique()->constrained('personas')->onDelete('cascade');
 
-            // Opcional: solo si el empleado o docente tiene credenciales de acceso al sistema
-            $table->foreignId('usuario_id')->nullable()->unique()->constrained('users')->onDelete('set null');
-
             // Tipo de personal: 'docente', 'administrativo', etc.
             $table->string('tipo', 50);
 

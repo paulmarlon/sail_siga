@@ -3,7 +3,7 @@
 @section('title', 'Editar Oferta Académica | SIG@')
 
 @section('css')
-    <!-- Select2 CSS -->
+    <!-- Select2 CSS para la primera columna -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@x.x.x/dist/select2-bootstrap4.min.css"
         rel="stylesheet" />
@@ -115,7 +115,7 @@
 
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center py-1">
-        <h1 class="h4 mb-0"><i class="fas fa-edit mr-2 text-primary"></i> Editar <b>Oferta Académica (Grupo)</b></h1>
+        <h1 class="h4 mb-0"><i class="fas fa-edit mr-2 text-success"></i> Editar <b>Oferta Académica (Grupo)</b></h1>
         <div class="btn-group">
             <button id="btn-toggle-opciones" class="btn btn-sm btn-info" title="Mostrar/Ocultar Panel de Opciones">
                 <i class="fas fa-columns"></i> <span id="toggle-text">Opciones</span>
@@ -128,11 +128,15 @@
 @stop
 
 @section('content')
+    @alert
+
     <div class="oferta-main-wrapper">
+        {{-- Nota: Para la edición del grupo completo apuntamos al update (o una ruta específica de actualización masiva por grupo si lo prefieres) --}}
         <form action="{{ route('admin.oferta-academica.update', $ofertaAcademica) }}" method="POST" id="form-oferta"
             class="d-flex flex-column flex-grow-1">
             @csrf
             @method('PUT')
+
             <div class="oferta-layout">
 
                 <!-- ================= COLUMNA 1: CATÁLOGO DE MATERIAS ================= -->
@@ -172,42 +176,36 @@
                     </div>
                 </div>
 
-                <!-- ================= COLUMNA 2: ZONA ACTIVA DE SELECCIÓN (MATERIAS DEL GRUPO) ================= -->
+                <!-- ================= COLUMNA 2: ZONA ACTIVA (MATERIAS DEL GRUPO) ================= -->
                 <div class="columna-arrastre">
                     <div class="card card-success card-outline h-100 mb-0 shadow-sm d-flex flex-column">
                         <div class="card-header bg-white py-1 px-2">
                             <h6 class="card-title text-dark font-weight-bold mb-0" style="font-size: 0.85rem;"><i
-                                    class="fas fa-check-square mr-1 text-success"></i> 2. Materias del Grupo (Zona Activa)
-                            </h6>
+                                    class="fas fa-list-alt mr-1 text-success"></i> 2. Materias Actuales del Grupo</h6>
                         </div>
                         <div class="card-body d-flex flex-column p-2 flex-grow-1">
                             <p class="text-muted small mb-1" style="font-size: 0.72rem; line-height: 1.2;"><i
-                                    class="fas fa-info-circle"></i> Aquí figuran las materias actuales de este grupo. Puedes
-                                agregar o quitar según necesites.</p>
+                                    class="fas fa-info-circle"></i> Estas son las materias asociadas a este Periodo / Turno
+                                / Paralelo. Puedes añadir o quitar elementos.</p>
 
-                            <!-- Contenedor destino pre-cargado con las ofertas existentes del grupo -->
+                            <!-- Contenedor destino con precarga de las materias actuales del grupo -->
                             <div id="zona-grabacion" class="lista-destino-arrastre p-1 overflow-auto"
                                 style="max-height: calc(100vh - 210px);">
-                                @foreach ($ofertasDelGrupo as $oferta)
-                                    <div class="materia-item-seleccionada py-1 px-2 mb-1 align-items-center"
-                                        data-id="{{ $oferta->pensum_id }}">
-                                        <input type="hidden" name="pensum_id[]" value="{{ $oferta->pensum_id }}">
+                                @foreach ($ofertasDelGrupo as $ofertaMiembro)
+                                    <div class="materia-item-seleccionada py-1 px-2 mb-1"
+                                        data-id="{{ $ofertaMiembro->pensum_id }}">
+                                        <input type="hidden" name="pensum_id[]" value="{{ $ofertaMiembro->pensum_id }}">
                                         <span class="font-weight-bold text-success text-truncate mr-2"
-                                            style="font-size: 0.72rem; line-height: 1.1; flex-grow: 1;">
-                                            {{ $oferta->pensum->carrera->sigla ?? 'N/A' }}-{{ $oferta->pensum->grado->orden ?? 'N/A' }}
-                                            | {{ $oferta->pensum->materia->nombre ?? 'N/A' }}
+                                            style="font-size: 0.72rem; line-height: 1.1;">
+                                            {{ $ofertaMiembro->pensum->carrera->sigla ?? 'N/A' }}-{{ $ofertaMiembro->pensum->grado->orden ?? 'N/A' }}
+                                            |
+                                            <span
+                                                class="text-dark">{{ $ofertaMiembro->pensum->materia->nombre ?? 'N/A' }}</span>
                                         </span>
-                                        <div class="d-flex align-items-center">
-                                            <input type="number" name="cupos[{{ $oferta->pensum_id }}]"
-                                                class="form-control form-control-xs text-center mr-2"
-                                                value="{{ $oferta->cupo_maximo }}"
-                                                style="width: 60px; height: 24px; font-size: 0.75rem;" min="1"
-                                                title="Cupo individual" required>
-                                            <button type="button" class="btn btn-xs text-danger btn-remover-materia p-0"
-                                                title="Quitar">
-                                                <i class="fas fa-times-circle fa-lg"></i>
-                                            </button>
-                                        </div>
+                                        <button type="button" class="btn btn-xs text-danger btn-remover-materia p-0"
+                                            title="Quitar">
+                                            <i class="fas fa-times-circle"></i>
+                                        </button>
                                     </div>
                                 @endforeach
                             </div>
@@ -215,7 +213,7 @@
                     </div>
                 </div>
 
-                <!-- ================= COLUMNA 3: CAMPOS DE CONFIGURACIÓN Y BOTÓN ACTUALIZAR ================= -->
+                <!-- ================= COLUMNA 3: PARÁMETROS DE CONFIGURACIÓN ================= -->
                 <div class="columna-opciones" id="panel-opciones">
                     <div class="card card-info card-outline h-100 mb-0 shadow-sm d-flex flex-column">
                         <div class="card-header bg-white py-2">
@@ -226,13 +224,12 @@
                             <div class="flex-grow-1">
                                 <div class="form-group mb-2">
                                     <label for="periodo_id" class="small font-weight-bold mb-1">Periodo Académico:</label>
-                                    <select name="periodo_id" id="periodo_id" class="form-control form-control-sm select2"
-                                        required>
+                                    <select name="periodo_id" id="periodo_id" class="form-control form-control-sm" required>
                                         <option value="">Seleccione periodo</option>
                                         @foreach ($periodos as $periodo)
                                             <option value="{{ $periodo->id }}"
-                                                {{ $periodoActualId == $periodo->id ? 'selected' : '' }}>
-                                                {{ $periodo->nombre }} | {{ $periodo->gestion->nombre ?? '' }}
+                                                {{ $ofertaAcademica->periodo_id == $periodo->id ? 'selected' : '' }}>
+                                                {{ $periodo->nombre }} | {{ $periodo->gestion->nombre }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -240,12 +237,11 @@
 
                                 <div class="form-group mb-2">
                                     <label for="turno_id" class="small font-weight-bold mb-1">Turno:</label>
-                                    <select name="turno_id" id="turno_id" class="form-control form-control-sm select2"
-                                        required>
+                                    <select name="turno_id" id="turno_id" class="form-control form-control-sm" required>
                                         <option value="">Seleccione turno</option>
                                         @foreach ($turnos as $turno)
                                             <option value="{{ $turno->id }}"
-                                                {{ $turnoActualId == $turno->id ? 'selected' : '' }}>
+                                                {{ $ofertaAcademica->turno_id == $turno->id ? 'selected' : '' }}>
                                                 {{ $turno->nombre }}
                                             </option>
                                         @endforeach
@@ -254,37 +250,45 @@
 
                                 <div class="form-group mb-2">
                                     <label for="paralelo_id" class="small font-weight-bold mb-1">Paralelo:</label>
-                                    <select name="paralelo_id" id="paralelo_id"
-                                        class="form-control form-control-sm select2" required>
+                                    <select name="paralelo_id" id="paralelo_id" class="form-control form-control-sm"
+                                        required>
                                         <option value="">Seleccione paralelo</option>
                                         @foreach ($paralelos as $paralelo)
                                             <option value="{{ $paralelo->id }}"
-                                                {{ $paraleloActualId == $paralelo->id ? 'selected' : '' }}>
+                                                {{ $ofertaAcademica->paralelo_id == $paralelo->id ? 'selected' : '' }}>
                                                 {{ $paralelo->nombre }}
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
 
-                                <div class="form-group mb-2">
-                                    <label for="estado_id" class="small font-weight-bold mb-1">Estado:</label>
-                                    <select name="estado_id" id="estado_id" class="form-control form-control-sm select2"
-                                        required>
-                                        @foreach ($estados as $estado)
-                                            <option value="{{ $estado->id }}"
-                                                {{ $ofertaAcademica->estado_id == $estado->id ? 'selected' : '' }}>
-                                                {{ $estado->nombre }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                <div class="form-row mb-2">
+                                    <div class="form-group col-6 mb-0">
+                                        <label for="cupo_maximo" class="small font-weight-bold mb-1">Cupo Máx:</label>
+                                        <input type="number" name="cupo_maximo" id="cupo_maximo"
+                                            class="form-control form-control-sm"
+                                            value="{{ $ofertaAcademica->cupo_maximo }}" min="1" required>
+                                    </div>
+                                    <div class="form-group col-6 mb-0">
+                                        <label for="estado_id" class="small font-weight-bold mb-1">Estado:</label>
+                                        <select name="estado_id" id="estado_id" class="form-control form-control-sm"
+                                            required>
+                                            @foreach ($estados as $estado)
+                                                <option value="{{ $estado->id }}"
+                                                    {{ $ofertaAcademica->estado_id == $estado->id ? 'selected' : '' }}>
+                                                    {{ $estado->nombre }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Botón de actualizar al fondo de la tercera columna -->
+                            <!-- Botón de guardar cambios -->
                             <div class="border-top pt-3 mt-auto">
                                 <button type="submit"
                                     class="btn btn-sm btn-success btn-block font-weight-bold shadow-sm">
-                                    <i class="fas fa-save mr-1"></i> Actualizar Ofertas Académicas
+                                    <i class="fas fa-save mr-1"></i> Actualizar Oferta Académica
                                 </button>
                             </div>
                         </div>
@@ -299,7 +303,7 @@
 @section('js')
     <script>
         $(document).ready(function() {
-            // 1. Filtrado rápido del Catálogo en la Columna 1
+            // 1. Filtrado rápido del Catálogo
             $('#filtrarCatalogo').on('keyup', function() {
                 let val = $(this).val().toLowerCase().trim();
                 $('#catalogo-origen .materia-item-catalogo').filter(function() {
@@ -308,36 +312,31 @@
                 });
             });
 
-            // 2. Evento clic en el botón (+) para mover la materia a la Zona Activa (Columna 2)
+            // 2. Evento clic en el botón (+) para añadir del catálogo a la zona activa
             $(document).on('click', '.btn-agregar-materia', function() {
                 const itemPadre = $(this).closest('.materia-item-catalogo');
                 const id = itemPadre.attr('data-id');
                 const textoCompleto = itemPadre.attr('data-texto');
 
-                // Validar si ya existe en la zona de grabación
                 if ($(`#zona-grabacion input[value="${id}"]`).length > 0) {
-                    toastr.warning('Esta materia ya está en la lista para grabar.');
+                    toastr.warning('Esta materia ya está incluida en este grupo.');
                     return;
                 }
 
-                // Elemento compacto inyectado con su propio campo de cupo editable
                 const htmlItem = `
-                    <div class="materia-item-seleccionada py-1 px-2 mb-1 align-items-center" data-id="${id}">
+                    <div class="materia-item-seleccionada py-1 px-2 mb-1" data-id="${id}">
                         <input type="hidden" name="pensum_id[]" value="${id}">
-                        <span class="font-weight-bold text-success text-truncate mr-2" style="font-size: 0.72rem; line-height: 1.1; flex-grow: 1;">
+                        <span class="font-weight-bold text-success text-truncate mr-2" style="font-size: 0.72rem; line-height: 1.1;">
                             ${textoCompleto}
                         </span>
-                        <div class="d-flex align-items-center">
-                            <input type="number" name="cupos[${id}]" class="form-control form-control-xs text-center mr-2" value="80" style="width: 60px; height: 24px; font-size: 0.75rem;" min="1" title="Cupo individual" required>
-                            <button type="button" class="btn btn-xs text-danger btn-remover-materia p-0" title="Quitar">
-                                <i class="fas fa-times-circle fa-lg"></i>
-                            </button>
-                        </div>
+                        <button type="button" class="btn btn-xs text-danger btn-remover-materia p-0" title="Quitar">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
                     </div>
                 `;
 
                 $('#zona-grabacion').append(htmlItem);
-                toastr.success('Materia agregada correctamente');
+                toastr.success('Materia agregada al grupo');
             });
 
             // 3. Remover materia de la zona activa
@@ -347,7 +346,7 @@
                 });
             });
 
-            // 4. Toggle Panel Opciones (Columna 3)
+            // 4. Toggle Panel Opciones
             $('#btn-toggle-opciones').on('click', function() {
                 $('#panel-opciones').toggleClass('collapsed');
                 const isCollapsed = $('#panel-opciones').hasClass('collapsed');
@@ -361,7 +360,7 @@
                     e.preventDefault();
                     Swal.fire({
                         title: 'Sin materias seleccionadas',
-                        text: 'Debes mantener o seleccionar al menos una materia haciendo clic en el botón (+) para poder actualizar.',
+                        text: 'Debes mantener al menos una materia en la zona activa para guardar la oferta.',
                         icon: 'warning',
                         confirmButtonColor: '#003366'
                     });

@@ -31,7 +31,7 @@ class OfertaAcademicaController extends Controller
         $periodos = Periodo::all();
         $paralelos = Paralelo::all();
         $turnos = Turno::all();
-        $pensums = Pensum::with(['materia', 'carrera'])->get();
+        $pensums = Pensum::with(['materia', 'carrera', 'grado'])->get();
         $estados = Estado::where('contexto', 'academico')->get();
 
         return view('admin.oferta_academica.create', compact('periodos', 'paralelos', 'turnos', 'pensums', 'estados'));
@@ -43,14 +43,27 @@ class OfertaAcademicaController extends Controller
             'periodo_id' => 'required|exists:periodos,id',
             'paralelo_id' => 'required|exists:paralelos,id',
             'turno_id' => 'required|exists:turnos,id',
-            'pensum_id' => 'required|array|min:1', // Validamos que sea un arreglo con al menos 1 elemento
-            'pensum_id.*' => 'exists:pensums,id',    // Validamos que cada ID exista en la tabla pensums
+            'pensum_id' => 'required|array|min:1',
+            'pensum_id.*' => 'exists:pensums,id',
             'cupo_maximo' => 'required|integer|min:1',
             'estado_id' => 'required|exists:estados,id',
         ]);
 
-        // Iteramos sobre cada ID de pensum seleccionado en la vista multicolumna
+        $duplicadas = 0;
+        $creadas = 0;
+
         foreach ($request->pensum_id as $pensumId) {
+            $existe = OfertaAcademica::where('pensum_id', $pensumId)
+                ->where('periodo_id', $request->periodo_id)
+                ->where('turno_id', $request->turno_id)
+                ->where('paralelo_id', $request->paralelo_id)
+                ->exists();
+
+            if ($existe) {
+                $duplicadas++;
+                continue; // Salta esta materia y sigue con la siguiente
+            }
+
             OfertaAcademica::create([
                 'periodo_id'   => $request->periodo_id,
                 'paralelo_id'  => $request->paralelo_id,
@@ -59,12 +72,30 @@ class OfertaAcademicaController extends Controller
                 'cupo_maximo'  => $request->cupo_maximo,
                 'estado_id'    => $request->estado_id,
             ]);
+
+            $creadas++;
         }
 
-        return redirect()->route('admin.oferta-academica.index')
-            ->with('success', 'Ofertas académicas creadas masivamente con éxito.');
-    }
+        // CASO 1: NINGUNA SE CREÓ (Todas estaban duplicadas) -> Se queda en el create
+        if ($creadas === 0 && $duplicadas > 0) {
+            return redirect()->back()
+                ->withInput()
+                ->with('mensaje', "No se registró ninguna oferta. Las {$duplicadas} materias seleccionadas ya existen en este periodo, turno y paralelo.")
+                ->with('icon', 'warning');
+        }
 
+        // CASO 2: CREACIÓN MIXTA (Algunas nuevas, algunas duplicadas) -> Avanza al index
+        if ($creadas > 0 && $duplicadas > 0) {
+            return redirect()->route('admin.oferta-academica.index')
+                ->with('mensaje', "Se crearon {$creadas} ofertas exitosamente. Se omitieron {$duplicadas} materias duplicadas.")
+                ->with('icon', 'warning');
+        }
+
+        // CASO 3: TODO OK (Todas creadas sin duplicados) -> Avanza al index
+        return redirect()->route('admin.oferta-academica.index')
+            ->with('mensaje', "Se crearon {$creadas} ofertas académicas exitosamente.")
+            ->with('icon', 'success');
+    }
     public function show(OfertaAcademica $ofertaAcademica)
     {
         $ofertaAcademica->load(['periodo', 'paralelo', 'turno', 'pensum.materia', 'pensum.carrera', 'estado']);
@@ -77,15 +108,13 @@ class OfertaAcademicaController extends Controller
         $periodos = Periodo::all();
         $paralelos = Paralelo::all();
         $turnos = Turno::all();
-        $pensums = Pensum::with(['materia', 'carrera'])->get();
+        $pensums = Pensum::with(['materia', 'carrera', 'grado'])->get();
         $estados = Estado::all();
 
-        // Variables de selección actual para los selects
         $periodoActualId = $ofertaAcademica->periodo_id;
         $turnoActualId = $ofertaAcademica->turno_id;
         $paraleloActualId = $ofertaAcademica->paralelo_id;
 
-        // Variables de contexto visual y de grupo
         $grupoPeriodo = $ofertaAcademica->periodo->nombre ?? 'N/A';
         $grupoTurno = $ofertaAcademica->turno->nombre ?? 'N/A';
         $grupoParalelo = $ofertaAcademica->paralelo->nombre ?? 'N/A';
@@ -121,15 +150,62 @@ class OfertaAcademicaController extends Controller
             'periodo_id' => 'required|exists:periodos,id',
             'paralelo_id' => 'required|exists:paralelos,id',
             'turno_id' => 'required|exists:turnos,id',
-            'pensum_id' => 'required|exists:pensums,id',
+            'pensum_id' => 'required|array|min:1',
+            'pensum_id.*' => 'exists:pensums,id',
             'cupo_maximo' => 'required|integer|min:1',
             'estado_id' => 'required|exists:estados,id',
         ]);
 
-        $ofertaAcademica->update($request->all());
+        // 1. Identificar el grupo original al que pertenecía este registro antes de editar
+        $periodoAnterior = $ofertaAcademica->periodo_id;
+        $turnoAnterior = $ofertaAcademica->turno_id;
+        $paraleloAnterior = $ofertaAcademica->paralelo_id;
+
+        // 2. Obtener los IDs actuales que el usuario envió en la vista
+        $nuevosPensumIds = $request->pensum_id;
+
+        // 3. Validar duplicados cruzados con OTROS grupos existentes
+        foreach ($nuevosPensumIds as $pensumId) {
+            $existeDuplicado = OfertaAcademica::where('pensum_id', $pensumId)
+                ->where('periodo_id', $request->periodo_id)
+                ->where('turno_id', $request->turno_id)
+                ->where('paralelo_id', $request->paralelo_id)
+                // Excluimos a todos los miembros que formaban parte de este mismo grupo originalmente
+                ->whereNot(function ($query) use ($periodoAnterior, $turnoAnterior, $paraleloAnterior) {
+                    $query->where('periodo_id', $periodoAnterior)
+                        ->where('turno_id', $turnoAnterior)
+                        ->where('paralelo_id', $paraleloAnterior);
+                })
+                ->exists();
+
+            if ($existeDuplicado) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('mensaje', 'No se pudo actualizar. Una de las materias seleccionadas ya existe en otro grupo con el mismo periodo, turno y paralelo.')
+                    ->with('icon', 'warning');
+            }
+        }
+
+        // 4. Sincronización del grupo: Eliminar los registros anteriores de este grupo y recrearlos con los nuevos datos
+        OfertaAcademica::where('periodo_id', $periodoAnterior)
+            ->where('turno_id', $turnoAnterior)
+            ->where('paralelo_id', $paraleloAnterior)
+            ->delete();
+
+        foreach ($nuevosPensumIds as $pensumId) {
+            OfertaAcademica::create([
+                'periodo_id'  => $request->periodo_id,
+                'paralelo_id' => $request->paralelo_id,
+                'turno_id'    => $request->turno_id,
+                'pensum_id'   => $pensumId,
+                'cupo_maximo' => $request->cupo_maximo,
+                'estado_id'   => $request->estado_id,
+            ]);
+        }
 
         return redirect()->route('admin.oferta-academica.index')
-            ->with('success', 'Oferta académica actualizada exitosamente.');
+            ->with('mensaje', 'Oferta académica actualizada y sincronizada exitosamente.')
+            ->with('icon', 'success');
     }
 
     public function destroy(OfertaAcademica $ofertaAcademica)
@@ -137,7 +213,8 @@ class OfertaAcademicaController extends Controller
         $ofertaAcademica->delete();
 
         return redirect()->route('admin.oferta-academica.index')
-            ->with('success', 'Oferta académica enviada a la papelera.');
+            ->with('mensaje', 'Oferta académica enviada a la papelera.')
+            ->with('icon', 'success');
     }
 
     public function papelera()
@@ -160,6 +237,7 @@ class OfertaAcademicaController extends Controller
         $oferta->restore();
 
         return redirect()->route('admin.oferta-academica.papelera')
-            ->with('success', 'Oferta académica restaurada exitosamente.');
+            ->with('mensaje', 'Oferta académica restaurada exitosamente.')
+            ->with('icon', 'success');
     }
 }

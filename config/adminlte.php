@@ -368,14 +368,25 @@ return [
             'classes' => 'bg-blue text-white',
         ],
         [
-            'text'    => 'Roles',
-            'url'     => 'admin/roles',
-            'icon'    => 'fas fa-fw fa-user-check',
+            'text'    => 'Roles y Permisos',
+            'icon'    => 'fas fa-fw fa-user-shield',
             'classes' => 'bg-blue text-white',
+            'submenu' => [
+                [
+                    'text' => 'Lista de Roles',
+                    'url'  => 'admin/roles',
+                    'icon' => 'fas fa-fw fa-user-check',
+                ],
+                [
+                    'text' => 'Usuarios del Sistema',
+                    'url'  => 'admin/usuarios', // <-- NUEVA RUTA PARA GESTIONAR ACCESOS
+                    'icon' => 'fas fa-fw fa-users-cog',
+                ],
+            ],
         ],
         [
             'text'    => 'Personal',
-            'icon'    => 'fas fa-fw fa-users',
+            'icon'    => 'fas fa-fw fa-id-badge',
             'url'     => 'admin/personal',
         ],
         [

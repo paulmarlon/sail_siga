@@ -52,7 +52,8 @@
                         </div>
 
                         <!-- SECCIÓN 2: DATOS BIOGRÁFICOS (Autocompletados / Solo lectura) -->
-                        <div id="seccion_datos_persona" style="display: none;">
+                        <div id="seccion_datos_persona"
+                            style="{{ old('persona_id') ? 'display: block;' : 'display: none;' }}">
                             <hr class="my-4">
                             <h5 class="text-secondary mb-3"><i class="fas fa-id-card"></i> Datos Biográficos (Seleccionados)
                             </h5>
@@ -86,10 +87,10 @@
                         </div>
 
                         <!-- SECCIÓN 3: DATOS PROPIOS DE LA TABLA PERSONAL -->
-                        <div id="seccion_datos_laborales" style="display: none;">
+                        <div id="seccion_datos_laborales"
+                            style="{{ old('persona_id') ? 'display: block;' : 'display: none;' }}">
                             <hr class="my-4">
-                            <h5 class="text-secondary mb-3"><i class="fas fa-briefcase"></i> Datos Laborales y de Acceso
-                            </h5>
+                            <h5 class="text-secondary mb-3"><i class="fas fa-briefcase"></i> Datos Laborales</h5>
 
                             <div class="row">
                                 <!-- Tipo de Personal (Selector controlado para evitar texto libre) -->
@@ -147,42 +148,13 @@
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <!-- Rol -->
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="rol">Rol de Usuario</label>
-                                        <select name="rol" id="rol" class="form-control">
-                                            <option value="">Sin acceso al sistema (Opcional)</option>
-                                            @foreach ($roles as $rol)
-                                                <option value="{{ $rol->name }}"
-                                                    {{ old('rol') == $rol->name ? 'selected' : '' }}>
-                                                    {{ $rol->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Email de Sistema -->
-                                <div class="col-md-8">
-                                    <div class="form-group">
-                                        <label for="email">Correo Electrónico (Sistema)</label>
-                                        <input type="email" name="email" id="email"
-                                            class="form-control @error('email') is-invalid @enderror"
-                                            value="{{ old('email') }}" placeholder="usuario@correo.com">
-                                        @error('email')
-                                            <small class="text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                     </div>
 
                     <!-- Botones de Acción -->
-                    <div class="card-footer text-right" id="footer_acciones" style="display: none;">
+                    <div class="card-footer text-right" id="footer_acciones"
+                        style="{{ old('persona_id') ? 'display: block;' : 'display: none;' }}">
                         <a href="{{ route('admin.personal.index', $tipo) }}" class="btn btn-default mr-2">
                             <i class="fas fa-times"></i> Cancelar
                         </a>

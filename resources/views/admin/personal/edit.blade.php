@@ -5,7 +5,7 @@
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
         <h1><b>Editar Personal:</b> <span class="text-primary">{{ ucfirst($personal->tipo) }}</span></h1>
-        <a href="{{ route('admin.personal.index') }}" class="btn btn-secondary">
+        <a href="{{ route('admin.personal.index', $personal->tipo) }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Volver
         </a>
     </div>
@@ -25,12 +25,12 @@
                     @csrf
                     @method('PUT')
 
-                    <!-- ID de la persona vinculada (Ya no cambia, solo lectura o guardado oculto) -->
+                    <!-- ID de la persona vinculada -->
                     <input type="hidden" name="persona_id" value="{{ $personal->persona_id }}">
 
                     <div class="card-body">
 
-                        <!-- SECCIÓN 2: DATOS BIOGRÁFICOS (Solo lectura, ya que pertenecen a la persona base) -->
+                        <!-- SECCIÓN 1: DATOS BIOGRÁFICOS (Solo lectura) -->
                         <div id="seccion_datos_persona">
                             <h5 class="text-secondary mb-3"><i class="fas fa-id-card"></i> Datos Biográficos (Persona
                                 Vinculada)</h5>
@@ -67,11 +67,10 @@
                             </div>
                         </div>
 
-                        <!-- SECCIÓN 3: DATOS PROPIOS DE LA TABLA PERSONAL -->
+                        <!-- SECCIÓN 2: DATOS LABORALES -->
                         <div id="seccion_datos_laborales">
                             <hr class="my-4">
-                            <h5 class="text-secondary mb-3"><i class="fas fa-briefcase"></i> Datos Laborales y de Acceso
-                            </h5>
+                            <h5 class="text-secondary mb-3"><i class="fas fa-briefcase"></i> Datos Laborales</h5>
 
                             <div class="row">
                                 <!-- Tipo de Personal -->
@@ -131,45 +130,13 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="row">
-                                <!-- Rol -->
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="rol">Rol de Usuario</label>
-                                        <select name="rol" id="rol" class="form-control">
-                                            <option value="">Sin acceso al sistema (Opcional)</option>
-                                            @foreach ($roles as $rol)
-                                                <option value="{{ $rol->name }}"
-                                                    {{ old('rol', optional($personal->usuario->roles->first())->name) == $rol->name ? 'selected' : '' }}>
-                                                    {{ $rol->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Email de Sistema -->
-                                <div class="col-md-8">
-                                    <div class="form-group">
-                                        <label for="email">Correo Electrónico (Sistema)</label>
-                                        <input type="email" name="email" id="email"
-                                            class="form-control @error('email') is-invalid @enderror"
-                                            value="{{ old('email', optional($personal->usuario)->email) }}"
-                                            placeholder="usuario@correo.com">
-                                        @error('email')
-                                            <small class="text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                     </div>
 
                     <!-- Botones de Acción -->
                     <div class="card-footer text-right">
-                        <a href="{{ route('admin.personal.index') }}" class="btn btn-default mr-2">
+                        <a href="{{ route('admin.personal.index', $personal->tipo) }}" class="btn btn-default mr-2">
                             <i class="fas fa-times"></i> Cancelar
                         </a>
                         <button type="submit" class="btn btn-success">

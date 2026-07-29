@@ -98,3 +98,29 @@ RESUMEN DE COMANDOS DOCKER (POSTGRESQL & LARAVEL)
    Comando: docker compose logs -f
 
 ========================================
+
+
+=========================================================
+MANUAL DE COMANDOS - LARAVEL SAIL (SIGA)
+=========================================================
+
+1. ENCENDER EL SISTEMA
+   Comando: ./vendor/bin/sail up -d
+   (Inicia Laravel y PostgreSQL en segundo plano).
+
+2. APAGAR EL SISTEMA
+   Comando: ./vendor/bin/sail down
+   (Detiene y limpia los contenedores de forma segura).
+
+3. VERIFICAR EL ESTADO
+   Comando: ./vendor/bin/sail ps
+   (Muestra qué contenedores están corriendo actualmente).
+
+4. VER LOGS Y ERRORES EN TIEMPO REAL
+   Comando: ./vendor/bin/sail logs -f
+   (Monitorea la actividad del sistema. Presiona Ctrl + C para salir).
+
+5. LIMPIAR CACHÉ Y OPTIMIZAR (SOLUCIÓN DE EMERGENCIA)
+   Comando: ./vendor/bin/sail artisan optimize:clear
+   (Limpia vistas, rutas y configuraciones cacheadas).
+=========================================================
