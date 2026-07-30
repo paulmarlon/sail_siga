@@ -29,4 +29,16 @@ class Personal extends Model
     {
         return $this->belongsTo(Estado::class);
     }
+    // Agrega esta relación en tu modelo Personal existente
+    public function historialDocente()
+    {
+        return $this->hasMany(OfertaDocenteHistorial::class, 'docente_id');
+    }
+
+    // Opcional: Un atajo rápido para ver en qué ofertas está enseñando actualmente de forma activa
+    public function ofertasActivas()
+    {
+        return $this->hasMany(OfertaDocenteHistorial::class, 'docente_id')
+            ->whereNull('fecha_fin');
+    }
 }

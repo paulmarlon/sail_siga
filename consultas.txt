@@ -1,0 +1,8 @@
+// Ver el docente actual de una oferta académica con sus datos personales
+$docente = $oferta->docenteActual?->docente->persona;
+
+// Ver todas las asignaciones históricas de un docente
+$historiales = $personal->historialDocente;
+
+// Ver quién registró el cambio de docente
+$usuarioQueGuardo = $historial->registradoPor;

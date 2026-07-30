@@ -48,4 +48,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(Personal::class, 'usuario_id');
     }
+    // Agrega esta relación en tu modelo User existente
+    public function historialesDocentesRegistrados()
+    {
+        return $this->hasMany(OfertaDocenteHistorial::class, 'registrado_por_user_id');
+    }
 }

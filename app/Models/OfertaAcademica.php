@@ -46,4 +46,17 @@ class OfertaAcademica extends Model
     {
         return $this->belongsTo(Estado::class);
     }
+    // Agrega esta relación en tu modelo OfertaAcademica existente
+    public function historialDocentes()
+    {
+        return $this->hasMany(OfertaDocenteHistorial::class, 'oferta_id');
+    }
+
+    // Atajo directo para obtener al docente que está dictando la materia AHORA MISMO
+    public function docenteActual()
+    {
+        return $this->hasOne(OfertaDocenteHistorial::class, 'oferta_id')
+            ->whereNull('fecha_fin')
+            ->latest(); // O el vigente
+    }
 }

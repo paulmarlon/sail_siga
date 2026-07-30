@@ -55,11 +55,11 @@
                                 </td>
                                 <td class="text-center">
                                     <form action="{{ route('admin.oferta-academica.restaurar', $oferta->id) }}"
-                                        method="POST" class="d-inline form-restaurar">
+                                        method="POST" class="d-inline">
                                         @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="btn btn-success btn-sm" title="Restaurar registro">
-                                            <i class="fas fa-undo"></i> Restaurar
+                                        <!-- No pongas @method('PATCH') si la ruta es POST -->
+                                        <button type="submit" class="btn btn-xs btn-success" title="Restaurar">
+                                            <i class="fas fa-trash-restore"></i> Restaurar
                                         </button>
                                     </form>
                                 </td>

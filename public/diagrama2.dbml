@@ -132,7 +132,6 @@ Table user {
 Table personal {
   id int [pk, increment]
   persona_id int [ref: > persona.id, unique, not null] // Vínculo obligatorio a la persona biográfica
-  usuario_id int [ref: - user.id, null] // Opcional: solo si el empleado usa el sistema
   tipo varchar [note: 'docente, administrativo']
   profesion varchar
   estado_id int [ref: > estado.id]
@@ -176,7 +175,6 @@ Table pensum {
 Table estudiante {
   id int [pk, increment]
   persona_id int [ref: > persona.id, unique, not null] // Vínculo obligatorio a la persona biográfica
-  usuario_id int [ref: - user.id, null] // Opcional: solo si el estudiante usa el portal web
   registro_universitario varchar [unique]
   estado_id int [ref: > estado.id]
 }

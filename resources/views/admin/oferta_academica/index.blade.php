@@ -54,23 +54,27 @@
                         <tr class="text-center">
                             <th style="width: 40px;">ID</th>
                             <th>Carrera / Pensum</th>
-                            <th>Grado</th>
+                            <th class="d-none">Grado</th> {{-- Oculta visualmente en la tabla pero accesible para el filtro --}}
                             <th>Materia</th>
                             <th>Periodo</th>
                             <th>Turno</th>
                             <th>Paralelo</th>
-                            <th style="width: 60px;">Cupo</th>
+                            <th>Docente Asignado</th>
                             <th style="width: 90px;">Estado</th>
                             <th style="width: 100px">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($ofertas as $oferta)
-                            <tr>
+                            @php
+                                // Verificamos si tiene un docente vigente asignado actualmente
+                                $docenteVigente = $oferta->historialDocentes->whereNull('fecha_fin')->first();
+                            @endphp
+                            <tr class="{{ !$docenteVigente ? 'table-warning' : '' }}">
                                 <td class="text-center font-weight-bold">{{ $oferta->id }}</td>
                                 <td>{{ $oferta->pensum->materia->sigla ?? 'N/A' }}</td>
-                                <td class="text-center">
-                                    <span class="badge badge-primary">{{ $oferta->pensum->grado->nombre ?? 'N/A' }}</span>
+                                <td class="d-none text-center">
+                                    {{ $oferta->pensum->grado->nombre ?? 'N/A' }} {{-- Se mantiene oculto para que el DataTable lo lea en el índice 2 --}}
                                 </td>
                                 <td><strong>{{ $oferta->pensum->materia->nombre ?? 'N/A' }}</strong></td>
                                 <td class="text-center">
@@ -82,12 +86,28 @@
                                 <td class="text-center">
                                     <span class="badge badge-secondary">{{ $oferta->paralelo->nombre ?? 'N/A' }}</span>
                                 </td>
-                                <td class="text-center">{{ $oferta->cupo_maximo }}</td>
+                                <td class="text-center">
+                                    @if ($docenteVigente)
+                                        <span class="text-success font-weight-bold" style="font-size: 0.8rem;">
+                                            <i class="fas fa-user-check"></i>
+                                            {{ $docenteVigente->docente->persona->ap_paterno ?? '' }}
+                                            {{ $docenteVigente->docente->persona->nombres ?? '' }}
+                                        </span>
+                                    @else
+                                        <span class="badge badge-danger">
+                                            <i class="fas fa-exclamation-triangle"></i> Sin Docente
+                                        </span>
+                                    @endif
+                                </td>
                                 <td class="text-center">
                                     <span class="badge badge-success">{{ $oferta->estado->nombre ?? 'N/A' }}</span>
                                 </td>
                                 <td class="text-center py-1">
                                     <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('admin.oferta.docentes.show', $oferta->id) }}"
+                                            class="btn btn-xs btn-info" title="Gestionar Docente y Cátedra">
+                                            <i class="fas fa-chalkboard-teacher"></i>
+                                        </a>
                                         <a href="{{ route('admin.oferta-academica.edit', $oferta) }}"
                                             class="btn btn-default btn-xs px-2" title="Editar">
                                             <i class="fas fa-edit text-success"></i>
@@ -120,8 +140,9 @@
                 "responsive": true,
                 "lengthChange": true,
                 "autoWidth": false,
+                "pageLength": 15,
                 "order": [
-                    [0, "desc"]
+                    [0, "asc"]
                 ],
                 "language": {
                     "url": "https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json"
@@ -162,9 +183,10 @@
                     // Forzar tamaño compacto de paginación
                     $('.dataTables_paginate ul.pagination').addClass('pagination-sm');
 
-                    // Crear los selectores dinámicos basados en los índices de las columnas:
-                    // 2: Grado, 4: Periodo, 5: Turno, 6: Paralelo
-                    this.api().columns([4, 5, 6, 2]).every(function(index) {
+                    var api = this.api();
+
+                    // Mantenemos los mismos índices originales ya que la columna sigue existiendo ocultamente
+                    api.columns([4, 5, 6, 2]).every(function(index) {
                         var column = this;
                         var containerId = '';
 
@@ -178,8 +200,13 @@
                             )
                             .appendTo($(containerId))
                             .on('change', function() {
-                                var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                column.search(val ? '^' + val + '$' : '', true, false)
+                                var val = $(this).val();
+                                // Guardar en localStorage al cambiar el filtro
+                                localStorage.setItem('dt_filter_' + containerId, val);
+
+                                var escapedVal = $.fn.dataTable.util.escapeRegex(val);
+                                column.search(escapedVal ? '^' + escapedVal + '$' : '',
+                                        true, false)
                                     .draw();
                             });
 
@@ -193,6 +220,15 @@
                                     '</option>');
                             }
                         });
+
+                        // Restaurar valor guardado previamente en localStorage
+                        var savedVal = localStorage.getItem('dt_filter_' + containerId);
+                        if (savedVal) {
+                            select.val(savedVal);
+                            column.search($.fn.dataTable.util.escapeRegex(savedVal) ? '^' + $.fn
+                                .dataTable.util.escapeRegex(savedVal) + '$' : '', true,
+                                false).draw();
+                        }
                     });
                 }
             });
