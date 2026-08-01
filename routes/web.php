@@ -16,7 +16,8 @@ use App\Http\Controllers\{
     RoleController,
     PersonalController,
     OfertaAcademicaController,
-    OfertaDocenteHistorialController
+    OfertaDocenteHistorialController,
+    EstudianteController
 };
 use Illuminate\Support\Facades\Route;
 
@@ -43,7 +44,7 @@ Route::middleware('auth')->group(function () {
         Route::get('niveles/papelera', [NivelController::class, 'papelera'])->name('niveles.papelera')->middleware('can:admin.niveles.index');
         Route::post('niveles/{id}/restaurar', [NivelController::class, 'restaurar'])->name('niveles.restaurar')->middleware('can:admin.niveles.edit');
         Route::resource('niveles', NivelController::class)
-            ->parameters(['nivels' => 'nivel']) // <--- ¡Agrégalo aquí!
+            ->parameters(['nivels' => 'nivel'])
             ->only(['index', 'store', 'edit', 'update', 'destroy'])
             ->middleware('can:admin.niveles.index');
 
@@ -77,18 +78,19 @@ Route::middleware('auth')->group(function () {
         Route::get('periodos/papelera', [PeriodoController::class, 'papelera'])->name('periodos.papelera')->middleware('can:admin.periodos.index');
         Route::post('periodos/{id}/restaurar', [PeriodoController::class, 'restaurar'])->name('periodos.restaurar')->middleware('can:admin.periodos.edit');
         Route::resource('periodos', PeriodoController::class)->middleware('can:admin.periodos.index');
-        // Oferta Académica
+
         // Oferta Académica
         Route::get('oferta-academica/papelera', [OfertaAcademicaController::class, 'papelera'])->name('oferta-academica.papelera')->middleware('can:admin.oferta-academica.index');
         Route::post('oferta-academica/{id}/restaurar', [OfertaAcademicaController::class, 'restaurar'])->name('oferta-academica.restaurar')->middleware('can:admin.oferta-academica.edit');
-
         Route::resource('oferta-academica', OfertaAcademicaController::class)
             ->parameters(['oferta-academica' => 'oferta_academica'])
             ->middleware('can:admin.oferta-academica.index');
+
         // --- RUTAS DE HISTORIAL DOCENTE POR OFERTA ACADÉMICA ---
         Route::get('oferta-academica/{id}/docentes', [OfertaDocenteHistorialController::class, 'show'])->name('oferta.docentes.show')->middleware('can:admin.oferta-academica.index');
         Route::post('oferta-academica/{id}/docentes', [OfertaDocenteHistorialController::class, 'store'])->name('oferta.docentes.store')->middleware('can:admin.oferta-academica.edit');
         Route::put('oferta-docente-historial/{id}/concluir', [OfertaDocenteHistorialController::class, 'concluir'])->name('oferta.docentes.concluir')->middleware('can:admin.oferta-academica.edit');
+
         // Materias
         Route::get('materias/papelera', [MateriaController::class, 'papelera'])->name('materias.papelera')->middleware('can:admin.materias.index');
         Route::post('materias/{id}/restaurar', [MateriaController::class, 'restaurar'])->name('materias.restaurar')->middleware('can:admin.materias.edit');
@@ -104,19 +106,21 @@ Route::middleware('auth')->group(function () {
         Route::post('carreras/{id}/restaurar', [CarreraController::class, 'restaurar'])->name('carreras.restaurar')->middleware('can:admin.carreras.edit');
         Route::resource('carreras', CarreraController::class)->middleware('can:admin.carreras.index');
 
-        // 1. Rutas específicas de la papelera y restauración (SIEMPRE antes del resource)
+        // Pensums
         Route::get('pensums/{carrera_id}/papelera', [PensumController::class, 'papelera'])->name('pensums.papelera');
         Route::post('pensums/{id}/restaurar', [PensumController::class, 'restaurar'])->name('pensums.restaurar');
-
-        // 2. Ruta GET estática explícita (soluciona el error 405 del conflicto con el POST del resource)
         Route::get('pensums', [PensumController::class, 'index'])->name('pensums.index')->middleware('can:admin.pensums.index');
-
-        // 3. (Opcional) Si en algún lugar accedes entrando directamente a /admin/pensums/1
         Route::get('pensums/carrera/{carrera_id}', [PensumController::class, 'index'])->whereNumber('carrera_id')->name('pensums.carrera')->middleware('can:admin.pensums.index');
-
-        // 4. Rutas de actualización y resource
         Route::post('pensums/update-grado', [PensumController::class, 'updateGrado'])->name('pensums.update-grado')->middleware('can:admin.pensums.edit');
         Route::resource('pensums', PensumController::class)->except(['index'])->middleware('can:admin.pensums.index');
+
+        // --- GESTIÓN DE ESTUDIANTES ---
+        // 1. Rutas estáticas y personalizadas PRIMERO
+        Route::get('estudiantes/papelera', [EstudianteController::class, 'papelera'])->name('estudiantes.papelera')->middleware('can:admin.estudiantes.index');
+        Route::post('estudiantes/{id}/restaurar', [EstudianteController::class, 'restaurar'])->name('estudiantes.restaurar')->middleware('can:admin.estudiantes.edit');
+
+        // 2. Route::resource DESPUÉS
+        Route::resource('estudiantes', EstudianteController::class)->middleware('can:admin.estudiantes.index');
 
         // --- GESTIÓN DE ROLES Y PERMISOS ---
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index')->middleware('can:admin.roles.index');

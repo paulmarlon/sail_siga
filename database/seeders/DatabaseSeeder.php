@@ -154,6 +154,16 @@ class DatabaseSeeder extends Seeder
                 'admin.oferta-academica.destroy',
                 'admin.oferta-academica.papelera',
                 'admin.oferta-academica.restaurar',
+                // Estudiantes
+                'admin.estudiantes.index',
+                'admin.estudiantes.create',
+                'admin.estudiantes.store',
+                'admin.estudiantes.show',
+                'admin.estudiantes.edit',
+                'admin.estudiantes.update',
+                'admin.estudiantes.destroy',
+                'admin.estudiantes.papelera',
+                'admin.estudiantes.restaurar',
             ];
 
             foreach ($permisos as $permiso) {

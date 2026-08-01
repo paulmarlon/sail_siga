@@ -110,11 +110,6 @@ Table persona {
   deleted_at timestamp
 }
 
-Table ppff {
-  id int [pk, increment]
-  persona_id int [ref: > persona.id, unique]
-  parentesco varchar [note: 'Padre, Madre, Tutor, Apoderado']
-}
 
 // -----------------------------------------------------------------------------
 // NIVEL 3: SEGURIDAD, USUARIOS Y RECURSOS HUMANOS
@@ -181,10 +176,13 @@ Table estudiante {
 
 Table estudiante_ppff {
   estudiante_id int [ref: > estudiante.id]
-  ppff_id int [ref: > ppff.id]
+  ppff_persona_id int [ref: > persona.id]
   parentesco varchar
   es_tutor_principal boolean [default: true]
-Indexes { (estudiante_id, ppff_id) [pk] }
+
+  Indexes {
+    (estudiante_id, ppff_persona_id) [pk]
+  }
 
 }
 

@@ -394,6 +394,12 @@ return [
             'icon'    => 'fas fa-fw fa-graduation-cap',
             'url'     => 'admin/oferta-academica',
         ],
+        [
+            'text'    => 'Estudiantes',
+            'icon'    => 'fas fa-fw fa-user-graduate',
+            'url'     => 'admin/estudiantes',
+            'classes' => 'bg-blue text-white',
+        ],
 
 
         [
@@ -450,6 +456,7 @@ return [
             'icon_color' => 'cyan',
             'url' => '#',
         ],
+
     ],
 
     /*
