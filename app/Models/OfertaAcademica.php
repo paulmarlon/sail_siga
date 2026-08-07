@@ -59,4 +59,8 @@ class OfertaAcademica extends Model
             ->whereNull('fecha_fin')
             ->latest(); // O el vigente
     }
+    public function matriculaciones()
+    {
+        return $this->hasMany(MatriculacionMateria::class, 'oferta_id');
+    }
 }

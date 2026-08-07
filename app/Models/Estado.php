@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Estado extends Model
 {
@@ -45,5 +46,16 @@ class Estado extends Model
     public function ofertasAcademicas()
     {
         return $this->hasMany(OfertaAcademica::class);
+    }
+    public function inscripcionesCarrera(): HasMany
+    {
+        return $this->hasMany(InscripcionCarrera::class);
+    }
+    /**
+     * Relación con las matriculaciones de materias que tienen este estado.
+     */
+    public function matriculacionesMaterias()
+    {
+        return $this->hasMany(MatriculacionMateria::class);
     }
 }

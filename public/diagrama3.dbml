@@ -1,129 +1,359 @@
-
-// NIVEL 0: CATÁLOGOS DE CONTROL
+// =============================================================================
+// SIG@ - SISTEMA DE GESTIÓN ACADÉMICA (DBML NIVEL ENTERPRISE - 100% CONSISTENTE)
+// =============================================================================
 
 // -----------------------------------------------------------------------------
+// NIVEL 1: CATÁLOGOS BASE E INFRAESTRUCTURA INDEPENDIENTE
+// -----------------------------------------------------------------------------
+Table domicilio {
+  id int [pk, increment]
+  pais varchar [default: 'Bolivia']
+  departamento varchar
+  ciudad varchar
+  zona varchar
+  avenida varchar
+  numero varchar
+  referencia text
+  latitud decimal(10, 8)
+  longitud decimal(11, 8)
+  tipo_domicilio varchar
+  deleted_at timestamp
+}
 
 Table estado {
-
   id int [pk, increment]
-
-  nombre varchar
-
-  slug varchar
-
-  contexto varchar
-
-}
-
-
-// -----------------------------------------------------------------------------
-
-// NIVEL 1: NÚCLEO DE IDENTIDAD
-
-// -----------------------------------------------------------------------------
-
-Table persona {
-
-  id int [pk, increment]
-
-  ci varchar [unique]
-
-  nombres varchar
-
-  ap_paterno varchar
-
-  ap_materno varchar
-
-  deleted_at timestamp
-
-}
-
-
-// -----------------------------------------------------------------------------
-
-// NIVEL 2: ACCESO Y SEGURIDAD
-
-// -----------------------------------------------------------------------------
-
-Table user {
-
-  id int [pk, increment]
-
-  persona_id int [ref: - persona.id, unique, not null]
-
-  email varchar [unique]
-
-  password varchar
-
-  estado_id int [ref: > estado.id]
-
-  last_login_at timestamp
-
-}
-
-
-// -----------------------------------------------------------------------------
-
-// NIVEL 3: ROLES (COMPOSICIÓN DE LA IDENTIDAD)
-
-// -----------------------------------------------------------------------------
-
-Table estudiante {
-
-  id int [pk, increment]
-
-  persona_id int [ref: > persona.id]
-
-  registro_historico varchar [unique]
-
-  estado_id int [ref: > estado.id]
-
-}
-
-
-
-Table personal {
-
-  id int [pk, increment]
-
-  persona_id int [ref: > persona.id]
-
-  tipo varchar // 'Docente', 'Administrativo', 'Directivo'
-
-  profesion varchar
-
-  estado_id int [ref: > estado.id]
-
-}
-
-
-Table ppff {
-
-  id int [pk, increment]
-
-  persona_id int [ref: > persona.id]
-
-  // La información de parentesco y orden de prioridad vive en la tabla relacional
-
-}
-
-// TABLA INTERMEDIA (EL PUENTE)
-
-Table estudiante_ppff {
-
-  estudiante_id int [ref: > estudiante.id]
-
-  ppff_id int [ref: > ppff.id]
-
-  parentesco varchar // 'Padre', 'Madre', 'Tutor'
-
-  es_tutor_principal boolean [default: true] // Útil para envío de notificaciones
-
+  nombre varchar [unique]
+  slug varchar [unique]
+  contexto varchar [note: 'Ej: user, academico, proceso, global, financiero, legal']
+  permite_login boolean [default: true]
+  permite_procesos_academicos boolean [default: true]
+  color_hex varchar
 
   Indexes {
-
-    (estudiante_id, ppff_id) [pk]
-
+    (slug, contexto) [unique]
   }
 
+}
+
+Table nivel {
+  id int [pk, increment]
+  nombre varchar [note: 'Pregrado, Posgrado, Técnico']
+}
+
+Table turno {
+  id int [pk, increment]
+  nombre varchar
+}
+
+Table paralelo {
+  id int [pk, increment]
+  nombre varchar
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 2: ENTIDADES DE CONFIGURACIÓN Y PERSONAS
+// -----------------------------------------------------------------------------
+Table gestion {
+  id int [pk, increment]
+  nombre varchar(4) [unique]
+  estado_id int [ref: > estado.id]
+}
+
+Table periodo {
+  id int [pk, increment]
+  nombre varchar
+  gestion_id int [ref: > gestion.id]
+  fecha_inicio date
+  fecha_fin date
+  estado_id int [ref: > estado.id]
+}
+
+Table materia {
+  id int [pk, increment]
+  sigla varchar [unique]
+  nombre varchar
+  descripcion varchar
+  horas_academicas int
+  tipo_materia varchar [note: 'Teorica, Practica, Teorica-Practica']
+  es_comun boolean [default: false]
+  es_conducta boolean [default: false, note: 'Materia transversal de disciplina y conducta']
+  estado_id int [ref: > estado.id]
+}
+
+Table grado {
+  id int [pk, increment]
+  nombre varchar
+  orden int
+  ciclo int [default: 1, note: '1: Tronco Común, 2: Especialidad']
+  nivel_id int [ref: > nivel.id]
+  estado_id int [ref: > estado.id]
+}
+
+Table configuracion {
+  id int [pk, increment]
+  nombre_institucion varchar
+  sigla_institucion varchar
+  nit varchar
+  domicilio_id int [ref: - domicilio.id, unique]
+  telefono varchar
+  email_contacto varchar
+  web varchar
+  logo_path varchar
+  divisa varchar [default: 'BOB']
+  gestion_actual_id int [ref: > gestion.id]
+}
+
+Table persona {
+  id int [pk, increment]
+  ci varchar [unique]
+  nombres varchar
+  ap_paterno varchar
+  ap_materno varchar
+  fecha_nacimiento date
+  sexo char(1)
+  celular varchar
+  email_personal varchar
+  foto_path varchar
+  domicilio_id int [ref: - domicilio.id, null]
+  deleted_at timestamp
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 3: SEGURIDAD, USUARIOS Y RECURSOS HUMANOS
+// -----------------------------------------------------------------------------
+Table user {
+  id int [pk, increment]
+  persona_id int [ref: - persona.id, unique, not null]
+  estado_id int [ref: > estado.id]
+  email varchar [unique]
+  password varchar
+  remember_token varchar
+  created_at timestamp
+}
+
+Table personal {
+  id int [pk, increment]
+  persona_id int [ref: - persona.id, unique, not null]
+  tipo varchar [note: 'docente, administrativo']
+  profesion varchar
+  estado_id int [ref: > estado.id]
+}
+
+Table formacion {
+  id int [pk, increment]
+  personal_id int [ref: > personal.id]
+  titulo varchar
+  institucion varchar
+  nivel_formacion varchar
+  fecha_graduacion date
+  archivo_path varchar
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 4: CARRERAS, MALLAS ACADÉMICAS Y ESTUDIANTES
+// -----------------------------------------------------------------------------
+Table carrera {
+  id int [pk, increment]
+  carrera_base_id int [ref: > carrera.id, null]
+  nombre varchar
+  sigla varchar [unique]
+  resolucion varchar
+  duracion int
+  titulo varchar
+  nivel_id int [ref: > nivel.id]
+  es_tronco_comun boolean [default: false]
+  estado_id int [ref: > estado.id]
+}
+
+Table pensum {
+  id int [pk, increment]
+  carrera_id int [ref: > carrera.id]
+  materia_id int [ref: > materia.id]
+  grado_id int [ref: > grado.id]
+  es_obligatoria boolean [default: true]
+  estado_id int [ref: > estado.id]
+}
+
+Table estudiante {
+  id int [pk, increment]
+  persona_id int [ref: - persona.id, unique, not null]
+  registro_universitario varchar [unique]
+  materias_reprobadas_acumuladas int [default: 0, note: 'Control para regla de retiro por > 3 aplazos']
+  estado_id int [ref: > estado.id]
+}
+
+Table estudiante_ppff {
+  estudiante_id int [ref: > estudiante.id]
+  ppff_persona_id int [ref: > persona.id]
+  parentesco varchar
+  es_tutor_principal boolean [default: true]
+
+  Indexes {
+    (estudiante_id, ppff_persona_id) [pk]
+  }
+
+}
+
+Table inscripcion_carrera {
+  id int [pk, increment]
+  estudiante_id int [ref: > estudiante.id]
+  carrera_id int [ref: > carrera.id]
+  periodo_id int [ref: > periodo.id]
+  fecha_inscripcion date
+  es_especialidad_activa boolean [default: true]
+  estado_id int [ref: > estado.id]
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 5: GESTIÓN OPERATIVA Y EXÁMENES
+// -----------------------------------------------------------------------------
+Table oferta_academica {
+  id int [pk, increment]
+  periodo_id int [ref: > periodo.id]
+  paralelo_id int [ref: > paralelo.id]
+  turno_id int [ref: > turno.id]
+  pensum_id int [ref: > pensum.id]
+  cupo_maximo int [default: 80]
+  estado_id int [ref: > estado.id]
+}
+
+Table oferta_docente_historial {
+  id int [pk, increment]
+  oferta_id int [ref: > oferta_academica.id]
+  docente_id int [ref: > personal.id]
+  contrato_id varchar [null]
+  fecha_inicio date
+  fecha_fin date [null]
+  motivo_cambio varchar
+  estado_id int [ref: > estado.id]
+  registrado_por_user_id int [ref: > user.id]
+}
+
+Table matriculacion_materia {
+  id int [pk, increment]
+  estudiante_id int [ref: > estudiante.id]
+  oferta_id int [ref: > oferta_academica.id]
+  fecha_registro timestamp [default: `now()`]
+  costo_matricula decimal(10,2)
+  estado_id int [ref: > estado.id]
+}
+
+Table programacion_examen {
+  id int [pk, increment]
+  oferta_id int [ref: > oferta_academica.id]
+  instancia varchar [note: 'Parcial 1, Parcial 2, Parcial 3, Segunda Instancia']
+  modalidad varchar [note: 'Examen escrito a ciegas, Examen práctico directo']
+  tipo_proceso varchar [default: 'Ordinario']
+  fecha_programada datetime
+  responsable_id int [ref: > personal.id]
+  bloqueado boolean [default: false]
+  observaciones_legales text
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 6: EVALUACIÓN, ASISTENCIA, RECURSOS JERÁRQUICOS Y TITULACIÓN
+// -----------------------------------------------------------------------------
+Table asistencia {
+  id int [pk, increment]
+  matriculacion_id int [ref: > matriculacion_materia.id]
+  fecha date
+  estado_id int [ref: > estado.id]
+  observacion varchar
+}
+
+Table folio_examen {
+  id int [pk, increment]
+  programacion_id int [ref: > programacion_examen.id]
+  codigo_folio varchar [unique]
+  estudiante_id int [ref: > estudiante.id]
+  estado_folio varchar [default: 'Entregado (A ciegas)']
+}
+
+Table calificacion_parcial {
+  id int [pk, increment]
+  matriculacion_id int [ref: > matriculacion_materia.id]
+  nro_parcial int [note: '1, 2, 3 para parciales ordinarios, o 4 para Segunda Instancia']
+  tp_nota float [default: 0, note: 'Trabajo Práctico 25% (0 a 100)']
+  examen_nota float [default: 0, note: 'Examen a ciegas o directo 75% (0 a 100)']
+  nota_parcial_calculada float [note: 'Calculada: (tp_nota * 0.25) + (examen_nota * 0.75)']
+  estado_id int [ref: > estado.id]
+}
+
+Table calificacion_final {
+  id int [pk, increment]
+  matriculacion_id int [ref: > matriculacion_materia.id, unique]
+  promedio_parciales float [note: 'Suma o ponderacion de los parciales']
+  nota_segunda_instancia float [null, note: 'Nota obtenida en la Segunda Instancia (Habilitado entre 33 y 50.5)']
+  nota_definitiva float [note: 'Nota oficial de kardex. Minimo de aprobacion: 50.5']
+  estado_aprobacion varchar [note: 'Aprobado, Reprobado, Segunda Instancia, Retiro por Insuficiencia, Retiro Disciplinario']
+  acta_cerrada boolean [default: false, note: 'MEJORA: Bandera de congelamiento oficial de kárdex antes de recursos']
+  registrado_por_user_id int [ref: > user.id]
+  log_auditoria json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table recurso_jerarquico_nota {
+  id int [pk, increment]
+  matriculacion_id int [ref: > matriculacion_materia.id, note: 'Apunta a la cursada, abarcando parciales o segunda instancia']
+  instancia_afectada varchar [note: 'Primer Parcial, Segundo Parcial, Tercer Parcial, o Segunda Instancia']
+  nro_tramite varchar [unique, note: 'Número de expediente o solicitud formal']
+  motivo varchar [note: 'Revisión por tribunal, Impugnación de Segunda Instancia, Error de transcripción']
+  nota_anterior float [null, note: 'Nota antes de la resolución del tribunal']
+  nota_nueva float [null, note: 'Nota modificada y autorizada por la autoridad']
+  autoridad_responsable_id int [ref: > personal.id, note: 'Tribunal calificador, Docente Dirimente o Decano']
+  transaccion_financiera_id int [ref: > transaccion_financiera.id, null, note: 'MEJORA: Vínculo directo al pago de tasa por derecho de trámite/recurso']
+  documento_resolucion_path varchar [null, note: 'PDF de la resolución administrativa firmada']
+  registrado_por_user_id int [ref: > user.id]
+  created_at timestamp [default: `now()`]
+}
+
+Table titulacion {
+  id int [pk, increment]
+  estudiante_id int [ref: > estudiante.id]
+  carrera_id int [ref: > carrera.id]
+  modalidad varchar [note: 'Tesis, Excelencia, Examen de Grado']
+  fecha_inicio date
+  fecha_defensa date [null]
+  nota_defensa float [null, note: 'Nota mínima de aprobación: 50.5']
+  estado_titulacion_id int [ref: > estado.id]
+  archivo_resolucion_path varchar [null]
+  observaciones_auditoria text [null]
+}
+
+Table auditoria {
+  id int [pk, increment]
+  user_id int [ref: > user.id]
+  auditable_id int
+  auditable_type varchar
+  accion varchar
+  valores_anteriores json [null]
+  valores_nuevos json [null]
+  ip_address varchar(45) [null]
+  user_agent text [null]
+  created_at timestamp [default: `now()`]
+}
+
+// -----------------------------------------------------------------------------
+// NIVEL 7: MÓDULO FINANCIERO Y PAGOS (PREPARADO A FUTURO)
+// -----------------------------------------------------------------------------
+Table concepto_pago {
+  id int [pk, increment]
+  nombre varchar [note: 'Matrícula Semestral, Colegiatura, Derecho a Examen, Titulación, Trámite Recurso']
+  monto_base decimal(10,2)
+  estado_id int [ref: > estado.id]
+}
+
+Table transaccion_financiera {
+  id int [pk, increment]
+  estudiante_id int [ref: > estudiante.id]
+  concepto_id int [ref: > concepto_pago.id]
+  periodo_id int [ref: > periodo.id]
+  monto_pagado decimal(10,2)
+  descuento decimal(10,2) [default: 0]
+  fecha_pago timestamp [default: `now()`]
+  metodo_pago varchar [note: 'Efectivo, Transferencia, QR']
+  nro_comprobante varchar [unique]
+  registrado_por_user_id int [ref: > user.id]
+  estado_id int [ref: > estado.id, note: 'Pagado, Anulado, Pendiente']
 }

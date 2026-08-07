@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Carrera extends Model
 {
@@ -60,5 +61,9 @@ class Carrera extends Model
     public function materias()
     {
         return $this->hasManyThrough(Materia::class, Pensum::class, 'carrera_id', 'id', 'id', 'materia_id');
+    }
+    public function inscripciones(): HasMany
+    {
+        return $this->hasMany(InscripcionCarrera::class);
     }
 }

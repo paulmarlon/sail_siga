@@ -17,7 +17,9 @@ use App\Http\Controllers\{
     PersonalController,
     OfertaAcademicaController,
     OfertaDocenteHistorialController,
-    EstudianteController
+    EstudianteController,
+    InscripcionCarreraController,
+    MatriculacionMateriaController
 };
 use Illuminate\Support\Facades\Route;
 
@@ -87,8 +89,8 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:admin.oferta-academica.index');
 
         // --- RUTAS DE HISTORIAL DOCENTE POR OFERTA ACADÉMICA ---
-        Route::get('oferta-academica/{id}/docentes', [OfertaDocenteHistorialController::class, 'show'])->name('oferta.docentes.show')->middleware('can:admin.oferta-academica.index');
-        Route::post('oferta-academica/{id}/docentes', [OfertaDocenteHistorialController::class, 'store'])->name('oferta.docentes.store')->middleware('can:admin.oferta-academica.edit');
+        Route::get('oferta-academica/{oferta}/docentes', [OfertaDocenteHistorialController::class, 'show'])->name('oferta.docentes.show')->middleware('can:admin.oferta-academica.index');
+        Route::post('oferta-academica/{oferta}/docentes', [OfertaDocenteHistorialController::class, 'store'])->name('oferta.docentes.store')->middleware('can:admin.oferta-academica.edit');
         Route::put('oferta-docente-historial/{id}/concluir', [OfertaDocenteHistorialController::class, 'concluir'])->name('oferta.docentes.concluir')->middleware('can:admin.oferta-academica.edit');
 
         // Materias
@@ -131,6 +133,54 @@ Route::middleware('auth')->group(function () {
         Route::post('roles/{id}', [RoleController::class, 'update_permisos'])->name('roles.update_permisos')->middleware('can:admin.roles.update_permisos');
         Route::put('roles/{id}', [RoleController::class, 'update'])->name('roles.update')->middleware('can:admin.roles.update');
         Route::delete('roles/{id}', [RoleController::class, 'destroy'])->name('roles.destroy')->middleware('can:admin.roles.destroy');
+        // --- GESTIÓN DE INSCRIPCIONES A CARRERA ---
+
+        // --- GESTIÓN DE INSCRIPCIONES A CARRERA ---
+
+        // ==========================================
+        // RUTAS PERSONALIZADAS (ANTERIORES AL RESOURCE)
+        // ==========================================
+
+        // 1. Papelera (No requiere ID)
+        // ==========================================
+        // RUTAS PERSONALIZADAS DE INSCRIPCIÓN CARRERAS
+        // ==========================================
+
+        // 1. Papelera
+        Route::get('inscripcion-carreras/papelera', [InscripcionCarreraController::class, 'papelera'])
+            ->name('inscripcion-carreras.papelera');
+
+        // 2. Restaurar (Usando el parámetro exacto 'inscripcion_carrera')
+        Route::put('inscripcion-carreras/{inscripcion_carrera}/restaurar', [InscripcionCarreraController::class, 'restaurar'])
+            ->name('inscripcion-carreras.restaurar');
+
+        // 3. Procesar Retiro
+        Route::put('inscripcion-carreras/{inscripcionCarrera}/procesar-retiro', [InscripcionCarreraController::class, 'procesarRetiro'])
+            ->name('inscripcion-carreras.procesar-retiro');
+
+        // ==========================================
+        // RECURSO PRINCIPAL
+        // ==========================================
+        Route::resource('inscripcion-carreras', InscripcionCarreraController::class);
+
+
+        // ==========================================
+        // RECURSO PRINCIPAL DE LARAVEL
+        // ==========================================
+        Route::resource('inscripcion-carreras', InscripcionCarreraController::class);
+        // 1. Rutas personalizadas (Papelera y Restauración por SoftDeletes) ANTES del Resource
+        Route::get('matriculacion-materias/papelera', [MatriculacionMateriaController::class, 'papelera'])
+            ->name('matriculacion-materias.papelera');
+
+        Route::post('matriculacion-materias/{id}/restaurar', [MatriculacionMateriaController::class, 'restaurar'])
+            ->name('matriculacion-materias.restaurar');
+
+        // Ruta opcional por si requieres procesar un retiro o baja específica de materia vía PUT
+        Route::put('matriculacion-materias/{matriculacionMateria}/procesar-retiro', [MatriculacionMateriaController::class, 'procesarRetiro'])
+            ->name('matriculacion-materias.procesar-retiro');
+
+        // 2. El Resource DESPUÉS
+        Route::resource('matriculacion-materias', MatriculacionMateriaController::class);
     });
 });
 

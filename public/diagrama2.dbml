@@ -191,10 +191,17 @@ Table inscripcion_carrera {
   estudiante_id int [ref: > estudiante.id]
   carrera_id int [ref: > carrera.id]
   periodo_id int [ref: > periodo.id]
-  fecha_inscripcion date
-  es_especialidad_activa boolean [default: true]
-  estado_id int [ref: > estado.id]
+  fecha_inscripcion date [default: `now()`]
+  es_especialidad_activa boolean [default: true, note: 'Indica si cursa el tronco común o si ya eligió y cursa su especialidad']
+  registrado_por_user_id int [ref: > user.id, note: 'Personal administrativo que procesó la inscripción']
+  estado_id int [ref: > estado.id, note: 'Activo, Retirado, Congelado, Egresado']
+
+  Indexes {
+    (estudiante_id, carrera_id, periodo_id) [unique, note: 'Evita doble inscripción del estudiante en la misma carrera y periodo']
+  }
+
 }
+
 
 // -----------------------------------------------------------------------------
 // NIVEL 5: GESTIÓN OPERATIVA Y EXÁMENES
@@ -226,8 +233,13 @@ Table matriculacion_materia {
   estudiante_id int [ref: > estudiante.id]
   oferta_id int [ref: > oferta_academica.id]
   fecha_registro timestamp [default: `now()`]
-  costo_matricula decimal(10,2)
-  estado_id int [ref: > estado.id]
+  estado_id int [ref: > estado.id, note: 'Ej: Matriculado, Retirado, Concluido']
+  deleted_at timestamp
+
+  Indexes {
+    (estudiante_id, oferta_id) [unique, note: 'Evita que un estudiante se matricule dos veces en la misma oferta/materia']
+  }
+
 }
 
 Table programacion_examen {

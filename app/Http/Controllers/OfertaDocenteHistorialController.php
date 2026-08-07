@@ -8,6 +8,7 @@ use App\Models\OfertaAcademica;
 use App\Models\Personal;
 use App\Models\Estado;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 
 class OfertaDocenteHistorialController extends Controller
 {
@@ -27,9 +28,9 @@ class OfertaDocenteHistorialController extends Controller
             'historialDocentes.registradoPor'
         ]);
 
-        // Obtenemos a todo el personal con tipo docente de forma directa y segura
+        // Usamos whereIn para filtrar por múltiples tipos válidos
         $docentesDisponibles = Personal::with('persona')
-            ->where('tipo', 'docente')
+            ->whereIn('tipo', ['docente', 'planta'])
             ->get();
 
         return view('admin.oferta_academica.docentes', compact('oferta', 'docentesDisponibles'));
@@ -75,9 +76,8 @@ class OfertaDocenteHistorialController extends Controller
             ]);
         });
 
-        // Captura los filtros de la URL anterior de forma segura y tipada
-        /** @var string $previousUrl */
-        $previousUrl = url()->previous();
+        // Usamos la Facade URL que Intelephense tiene perfectamente tipada
+        $previousUrl = URL::previous();
 
         $query = parse_url($previousUrl, PHP_URL_QUERY);
         $previousQuery = is_string($query) ? $query : '';

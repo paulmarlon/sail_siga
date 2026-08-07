@@ -1731,16 +1731,6 @@ VALUES (
     ),
     (
         3,
-        252,
-        7,
-        true,
-        1,
-        '2026-07-26 06:06:34',
-        '2026-07-26 06:06:48',
-        '2026-07-26 06:06:48'
-    ),
-    (
-        3,
         253,
         7,
         true,
@@ -1788,6 +1778,16 @@ VALUES (
         '2026-07-26 06:07:08',
         '2026-07-26 06:07:08',
         NULL
+    ),
+    (
+        3,
+        295,
+        8,
+        true,
+        1,
+        '2026-07-26 06:08:11',
+        '2026-07-26 06:08:11',
+        NULL
     );
 
 INSERT INTO
@@ -1802,16 +1802,6 @@ INSERT INTO
         deleted_at
     )
 VALUES (
-        3,
-        295,
-        8,
-        true,
-        1,
-        '2026-07-26 06:08:11',
-        '2026-07-26 06:08:11',
-        NULL
-    ),
-    (
         3,
         296,
         8,
@@ -1900,6 +1890,16 @@ VALUES (
         '2026-07-26 06:08:30',
         '2026-07-26 06:08:30',
         NULL
+    ),
+    (
+        3,
+        305,
+        8,
+        true,
+        1,
+        '2026-07-26 06:08:35',
+        '2026-07-26 06:08:35',
+        NULL
     );
 
 INSERT INTO
@@ -1914,16 +1914,6 @@ INSERT INTO
         deleted_at
     )
 VALUES (
-        3,
-        305,
-        8,
-        true,
-        1,
-        '2026-07-26 06:08:35',
-        '2026-07-26 06:08:35',
-        NULL
-    ),
-    (
         3,
         306,
         8,
@@ -2012,6 +2002,16 @@ VALUES (
         '2026-07-26 06:09:51',
         '2026-07-26 06:09:51',
         NULL
+    ),
+    (
+        4,
+        34,
+        3,
+        true,
+        1,
+        '2026-07-26 06:10:02',
+        '2026-07-26 06:10:02',
+        NULL
     );
 
 INSERT INTO
@@ -2026,26 +2026,6 @@ INSERT INTO
         deleted_at
     )
 VALUES (
-        4,
-        32,
-        3,
-        true,
-        1,
-        '2026-07-26 06:09:47',
-        '2026-07-26 06:09:55',
-        '2026-07-26 06:09:55'
-    ),
-    (
-        4,
-        34,
-        3,
-        true,
-        1,
-        '2026-07-26 06:10:02',
-        '2026-07-26 06:10:02',
-        NULL
-    ),
-    (
         4,
         35,
         3,
@@ -2124,20 +2104,8 @@ VALUES (
         '2026-07-26 06:12:50',
         '2026-07-26 06:12:50',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         4,
         79,
         4,
@@ -2156,8 +2124,20 @@ VALUES (
         '2026-07-26 06:13:01',
         '2026-07-26 06:13:01',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         4,
         81,
         4,
@@ -2236,20 +2216,8 @@ VALUES (
         '2026-07-26 06:13:40',
         '2026-07-26 06:13:40',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         4,
         125,
         5,
@@ -2268,8 +2236,20 @@ VALUES (
         '2026-07-26 06:13:44',
         '2026-07-26 06:13:44',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         4,
         127,
         5,
@@ -2348,20 +2328,8 @@ VALUES (
         '2026-07-26 06:14:39',
         '2026-07-26 06:14:39',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         4,
         172,
         6,
@@ -2380,8 +2348,20 @@ VALUES (
         '2026-07-26 06:14:42',
         '2026-07-26 06:14:42',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         4,
         174,
         6,
@@ -2460,20 +2440,8 @@ VALUES (
         '2026-07-26 06:15:02',
         '2026-07-26 06:15:02',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         4,
         182,
         6,
@@ -2492,8 +2460,20 @@ VALUES (
         '2026-07-26 06:15:31',
         '2026-07-26 06:15:31',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         4,
         220,
         7,
@@ -2572,20 +2552,8 @@ VALUES (
         '2026-07-26 06:15:45',
         '2026-07-26 06:15:45',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         4,
         228,
         7,
@@ -2604,8 +2572,20 @@ VALUES (
         '2026-07-26 06:15:55',
         '2026-07-26 06:15:55',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         4,
         230,
         7,
@@ -2624,16 +2604,6 @@ VALUES (
         '2026-07-26 06:16:03',
         '2026-07-26 06:16:03',
         NULL
-    ),
-    (
-        4,
-        131,
-        8,
-        true,
-        1,
-        '2026-07-26 06:13:53',
-        '2026-07-26 06:16:57',
-        '2026-07-26 06:16:57'
     ),
     (
         4,
@@ -2684,20 +2654,8 @@ VALUES (
         '2026-07-26 06:17:32',
         '2026-07-26 06:17:32',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         4,
         277,
         8,
@@ -2725,6 +2683,28 @@ VALUES (
         1,
         '2026-07-26 06:17:37',
         '2026-07-26 06:17:37',
+        NULL
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
+        4,
+        131,
+        5,
+        true,
+        1,
+        '2026-07-26 06:13:53',
+        '2026-08-04 09:51:14',
         NULL
     ),
     (
@@ -2796,20 +2776,8 @@ VALUES (
         '2026-07-26 06:20:20',
         '2026-07-26 06:20:20',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         5,
         42,
         3,
@@ -2828,8 +2796,20 @@ VALUES (
         '2026-07-26 06:20:24',
         '2026-07-26 06:20:24',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         5,
         44,
         3,
@@ -2908,20 +2888,8 @@ VALUES (
         '2026-07-26 06:21:21',
         '2026-07-26 06:21:21',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         5,
         88,
         4,
@@ -2940,8 +2908,20 @@ VALUES (
         '2026-07-26 06:21:25',
         '2026-07-26 06:21:25',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         5,
         90,
         4,
@@ -3020,20 +3000,8 @@ VALUES (
         '2026-07-26 06:21:49',
         '2026-07-26 06:21:49',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         5,
         134,
         5,
@@ -3052,8 +3020,20 @@ VALUES (
         '2026-07-26 06:26:38',
         '2026-07-26 06:26:38',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         5,
         136,
         5,
@@ -3132,20 +3112,8 @@ VALUES (
         '2026-07-26 06:26:55',
         '2026-07-26 06:26:55',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         5,
         144,
         5,
@@ -3164,8 +3132,20 @@ VALUES (
         '2026-07-26 06:27:03',
         '2026-07-26 06:27:03',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         5,
         146,
         5,
@@ -3244,20 +3224,8 @@ VALUES (
         '2026-07-26 06:28:47',
         '2026-07-26 06:28:47',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         5,
         190,
         6,
@@ -3276,8 +3244,20 @@ VALUES (
         '2026-07-26 06:28:53',
         '2026-07-26 06:28:53',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         5,
         192,
         6,
@@ -3356,20 +3336,8 @@ VALUES (
         '2026-07-26 06:30:36',
         '2026-07-26 06:30:36',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         5,
         237,
         7,
@@ -3388,8 +3356,20 @@ VALUES (
         '2026-07-26 06:30:42',
         '2026-07-26 06:30:42',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         5,
         239,
         7,
@@ -3468,20 +3448,8 @@ VALUES (
         '2026-07-26 06:31:29',
         '2026-07-26 06:31:29',
         NULL
-    );
-
-INSERT INTO
-    public.pensums (
-        carrera_id,
-        materia_id,
-        grado_id,
-        es_obligatoria,
-        estado_id,
-        created_at,
-        updated_at,
-        deleted_at
-    )
-VALUES (
+    ),
+    (
         5,
         285,
         8,
@@ -3500,8 +3468,20 @@ VALUES (
         '2026-07-26 06:31:32',
         '2026-07-26 06:31:32',
         NULL
-    ),
-    (
+    );
+
+INSERT INTO
+    public.pensums (
+        carrera_id,
+        materia_id,
+        grado_id,
+        es_obligatoria,
+        estado_id,
+        created_at,
+        updated_at,
+        deleted_at
+    )
+VALUES (
         5,
         287,
         8,
@@ -3579,5 +3559,25 @@ VALUES (
         1,
         '2026-07-26 06:32:08',
         '2026-07-26 06:32:08',
+        NULL
+    ),
+    (
+        4,
+        32,
+        3,
+        true,
+        1,
+        '2026-07-26 06:09:47',
+        '2026-08-04 09:30:21',
+        NULL
+    ),
+    (
+        3,
+        252,
+        7,
+        true,
+        1,
+        '2026-07-26 06:06:34',
+        '2026-08-04 10:09:17',
         NULL
     );

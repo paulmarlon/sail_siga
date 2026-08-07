@@ -24,7 +24,7 @@ class PersonaCsvSeeder extends Seeder
             ?? Estado::where('contexto', 'laboral')->first()
             ?? Estado::first();
 
-        $filePath = database_path('seeders/csv/personas.csv');
+        $filePath = database_path('seeders/csv/personal.csv');
 
         if (!file_exists($filePath)) {
             $this->command->error("El archivo CSV no existe en la ruta: {$filePath}");

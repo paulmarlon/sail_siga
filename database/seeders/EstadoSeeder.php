@@ -45,9 +45,42 @@ class EstadoSeeder extends Seeder
                 'permite_procesos_academicos' => false,
                 'color_hex' => '#343a40'
             ],
+            // Nuevos Estados de Retiro Académico
+            [
+                'nombre' => 'Retiro Voluntario',
+                'slug' => 'retiro-voluntario',
+                'contexto' => 'academico',
+                'permite_login' => true,
+                'permite_procesos_academicos' => false,
+                'color_hex' => '#ffc107'
+            ],
+            [
+                'nombre' => 'Baja por Insuficiencia',
+                'slug' => 'baja-insuficiencia',
+                'contexto' => 'academico',
+                'permite_login' => false,
+                'permite_procesos_academicos' => false,
+                'color_hex' => '#dc3545'
+            ],
+            [
+                'nombre' => 'Baja Disciplinaria',
+                'slug' => 'baja-disciplinaria',
+                'contexto' => 'academico',
+                'permite_login' => false,
+                'permite_procesos_academicos' => false,
+                'color_hex' => '#212529'
+            ],
+            [
+                'nombre' => 'Baja por Salud',
+                'slug' => 'baja-salud',
+                'contexto' => 'academico',
+                'permite_login' => true,
+                'permite_procesos_academicos' => false,
+                'color_hex' => '#17a2b8'
+            ],
 
             // ==========================================
-            // Contexto: Laboral / Personal (Nuevos)
+            // Contexto: Laboral / Personal
             // ==========================================
             [
                 'nombre' => 'Activo',
@@ -55,7 +88,7 @@ class EstadoSeeder extends Seeder
                 'contexto' => 'laboral',
                 'permite_login' => true,
                 'permite_procesos_academicos' => true,
-                'color_hex' => '#28a745' // Verde (Trabajando normalmente)
+                'color_hex' => '#28a745'
             ],
             [
                 'nombre' => 'Licencia',
@@ -63,7 +96,7 @@ class EstadoSeeder extends Seeder
                 'contexto' => 'laboral',
                 'permite_login' => true,
                 'permite_procesos_academicos' => false,
-                'color_hex' => '#ffc107' // Amarillo (Permiso temporal)
+                'color_hex' => '#ffc107'
             ],
             [
                 'nombre' => 'Suspendido',
@@ -71,7 +104,7 @@ class EstadoSeeder extends Seeder
                 'contexto' => 'laboral',
                 'permite_login' => false,
                 'permite_procesos_academicos' => false,
-                'color_hex' => '#dc3545' // Rojo (Sin acceso temporal)
+                'color_hex' => '#dc3545'
             ],
             [
                 'nombre' => 'Cesado / Retirado',
@@ -79,7 +112,7 @@ class EstadoSeeder extends Seeder
                 'contexto' => 'laboral',
                 'permite_login' => false,
                 'permite_procesos_academicos' => false,
-                'color_hex' => '#6c757d' // Gris (Ya no labora)
+                'color_hex' => '#6c757d'
             ],
         ];
 

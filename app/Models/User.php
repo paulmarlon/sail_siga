@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles; // Si usas Spatie para roles y permisos
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['persona_id', 'email', 'password'])] // Cambiamos name por persona_id
 #[Hidden(['password', 'remember_token'])]
@@ -52,5 +53,9 @@ class User extends Authenticatable
     public function historialesDocentesRegistrados()
     {
         return $this->hasMany(OfertaDocenteHistorial::class, 'registrado_por_user_id');
+    }
+    public function inscripcionesCarreraRegistradas(): HasMany
+    {
+        return $this->hasMany(InscripcionCarrera::class, 'registrado_por_user_id');
     }
 }

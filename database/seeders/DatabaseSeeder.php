@@ -164,6 +164,16 @@ class DatabaseSeeder extends Seeder
                 'admin.estudiantes.destroy',
                 'admin.estudiantes.papelera',
                 'admin.estudiantes.restaurar',
+                // Inscripción a Carreras
+                'admin.inscripcion-carreras.index',
+                'admin.inscripcion-carreras.create',
+                'admin.inscripcion-carreras.store',
+                'admin.inscripcion-carreras.show',
+                'admin.inscripcion-carreras.edit',
+                'admin.inscripcion-carreras.update',
+                'admin.inscripcion-carreras.destroy',
+                'admin.inscripcion-carreras.papelera',
+                'admin.inscripcion-carreras.restaurar',
             ];
 
             foreach ($permisos as $permiso) {
@@ -205,10 +215,13 @@ class DatabaseSeeder extends Seeder
             MateriaSeeder::class,
             CarreraSeeder::class,
             PersonaCsvSeeder::class,
-
+            EstudianteSeeder::class,
         ]);
         $this->call([
             PensumSeeder::class,
+            OfertaAcademicaSeeder::class,
+            OfertaDocenteHistorialSeeder::class,
+            InscripcionCarreraSeeder::class,
         ]);
     }
 }

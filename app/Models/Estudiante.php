@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // <--- 1. Importar el trait
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Estudiante extends Model
 {
@@ -33,5 +34,13 @@ class Estudiante extends Model
         return $this->belongsToMany(Persona::class, 'estudiante_ppff', 'estudiante_id', 'ppff_persona_id')
             ->withPivot('parentesco', 'es_tutor_principal')
             ->withTimestamps();
+    }
+    public function inscripcionesCarrera(): HasMany
+    {
+        return $this->hasMany(InscripcionCarrera::class);
+    }
+    public function matriculacionesMaterias()
+    {
+        return $this->hasMany(MatriculacionMateria::class);
     }
 }

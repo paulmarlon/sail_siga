@@ -43,12 +43,12 @@
                                 class="fas fa-user-plus mr-1"></i>
                             {{ $docenteVigente ? 'Reasignar / Cambiar Docente' : 'Asignar Docente' }}</h3>
                     </div>
-                    <form action="{{ route('admin.oferta.docentes.store', $oferta->id) }}" method="POST">
+                    <form action="{{ route('admin.oferta.docentes.store', $oferta) }}" method="POST">
                         @csrf
                         <div class="card-body p-2" style="font-size: 0.85rem;">
 
                             <div class="form-group mb-2">
-                                <label for="docente_id" class="mb-1">Seleccionar Profesor:</label>
+                                <label for="docente_id" class="mb-1">Seleccionar Docente:</label>
                                 <select name="docente_id" id="docente_id" class="form-control form-control-sm select2"
                                     required style="width: 100%;">
                                     <option value="">-- Buscar por Nombre o CI --</option>

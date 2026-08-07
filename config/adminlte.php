@@ -400,6 +400,18 @@ return [
             'url'     => 'admin/estudiantes',
             'classes' => 'bg-blue text-white',
         ],
+        [
+            'text'    => 'Inscripción a Carreras',
+            'icon'    => 'fas fa-fw fa-file-signature',
+            'url'     => 'admin/inscripcion-carreras',
+            'classes' => 'bg-blue text-white',
+        ],
+        [
+            'text'    => 'Matriculación de Materias',
+            'icon'    => 'fas fa-fw fa-book-open',
+            'url'     => 'admin/matriculacion-materias',
+            'classes' => 'bg-blue text-white',
+        ],
 
 
         [
