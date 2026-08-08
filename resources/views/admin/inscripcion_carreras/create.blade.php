@@ -106,9 +106,9 @@
 
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center py-1">
-        <h1 class="h4 mb-0"><i class="fas fa-plus-circle mr-2 text-success"></i> Nueva <b>Inscripción Masiva</b></h1>
+        <h1 class="h4 mb-0"><i class="fas fa-plus-circle mr-2 text-primary"></i> Nueva <b>Inscripción Masiva</b></h1>
         <div class="btn-group">
-            <button type="button" class="btn btn-sm btn-outline-success font-weight-bold mr-2" data-toggle="modal"
+            <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold mr-2" data-toggle="modal"
                 data-target="#modalPegarRUs">
                 <i class="fas fa-file-excel mr-1"></i> Pegar Lista de RUs (Excel)
             </button>
@@ -160,7 +160,7 @@
                                                 {{ $estudiante->registro_universitario }}</small>
                                         </span>
                                         <button type="button"
-                                            class="btn btn-xs btn-outline-success btn-agregar-estudiante p-0 px-1"
+                                            class="btn btn-xs btn-outline-primary btn-agregar-estudiante p-0 px-1"
                                             title="Añadir estudiante">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -173,12 +173,12 @@
 
                 <!-- ================= COLUMNA 2: ZONA ACTIVA DE INSCRIPCIÓN ================= -->
                 <div class="columna-arrastre">
-                    <div class="card card-success card-outline h-100 mb-0 shadow-sm d-flex flex-column">
+                    <div class="card card-primary card-outline h-100 mb-0 shadow-sm d-flex flex-column">
                         <div class="card-header bg-white py-1 px-2 d-flex justify-content-between align-items-center">
                             <h6 class="card-title text-dark font-weight-bold mb-0" style="font-size: 0.85rem;">
-                                <i class="fas fa-users mr-1 text-success"></i> 2. Estudiantes a Inscribir en el Lote
+                                <i class="fas fa-users mr-1 text-primary"></i> 2. Estudiantes a Inscribir en el Lote
                             </h6>
-                            <span class="badge badge-success" id="contador-seleccionados">0 sel.</span>
+                            <span class="badge badge-primary" id="contador-seleccionados">0 sel.</span>
                         </div>
                         <div class="card-body d-flex flex-column p-2 flex-grow-1">
                             <p class="text-muted small mb-1" style="font-size: 0.72rem; line-height: 1.2;"><i
@@ -198,10 +198,10 @@
 
                 <!-- ================= COLUMNA 3: PARÁMETROS DE LA INSCRIPCIÓN ================= -->
                 <div class="columna-opciones" id="panel-opciones">
-                    <div class="card card-success card-outline h-100 mb-0 shadow-sm d-flex flex-column">
+                    <div class="card card-primary card-outline h-100 mb-0 shadow-sm d-flex flex-column">
                         <div class="card-header bg-white py-2">
                             <h6 class="card-title text-dark font-weight-bold mb-0"><i
-                                    class="fas fa-sliders-h mr-1 text-success"></i> 3. Datos de Carrera y Periodo</h6>
+                                    class="fas fa-sliders-h mr-1 text-primary"></i> 3. Datos de Carrera y Periodo</h6>
                         </div>
                         <div class="card-body d-flex flex-column p-3 flex-grow-1 overflow-auto">
                             <div class="flex-grow-1">
@@ -223,7 +223,7 @@
                                         <option value="">Seleccione periodo</option>
                                         @foreach ($periodos as $periodo)
                                             <option value="{{ $periodo->id }}">
-                                                {{ $periodo->nombre }}
+                                                {{ $periodo->nombre }} | Gestión: {{ $periodo->gestion->nombre ?? 'N/D' }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -259,7 +259,7 @@
 
                             <div class="border-top pt-3 mt-auto">
                                 <button type="submit"
-                                    class="btn btn-sm btn-success btn-block font-weight-bold shadow-sm">
+                                    class="btn btn-sm btn-primary btn-block font-weight-bold shadow-sm">
                                     <i class="fas fa-save mr-1"></i> Registrar Inscripción Masiva
                                 </button>
                             </div>
@@ -276,7 +276,7 @@
         aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-success text-white py-2">
+                <div class="modal-header bg-primary text-white py-2">
                     <h5 class="modal-title font-weight-bold" id="modalPegarRUsLabel" style="font-size: 0.95rem;">
                         <i class="fas fa-file-excel mr-1"></i> Importar RUs desde Excel (Copiar y Pegar)
                     </h5>
@@ -295,7 +295,7 @@
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="button" id="btn-procesar-rus" class="btn btn-sm btn-success font-weight-bold">
+                    <button type="button" id="btn-procesar-rus" class="btn btn-sm btn-primary font-weight-bold">
                         <i class="fas fa-check mr-1"></i> Procesar y Añadir Estudiantes
                     </button>
                 </div>
@@ -434,7 +434,7 @@
                 Swal.fire({
                     title: 'Proceso de importación',
                     html: mensajeSwal,
-                    icon: agregados > 0 ? 'success' : 'warning',
+                    icon: agregados > 0 ? 'primary' : 'warning',
                     confirmButtonColor: '#28a745'
                 });
             });

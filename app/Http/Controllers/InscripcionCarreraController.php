@@ -18,7 +18,7 @@ class InscripcionCarreraController extends Controller
         $inscripciones = InscripcionCarrera::with([
             'estudiante.persona',
             'carrera',
-            'periodo',
+            'periodo.gestion',
             'estado',
             'registradoPor'
         ])->get();
@@ -30,7 +30,8 @@ class InscripcionCarreraController extends Controller
     {
         $estudiantes = Estudiante::with('persona')->get();
         $carreras = Carrera::all();
-        $periodos = Periodo::all();
+        // Cargamos los periodos incluyendo su gestión relacionada y ordenados
+        $periodos = Periodo::with('gestion')->orderBy('gestion_id', 'desc')->get();
         // Filtramos opcionalmente los estados que correspondan al contexto académico
         $estados = Estado::where('contexto', 'academico')->get();
 
@@ -91,8 +92,21 @@ class InscripcionCarreraController extends Controller
 
     public function show(InscripcionCarrera $inscripcionCarrera)
     {
-        $inscripcionCarrera->load(['estudiante.persona', 'carrera', 'periodo', 'estado', 'registradoPor']);
+        $inscripcionCarrera->load(['estudiante.persona', 'carrera', 'periodo.gestion', 'estado', 'registradoPor']);
         return view('admin.inscripcion_carreras.show', compact('inscripcionCarrera'));
+    }
+
+    // CARGA LA VISTA PARA EDITAR UN SOLO REGISTRO (CON PERIODO Y GESTIÓN)
+    public function editIndividual($id)
+    {
+        $inscripcionCarrera = InscripcionCarrera::with(['estudiante.persona', 'carrera', 'periodo.gestion', 'estado'])->findOrFail($id);
+        $estados = Estado::where('contexto', 'academico')->get();
+        $carreras = Carrera::all();
+
+        // Cargamos los periodos incluyendo su gestión relacionada y ordenados por gestión descendente
+        $periodos = Periodo::with('gestion')->orderBy('gestion_id', 'desc')->get();
+
+        return view('admin.inscripcion_carreras.edit-individual', compact('inscripcionCarrera', 'estados', 'carreras', 'periodos'));
     }
 
     public function edit(InscripcionCarrera $inscripcionCarrera)
@@ -104,7 +118,8 @@ class InscripcionCarreraController extends Controller
 
         $estudiantes = Estudiante::with('persona')->get();
         $carreras = Carrera::all();
-        $periodos = Periodo::all();
+        // Cargamos los periodos con su gestión relacionada
+        $periodos = Periodo::with('gestion')->orderBy('gestion_id', 'desc')->get();
         $estados = Estado::where('contexto', 'academico')->get();
 
         return view('admin.inscripcion_carreras.edit', compact(
@@ -115,6 +130,32 @@ class InscripcionCarreraController extends Controller
             'periodos',
             'estados'
         ));
+    }
+
+    // PROCESA LA ACTUALIZACIÓN INDIVIDUAL
+    public function updateIndividual(Request $request, $id)
+    {
+        $inscripcion = InscripcionCarrera::findOrFail($id);
+
+        $request->validate([
+            'carrera_id'             => 'required|exists:carreras,id',
+            'periodo_id'             => 'required|exists:periodos,id',
+            'estado_id'              => 'required|exists:estados,id',
+            'fecha_inscripcion'      => 'required|date',
+            'es_especialidad_activa' => 'boolean',
+        ]);
+
+        $inscripcion->update([
+            'carrera_id'             => $request->carrera_id,
+            'periodo_id'             => $request->periodo_id,
+            'estado_id'              => $request->estado_id,
+            'fecha_inscripcion'      => $request->fecha_inscripcion,
+            'es_especialidad_activa' => $request->has('es_especialidad_activa'),
+            'registrado_por_user_id' => auth()->id(),
+        ]);
+
+        return redirect()->route('admin.inscripcion-carreras.index')
+            ->with(['mensaje' => 'Actualización individual exitosa.', 'icon' => 'success']);
     }
 
     public function update(Request $request, string  $id)
@@ -208,7 +249,7 @@ class InscripcionCarreraController extends Controller
 
     public function papelera()
     {
-        $inscripciones = InscripcionCarrera::onlyTrashed()->with(['estudiante.persona', 'carrera', 'periodo'])->get();
+        $inscripciones = InscripcionCarrera::onlyTrashed()->with(['estudiante.persona', 'carrera', 'periodo.gestion'])->get();
         return view('admin.inscripcion_carreras.papelera', compact('inscripciones'));
     }
 

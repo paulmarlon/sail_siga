@@ -106,9 +106,9 @@
 
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center py-1">
-        <h1 class="h4 mb-0"><i class="fas fa-edit mr-2 text-warning"></i> Editar <b>Inscripción Masiva</b></h1>
+        <h1 class="h4 mb-0"><i class="fas fa-edit mr-2 text-success"></i> Editar <b>Inscripción Masiva</b></h1>
         <div class="btn-group">
-            <button type="button" class="btn btn-sm btn-outline-warning font-weight-bold mr-2" data-toggle="modal"
+            <button type="button" class="btn btn-sm btn-outline-success font-weight-bold mr-2" data-toggle="modal"
                 data-target="#modalPegarRUs">
                 <i class="fas fa-file-excel mr-1"></i> Pegar Lista de RUs (Excel)
             </button>
@@ -183,12 +183,12 @@
 
                 <!-- ================= COLUMNA 2: ZONA ACTIVA DE INSCRIPCIÓN ================= -->
                 <div class="columna-arrastre">
-                    <div class="card card-warning card-outline h-100 mb-0 shadow-sm d-flex flex-column">
+                    <div class="card card-success card-outline h-100 mb-0 shadow-sm d-flex flex-column">
                         <div class="card-header bg-white py-1 px-2 d-flex justify-content-between align-items-center">
                             <h6 class="card-title text-dark font-weight-bold mb-0" style="font-size: 0.85rem;">
-                                <i class="fas fa-users mr-1 text-warning"></i> 2. Estudiantes Inscritos en el Lote
+                                <i class="fas fa-users mr-1 text-success"></i> 2. Estudiantes Inscritos en el Lote
                             </h6>
-                            <span class="badge badge-warning text-dark" id="contador-seleccionados">0 sel.</span>
+                            <span class="badge badge-success text-dark" id="contador-seleccionados">0 sel.</span>
                         </div>
                         <div class="card-body d-flex flex-column p-2 flex-grow-1">
                             <p class="text-muted small mb-1" style="font-size: 0.72rem; line-height: 1.2;"><i
@@ -229,10 +229,10 @@
 
                 <!-- ================= COLUMNA 3: PARÁMETROS DE LA INSCRIPCIÓN ================= -->
                 <div class="columna-opciones" id="panel-opciones">
-                    <div class="card card-warning card-outline h-100 mb-0 shadow-sm d-flex flex-column">
+                    <div class="card card-success card-outline h-100 mb-0 shadow-sm d-flex flex-column">
                         <div class="card-header bg-white py-2">
                             <h6 class="card-title text-dark font-weight-bold mb-0"><i
-                                    class="fas fa-sliders-h mr-1 text-warning"></i> 3. Datos de Carrera y Periodo</h6>
+                                    class="fas fa-sliders-h mr-1 text-success"></i> 3. Datos de Carrera y Periodo</h6>
                         </div>
                         <div class="card-body d-flex flex-column p-3 flex-grow-1 overflow-auto">
                             <div class="flex-grow-1">
@@ -248,7 +248,6 @@
                                         @endforeach
                                     </select>
                                 </div>
-
                                 <div class="form-group mb-2">
                                     <label for="periodo_id" class="small font-weight-bold mb-1">Periodo Académico:</label>
                                     <select name="periodo_id" id="periodo_id" class="form-control form-control-sm"
@@ -257,7 +256,7 @@
                                         @foreach ($periodos as $periodo)
                                             <option value="{{ $periodo->id }}"
                                                 {{ isset($inscripcionCarrera) && $inscripcionCarrera->periodo_id == $periodo->id ? 'selected' : '' }}>
-                                                {{ $periodo->nombre }}
+                                                {{ $periodo->nombre }} | Gestión: {{ $periodo->gestion->nombre ?? 'N/D' }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -297,7 +296,7 @@
 
                             <div class="border-top pt-3 mt-auto">
                                 <button type="submit"
-                                    class="btn btn-sm btn-warning btn-block font-weight-bold shadow-sm text-dark">
+                                    class="btn btn-sm btn-success btn-block font-weight-bold shadow-sm text-dark">
                                     <i class="fas fa-sync-alt mr-1"></i> Actualizar Inscripción Masiva
                                 </button>
                             </div>
@@ -314,7 +313,7 @@
         aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-warning py-2">
+                <div class="modal-header bg-success py-2">
                     <h5 class="modal-title font-weight-bold text-dark" id="modalPegarRUsLabel"
                         style="font-size: 0.95rem;">
                         <i class="fas fa-file-excel mr-1"></i> Importar RUs desde Excel (Copiar y Pegar)
@@ -335,7 +334,7 @@
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancelar</button>
                     <button type="button" id="btn-procesar-rus"
-                        class="btn btn-sm btn-warning font-weight-bold text-dark">
+                        class="btn btn-sm btn-success font-weight-bold text-dark">
                         <i class="fas fa-check mr-1"></i> Procesar y Añadir Estudiantes
                     </button>
                 </div>
@@ -423,7 +422,7 @@
             $('#btn-procesar-rus').on('click', function() {
                 const textoPegado = $('#textarea-rus').val();
                 if (!textoPegado.trim()) {
-                    Swal.fire('Atención', 'Por favor, pega los registros en el recuadro.', 'warning');
+                    Swal.fire('Atención', 'Por favor, pega los registros en el recuadro.', 'success');
                     return;
                 }
 
@@ -475,7 +474,7 @@
                 Swal.fire({
                     title: 'Proceso de importación',
                     html: mensajeSwal,
-                    icon: agregados > 0 ? 'success' : 'warning',
+                    icon: agregados > 0 ? 'success' : 'success',
                     confirmButtonColor: '#ffc107'
                 });
             });
@@ -495,7 +494,7 @@
                     Swal.fire({
                         title: 'Sin estudiantes seleccionados',
                         text: 'Debes mantener al menos un estudiante en el lote para actualizar la inscripción masiva.',
-                        icon: 'warning',
+                        icon: 'success',
                         confirmButtonColor: '#ffc107'
                     });
                 }

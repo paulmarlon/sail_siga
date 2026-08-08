@@ -145,12 +145,15 @@ Route::middleware('auth')->group(function () {
         // ==========================================
         // RUTAS PERSONALIZADAS DE INSCRIPCIÓN CARRERAS
         // ==========================================
+        // ==========================================
+        // RUTAS PERSONALIZADAS DE INSCRIPCIÓN A CARRERAS
+        // ==========================================
 
         // 1. Papelera
         Route::get('inscripcion-carreras/papelera', [InscripcionCarreraController::class, 'papelera'])
             ->name('inscripcion-carreras.papelera');
 
-        // 2. Restaurar (Usando el parámetro exacto 'inscripcion_carrera')
+        // 2. Restaurar
         Route::put('inscripcion-carreras/{inscripcion_carrera}/restaurar', [InscripcionCarreraController::class, 'restaurar'])
             ->name('inscripcion-carreras.restaurar');
 
@@ -158,29 +161,66 @@ Route::middleware('auth')->group(function () {
         Route::put('inscripcion-carreras/{inscripcionCarrera}/procesar-retiro', [InscripcionCarreraController::class, 'procesarRetiro'])
             ->name('inscripcion-carreras.procesar-retiro');
 
-        // ==========================================
-        // RECURSO PRINCIPAL
-        // ==========================================
+        // 4. NUEVA RUTA: Vista de Edición Individual
+        Route::get('inscripcion-carreras/{id}/edit-individual', [InscripcionCarreraController::class, 'editIndividual'])
+            ->name('inscripcion-carreras.edit-individual');
+
+        // 5. NUEVA RUTA: Procesar Actualización Individual
+        Route::put('inscripcion-carreras/{id}/individual', [InscripcionCarreraController::class, 'updateIndividual'])
+            ->name('inscripcion-carreras.update-individual');
+
+        // 6. RECURSO PRINCIPAL DE LARAVEL (El edit de aquí manejará el masivo que ya tienes)
         Route::resource('inscripcion-carreras', InscripcionCarreraController::class);
 
+        // ==========================================
+        // RUTAS PERSONALIZADAS DE MATRICULACIÓN DE MATERIAS
+        // ==========================================
+        // 1. RUTAS PERSONALIZADAS (DEBEN IR SIEMPRE ANTES DEL RESOURCE)
+        // ==========================================
 
         // ==========================================
-        // RECURSO PRINCIPAL DE LARAVEL
+        // 1. RUTAS PERSONALIZADAS (DEBEN IR SIEMPRE ANTES DEL RESOURCE)
         // ==========================================
-        Route::resource('inscripcion-carreras', InscripcionCarreraController::class);
-        // 1. Rutas personalizadas (Papelera y Restauración por SoftDeletes) ANTES del Resource
+
+        // Ruta de detalle microscópico (Carga académica por estudiante y periodo)
+        Route::get('matriculacion-materias/detalle/{estudianteId}/{periodoId}', [MatriculacionMateriaController::class, 'show'])
+            ->name('matriculacion-materias.show');
+
+        // Ruta para adición quirúrgica individual desde el show
+        Route::post('matriculacion-materias/store-single', [MatriculacionMateriaController::class, 'storeSingle'])
+            ->name('matriculacion-materias.store-single');
+
+        // ------------------------------------------
+        // Rutas para Actualización Masiva por Grupos
+        // ------------------------------------------
+        Route::get('matriculacion-materias/grupo/actualizar', [MatriculacionMateriaController::class, 'editGroup'])
+            ->name('matriculacion-materias.edit-group');
+
+        Route::put('matriculacion-materias/grupo/actualizar', [MatriculacionMateriaController::class, 'updateGroup'])
+            ->name('matriculacion-materias.update-group');
+
+        // ------------------------------------------
+        // Papelera y Restauración por SoftDeletes
+        // ------------------------------------------
         Route::get('matriculacion-materias/papelera', [MatriculacionMateriaController::class, 'papelera'])
             ->name('matriculacion-materias.papelera');
 
         Route::post('matriculacion-materias/{id}/restaurar', [MatriculacionMateriaController::class, 'restaurar'])
             ->name('matriculacion-materias.restaurar');
 
-        // Ruta opcional por si requieres procesar un retiro o baja específica de materia vía PUT
+        Route::delete('matriculacion-materias/{id}/fuerza-destruccion', [MatriculacionMateriaController::class, 'fuerzaDestruccion'])
+            ->name('matriculacion-materias.fuerza-destruccion');
+
+        // Ruta opcional para procesar retiro o baja específica de materia vía PUT
         Route::put('matriculacion-materias/{matriculacionMateria}/procesar-retiro', [MatriculacionMateriaController::class, 'procesarRetiro'])
             ->name('matriculacion-materias.procesar-retiro');
 
-        // 2. El Resource DESPUÉS
-        Route::resource('matriculacion-materias', MatriculacionMateriaController::class);
+        // ==========================================
+        // 2. EL RESOURCE ESTÁNDAR (AL FINAL)
+        // ==========================================
+        // Excluimos la ruta 'show' por defecto ya que la manejamos de forma personalizada arriba
+        Route::resource('matriculacion-materias', MatriculacionMateriaController::class)
+            ->except(['show']);
     });
 });
 

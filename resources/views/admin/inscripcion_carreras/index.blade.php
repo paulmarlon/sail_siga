@@ -91,24 +91,31 @@
                                         <small class="text-muted">CI: {{ $inscripcion->estudiante->persona->ci }} | Reg:
                                             {{ $inscripcion->estudiante->registro_universitario }}</small>
                                     </td>
-                                    <td>
+                                    <td data-filter-value="{{ $inscripcion->carrera->nombre }}">
                                         {{ $inscripcion->carrera->nombre }}
                                         <br>
                                         <small class="text-muted">Sigla: {{ $inscripcion->carrera->sigla }}</small>
                                     </td>
-                                    <td class="text-center"><span
-                                            class="badge badge-info">{{ $inscripcion->periodo->nombre }}</span></td>
+                                    <td class="text-center"
+                                        data-filter-value="{{ $inscripcion->periodo->nombre }} | {{ $inscripcion->periodo->gestion->nombre ?? 'N/D' }}">
+                                        <span class="badge badge-info">
+                                            {{ $inscripcion->periodo->nombre }} |
+                                            {{ $inscripcion->periodo->gestion->nombre ?? 'N/D' }}
+                                        </span>
+                                    </td>
                                     <td class="text-center">
                                         {{ $inscripcion->fecha_inscripcion ? $inscripcion->fecha_inscripcion->format('d/m/Y') : '-' }}
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center"
+                                        data-filter-value="{{ $inscripcion->es_especialidad_activa ? 'Especialidad Activa' : 'Tronco Común' }}">
                                         @if ($inscripcion->es_especialidad_activa)
                                             <span class="badge badge-success">Especialidad Activa</span>
                                         @else
                                             <span class="badge badge-secondary">Tronco Común</span>
                                         @endif
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center"
+                                        data-filter-value="{{ $inscripcion->estado->nombre ?? 'N/D' }}">
                                         <span class="badge"
                                             style="background-color: {{ $inscripcion->estado->color_hex ?? '#6c757d' }}; color: #fff;">
                                             {{ $inscripcion->estado->nombre ?? 'N/D' }}
@@ -122,10 +129,16 @@
                                                 <i class="fas fa-eye text-info"></i>
                                             </a>
 
-                                            {{-- Editar --}}
+                                            {{-- Editar Individual (El formulario rápido) --}}
+                                            <a href="{{ route('admin.inscripcion-carreras.edit-individual', $inscripcion->id) }}"
+                                                class="btn btn-default btn-xs px-2" title="Editar Individual">
+                                                <i class="fas fa-user-edit text-success"></i>
+                                            </a>
+
+                                            {{-- Editar Masivo / Lote (Tu formulario original de grupo) --}}
                                             <a href="{{ route('admin.inscripcion-carreras.edit', $inscripcion->id) }}"
-                                                class="btn btn-default btn-xs px-2" title="Editar">
-                                                <i class="fas fa-edit text-success"></i>
+                                                class="btn btn-default btn-xs px-2" title="Editar Grupo / Lote">
+                                                <i class="fas fa-users-cog text-success"></i>
                                             </a>
 
                                             {{-- Botón para Dar de Baja (Retiro) --}}
@@ -168,6 +181,16 @@
 @section('js')
     <script>
         $(function() {
+            // Función auxiliar para extraer el valor exacto del atributo data-filter-value del DOM original
+            function getCleanFilterValue(rowIdx, colIdx) {
+                var trNode = table.row(rowIdx).node();
+                if (trNode) {
+                    var val = $(trNode).find('td').eq(colIdx).attr('data-filter-value');
+                    if (val) return val;
+                }
+                return '';
+            }
+
             var table = $('#tabla-inscripciones').DataTable({
                 responsive: true,
                 autoWidth: false,
@@ -180,6 +203,51 @@
                     url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
                 },
                 dom: '<"row mx-0 border-bottom py-2"<"col-md-4"B><"col-md-3"l><"col-md-5"f>>rt<"row mx-0 pt-2 align-items-center"<"col-md-6"i><"col-md-6 d-flex justify-content-end"p>>',
+
+                // Sincronización exacta: tanto para type 'filter' como 'search', devolvemos el valor limpio
+                columns: [
+                    null, // Col 0
+                    null, // Col 1
+                    {
+                        // Col 2: Carrera
+                        render: function(data, type, row, meta) {
+                            if (type === 'filter' || type === 'search') {
+                                return getCleanFilterValue(meta.row, meta.col) || data;
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        // Col 3: Periodo
+                        render: function(data, type, row, meta) {
+                            if (type === 'filter' || type === 'search') {
+                                return getCleanFilterValue(meta.row, meta.col) || data;
+                            }
+                            return data;
+                        }
+                    },
+                    null, // Col 4
+                    {
+                        // Col 5: Especialidad
+                        render: function(data, type, row, meta) {
+                            if (type === 'filter' || type === 'search') {
+                                return getCleanFilterValue(meta.row, meta.col) || data;
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        // Col 6: Estado
+                        render: function(data, type, row, meta) {
+                            if (type === 'filter' || type === 'search') {
+                                return getCleanFilterValue(meta.row, meta.col) || data;
+                            }
+                            return data;
+                        }
+                    },
+                    null // Col 7
+                ],
+
                 buttons: [{
                         extend: 'copy',
                         text: '<i class="fas fa-copy"></i>',
@@ -227,8 +295,6 @@
                     $('.dataTables_paginate ul.pagination').addClass('pagination-sm');
                     var api = this.api();
 
-                    // Índices reales basados en el orden de las columnas de la tabla visible:
-                    // 2 = Carrera, 3 = Periodo, 5 = Especialidad, 6 = Estado
                     var filtrosConfig = [{
                             index: 2,
                             container: '#filtro-carrera-container'
@@ -257,25 +323,24 @@
                                 var val = $(this).val();
                                 localStorage.setItem('dt_filter_insc_' + item.index, val);
 
-                                // Se aplica expresión regular exacta para evitar falsos positivos en textos similares
+                                // Búsqueda exacta respetando caracteres especiales
                                 column.search(val ? '^' + $.fn.dataTable.util.escapeRegex(
                                     val) + '$' : '', true, false).draw();
                             });
 
                         var uniqueData = [];
-                        column.data().unique().sort().each(function(d) {
-                            var tempDiv = document.createElement("div");
-                            tempDiv.innerHTML = d;
-                            // Tomar solo la primera línea de texto limpia (ignora las siglas o subtítulos bajo el nombre)
-                            var lines = (tempDiv.textContent || tempDiv.innerText || "")
-                                .trim().split('\n');
-                            var val = lines[0].trim();
 
+                        // Extraemos exactamente la misma data usando la misma función limpiadora
+                        api.rows().every(function(rowIdx) {
+                            var val = getCleanFilterValue(rowIdx, item.index);
                             if (val && !uniqueData.includes(val)) {
                                 uniqueData.push(val);
-                                select.append('<option value="' + val + '">' + val +
-                                    '</option>');
                             }
+                        });
+
+                        uniqueData.sort().forEach(function(val) {
+                            select.append('<option value="' + val + '">' + val +
+                                '</option>');
                         });
 
                         var savedVal = localStorage.getItem('dt_filter_insc_' + item.index);
@@ -318,7 +383,6 @@
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Limpiamos el filtro de estado guardado para evitar incongruencias visuales al actualizar
                         localStorage.removeItem('dt_filter_insc_6');
 
                         $('<input>').attr({
