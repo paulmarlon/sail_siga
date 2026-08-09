@@ -69,6 +69,7 @@ Table materia {
   horas_academicas int
   tipo_materia varchar [note: 'Teorica, Practica, Teorica-Practica']
   es_comun boolean [default: false]
+
   estado_id int [ref: > estado.id]
 }
 
@@ -171,6 +172,7 @@ Table estudiante {
   id int [pk, increment]
   persona_id int [ref: > persona.id, unique, not null] // Vínculo obligatorio a la persona biográfica
   registro_universitario varchar [unique]
+
   estado_id int [ref: > estado.id]
 }
 
