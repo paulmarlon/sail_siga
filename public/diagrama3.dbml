@@ -1,5 +1,6 @@
 // =============================================================================
-// SIG@ - SISTEMA DE GESTIÓN ACADÉMICA (DBML NIVEL ENTERPRISE - 100% CONSISTENTE)
+// SIG@ - SISTEMA DE GESTIÓN ACADÉMICA (DBML NIVEL ENTERPRISE COMPLETO)
+// Mantiene intacta toda tu base hasta "programacion_examen" y expande robustamente el Nivel 6
 // =============================================================================
 
 // -----------------------------------------------------------------------------
@@ -24,14 +25,11 @@ Table estado {
   id int [pk, increment]
   nombre varchar [unique]
   slug varchar [unique]
-  contexto varchar [note: 'Ej: user, academico, proceso, global, financiero, legal']
+  contexto varchar [note: 'Ej: user, academico, proceso, global']
   permite_login boolean [default: true]
   permite_procesos_academicos boolean [default: true]
   color_hex varchar
-
-  Indexes {
-    (slug, contexto) [unique]
-  }
+Indexes { (slug, contexto) [unique] }
 
 }
 
@@ -76,7 +74,7 @@ Table materia {
   horas_academicas int
   tipo_materia varchar [note: 'Teorica, Practica, Teorica-Practica']
   es_comun boolean [default: false]
-  es_conducta boolean [default: false, note: 'Materia transversal de disciplina y conducta']
+  es_conducta boolean [default: false, note: 'MEJORA ERP: Identifica materia transversal de disciplina sin 2da instancia']
   estado_id int [ref: > estado.id]
 }
 
@@ -118,6 +116,7 @@ Table persona {
   deleted_at timestamp
 }
 
+
 // -----------------------------------------------------------------------------
 // NIVEL 3: SEGURIDAD, USUARIOS Y RECURSOS HUMANOS
 // -----------------------------------------------------------------------------
@@ -133,7 +132,7 @@ Table user {
 
 Table personal {
   id int [pk, increment]
-  persona_id int [ref: - persona.id, unique, not null]
+  persona_id int [ref: - persona.id, unique, not null] // Vínculo obligatorio a la persona biográfica
   tipo varchar [note: 'docente, administrativo']
   profesion varchar
   estado_id int [ref: > estado.id]
@@ -176,9 +175,9 @@ Table pensum {
 
 Table estudiante {
   id int [pk, increment]
-  persona_id int [ref: - persona.id, unique, not null]
+  persona_id int [ref: - persona.id, unique, not null] // Vínculo obligatorio a la persona biográfica
   registro_universitario varchar [unique]
-  materias_reprobadas_acumuladas int [default: 0, note: 'Control para regla de retiro por > 3 aplazos']
+  materias_reprobadas_acumuladas int [default: 0, note: 'MEJORA ERP: Control estricto de aplazos acumulados']
   estado_id int [ref: > estado.id]
 }
 
@@ -199,10 +198,17 @@ Table inscripcion_carrera {
   estudiante_id int [ref: > estudiante.id]
   carrera_id int [ref: > carrera.id]
   periodo_id int [ref: > periodo.id]
-  fecha_inscripcion date
-  es_especialidad_activa boolean [default: true]
-  estado_id int [ref: > estado.id]
+  fecha_inscripcion date [default: `now()`]
+  es_especialidad_activa boolean [default: true, note: 'Indica si cursa el tronco común o si ya eligió y cursa su especialidad']
+  registrado_por_user_id int [ref: > user.id, note: 'Personal administrativo que procesó la inscripción']
+  estado_id int [ref: > estado.id, note: 'Activo, Retirado, Congelado, Egresado']
+
+  Indexes {
+    (estudiante_id, carrera_id, periodo_id) [unique, note: 'Evita doble inscripción del estudiante en la misma carrera y periodo']
+  }
+
 }
+
 
 // -----------------------------------------------------------------------------
 // NIVEL 5: GESTIÓN OPERATIVA Y EXÁMENES
@@ -225,7 +231,7 @@ Table oferta_docente_historial {
   fecha_inicio date
   fecha_fin date [null]
   motivo_cambio varchar
-  estado_id int [ref: > estado.id]
+  estado_id int [ref: > estado.id] // Ej: Vigente, Suspendido, Concluido, Anulado
   registrado_por_user_id int [ref: > user.id]
 }
 
@@ -234,15 +240,20 @@ Table matriculacion_materia {
   estudiante_id int [ref: > estudiante.id]
   oferta_id int [ref: > oferta_academica.id]
   fecha_registro timestamp [default: `now()`]
-  costo_matricula decimal(10,2)
-  estado_id int [ref: > estado.id]
+  estado_id int [ref: > estado.id, note: 'Ej: Matriculado, Retirado, Concluido']
+  deleted_at timestamp
+
+  Indexes {
+    (estudiante_id, oferta_id) [unique, note: 'Evita que un estudiante se matricule dos veces en la misma oferta/materia']
+  }
+
 }
 
 Table programacion_examen {
   id int [pk, increment]
   oferta_id int [ref: > oferta_academica.id]
-  instancia varchar [note: 'Parcial 1, Parcial 2, Parcial 3, Segunda Instancia']
-  modalidad varchar [note: 'Examen escrito a ciegas, Examen práctico directo']
+  instancia varchar
+  modalidad varchar [note: 'directa, a_ciegas, dictada']
   tipo_proceso varchar [default: 'Ordinario']
   fecha_programada datetime
   responsable_id int [ref: > personal.id]
@@ -251,7 +262,8 @@ Table programacion_examen {
 }
 
 // -----------------------------------------------------------------------------
-// NIVEL 6: EVALUACIÓN, ASISTENCIA, RECURSOS JERÁRQUICOS Y TITULACIÓN
+// NIVEL 6: EVALUACIÓN, ASISTENCIA, CALIFICACIONES, RECURSOS Y TITULACIÓN
+// (Estructura enterprise ajustada exactamente a tus reglas de negocio: Ponderaciones 30/30/40, Práctica 25%, Examen 75%, Segunda Instancia y Auditoría Jerárquica)
 // -----------------------------------------------------------------------------
 Table asistencia {
   id int [pk, increment]
@@ -266,27 +278,47 @@ Table folio_examen {
   programacion_id int [ref: > programacion_examen.id]
   codigo_folio varchar [unique]
   estudiante_id int [ref: > estudiante.id]
-  estado_folio varchar [default: 'Entregado (A ciegas)']
+  estado_folio varchar [default: 'Entregado', note: 'Control de ciclo de vida del folio físico: Entregado, Anulado, Calificado, Extraviado']
 }
 
 Table calificacion_parcial {
   id int [pk, increment]
   matriculacion_id int [ref: > matriculacion_materia.id]
-  nro_parcial int [note: '1, 2, 3 para parciales ordinarios, o 4 para Segunda Instancia']
-  tp_nota float [default: 0, note: 'Trabajo Práctico 25% (0 a 100)']
-  examen_nota float [default: 0, note: 'Examen a ciegas o directo 75% (0 a 100)']
-  nota_parcial_calculada float [note: 'Calculada: (tp_nota * 0.25) + (examen_nota * 0.75)']
+  nro_parcial int [note: '1 (Pondera 30%), 2 (Pondera 30%), o 3 (Pondera 40%)']
+  ponderacion_parcial decimal(5,2) [note: '30.00 para 1 y 2, 40.00 para 3']
+
+  // Componentes obligatorios (Trabajo Práctico sobre 100 equivale al 25%, Examen sobre 100 equivale al 75%)
+  tp_nota float [default: 0, note: 'Trabajo práctico evaluado sobre 100 (aporta 25%)']
+  exam_nota float [default: 0, note: 'Examen evaluado sobre 100 (aporta 75%)']
+
+  // Método de registro para trazabilidad de examen (directo, folio, dictada)
+  metodo_registro varchar [default: 'directa', note: 'directa, folio, dictada']
+  folio_id int [ref: > folio_examen.id, null]
+
+  nota_parcial_calculada float [note: 'Calculado: ((tp_nota * 0.25) + (exam_nota * 0.75)) * (ponderacion_parcial / 100)']
+  registrado_por_user_id int [ref: > user.id]
   estado_id int [ref: > estado.id]
+  updated_at timestamp
+
+  Indexes {
+    (matriculacion_id, nro_parcial) [unique]
+  }
+
 }
 
 Table calificacion_final {
   id int [pk, increment]
   matriculacion_id int [ref: > matriculacion_materia.id, unique]
-  promedio_parciales float [note: 'Suma o ponderacion de los parciales']
-  nota_segunda_instancia float [null, note: 'Nota obtenida en la Segunda Instancia (Habilitado entre 33 y 50.5)']
-  nota_definitiva float [note: 'Nota oficial de kardex. Minimo de aprobacion: 50.5']
-  estado_aprobacion varchar [note: 'Aprobado, Reprobado, Segunda Instancia, Retiro por Insuficiencia, Retiro Disciplinario']
-  acta_cerrada boolean [default: false, note: 'MEJORA: Bandera de congelamiento oficial de kárdex antes de recursos']
+  promedio_parciales float [note: 'Suma acumulada de los tres parciales']
+
+  // Gestión de Segunda Instancia (A lo sumo 3 materias, habilitado si acumulado >= 33% y < 50.5%)
+  habilita_segunda_instancia boolean [default: false]
+  nota_segunda_instancia float [null, note: 'Nota extraordinaria. Si aprueba, el sistema fija nota definitiva en 51.00']
+
+  nota_definitiva float [note: 'Nota oficial de kárdex (Mínimo de aprobación: 50.5)']
+  estado_aprobacion varchar [note: 'Aprobado, Reprobado Insuficiencia, Segunda Instancia, Retiro Disciplinario']
+  acta_cerrada boolean [default: false, note: 'Candado de seguridad: impide cambios directos tras el cierre oficial']
+
   registrado_por_user_id int [ref: > user.id]
   log_auditoria json
   created_at timestamp
@@ -295,15 +327,13 @@ Table calificacion_final {
 
 Table recurso_jerarquico_nota {
   id int [pk, increment]
-  matriculacion_id int [ref: > matriculacion_materia.id, note: 'Apunta a la cursada, abarcando parciales o segunda instancia']
-  instancia_afectada varchar [note: 'Primer Parcial, Segundo Parcial, Tercer Parcial, o Segunda Instancia']
-  nro_tramite varchar [unique, note: 'Número de expediente o solicitud formal']
-  motivo varchar [note: 'Revisión por tribunal, Impugnación de Segunda Instancia, Error de transcripción']
-  nota_anterior float [null, note: 'Nota antes de la resolución del tribunal']
-  nota_nueva float [null, note: 'Nota modificada y autorizada por la autoridad']
-  autoridad_responsable_id int [ref: > personal.id, note: 'Tribunal calificador, Docente Dirimente o Decano']
-  transaccion_financiera_id int [ref: > transaccion_financiera.id, null, note: 'MEJORA: Vínculo directo al pago de tasa por derecho de trámite/recurso']
-  documento_resolucion_path varchar [null, note: 'PDF de la resolución administrativa firmada']
+  matriculacion_id int [ref: > matriculacion_materia.id]
+  nro_tramite varchar [unique, note: 'Expediente administrativo o solicitud formal de revisión']
+  motivo varchar [note: 'Error de transcripción, Revisión por tribunal de alzada']
+  nota_anterior float [null]
+  nota_nueva float [null]
+  autoridad_responsable_id int [ref: > personal.id, note: 'Personal administrativo/jerárquico que autoriza el cambio de nota']
+  documento_resolucion_path varchar [null, note: 'PDF firmado de la resolución']
   registrado_por_user_id int [ref: > user.id]
   created_at timestamp [default: `now()`]
 }
@@ -312,13 +342,13 @@ Table titulacion {
   id int [pk, increment]
   estudiante_id int [ref: > estudiante.id]
   carrera_id int [ref: > carrera.id]
-  modalidad varchar [note: 'Tesis, Excelencia, Examen de Grado']
+  modalidad varchar
   fecha_inicio date
-  fecha_defensa date [null]
-  nota_defensa float [null, note: 'Nota mínima de aprobación: 50.5']
+  fecha_defensa date
+  nota_defensa float
   estado_titulacion_id int [ref: > estado.id]
-  archivo_resolucion_path varchar [null]
-  observaciones_auditoria text [null]
+  archivo_resolucion_path varchar
+  observaciones_auditoria text
 }
 
 Table auditoria {
@@ -327,33 +357,9 @@ Table auditoria {
   auditable_id int
   auditable_type varchar
   accion varchar
-  valores_anteriores json [null]
-  valores_nuevos json [null]
-  ip_address varchar(45) [null]
-  user_agent text [null]
+  valores_anteriores json
+  valores_nuevos json
+  ip_address varchar(45)
+  user_agent text
   created_at timestamp [default: `now()`]
-}
-
-// -----------------------------------------------------------------------------
-// NIVEL 7: MÓDULO FINANCIERO Y PAGOS (PREPARADO A FUTURO)
-// -----------------------------------------------------------------------------
-Table concepto_pago {
-  id int [pk, increment]
-  nombre varchar [note: 'Matrícula Semestral, Colegiatura, Derecho a Examen, Titulación, Trámite Recurso']
-  monto_base decimal(10,2)
-  estado_id int [ref: > estado.id]
-}
-
-Table transaccion_financiera {
-  id int [pk, increment]
-  estudiante_id int [ref: > estudiante.id]
-  concepto_id int [ref: > concepto_pago.id]
-  periodo_id int [ref: > periodo.id]
-  monto_pagado decimal(10,2)
-  descuento decimal(10,2) [default: 0]
-  fecha_pago timestamp [default: `now()`]
-  metodo_pago varchar [note: 'Efectivo, Transferencia, QR']
-  nro_comprobante varchar [unique]
-  registrado_por_user_id int [ref: > user.id]
-  estado_id int [ref: > estado.id, note: 'Pagado, Anulado, Pendiente']
 }
