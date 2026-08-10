@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OfertaAcademica extends Model
 {
@@ -62,5 +63,9 @@ class OfertaAcademica extends Model
     public function matriculaciones()
     {
         return $this->hasMany(MatriculacionMateria::class, 'oferta_id');
+    }
+    public function programacionesExamen(): HasMany
+    {
+        return $this->hasMany(ProgramacionExamen::class, 'oferta_id');
     }
 }

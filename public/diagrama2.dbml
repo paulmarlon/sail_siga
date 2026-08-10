@@ -24,7 +24,10 @@ Table estado {
   permite_login boolean [default: true]
   permite_procesos_academicos boolean [default: true]
   color_hex varchar
-Indexes { (slug, contexto) [unique] }
+
+  Indexes {
+    (slug, contexto) [unique]
+  }
 
 }
 
@@ -193,7 +196,7 @@ Table inscripcion_carrera {
   estudiante_id int [ref: > estudiante.id]
   carrera_id int [ref: > carrera.id]
   periodo_id int [ref: > periodo.id]
-  fecha_inscripcion date [default: `now()`]
+  fecha_inscripcion date [default: 'now()']
   es_especialidad_activa boolean [default: true, note: 'Indica si cursa el tronco común o si ya eligió y cursa su especialidad']
   registrado_por_user_id int [ref: > user.id, note: 'Personal administrativo que procesó la inscripción']
   estado_id int [ref: > estado.id, note: 'Activo, Retirado, Congelado, Egresado']
@@ -234,7 +237,7 @@ Table matriculacion_materia {
   id int [pk, increment]
   estudiante_id int [ref: > estudiante.id]
   oferta_id int [ref: > oferta_academica.id]
-  fecha_registro timestamp [default: `now()`]
+  fecha_registro timestamp [default: 'now()']
   estado_id int [ref: > estado.id, note: 'Ej: Matriculado, Retirado, Concluido']
   deleted_at timestamp
 
@@ -248,7 +251,7 @@ Table programacion_examen {
   id int [pk, increment]
   oferta_id int [ref: > oferta_academica.id]
   instancia varchar
-  modalidad varchar
+  modalidad varchar [note: 'directa, a_ciegas, dictada']
   tipo_proceso varchar [default: 'Ordinario']
   fecha_programada datetime
   responsable_id int [ref: > personal.id]
@@ -315,5 +318,5 @@ Table auditoria {
   valores_nuevos json
   ip_address varchar(45)
   user_agent text
-  created_at timestamp [default: `now()`]
+  created_at timestamp [default: 'now()']
 }

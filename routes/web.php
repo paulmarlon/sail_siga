@@ -19,7 +19,8 @@ use App\Http\Controllers\{
     OfertaDocenteHistorialController,
     EstudianteController,
     InscripcionCarreraController,
-    MatriculacionMateriaController
+    MatriculacionMateriaController,
+    ProgramacionExamenController
 };
 use Illuminate\Support\Facades\Route;
 
@@ -216,11 +217,44 @@ Route::middleware('auth')->group(function () {
             ->name('matriculacion-materias.procesar-retiro');
 
         // ==========================================
-        // 2. EL RESOURCE ESTÁNDAR (AL FINAL)
+        // 1. GESTIÓN DE MATRICULACIÓN DE MATERIAS
         // ==========================================
-        // Excluimos la ruta 'show' por defecto ya que la manejamos de forma personalizada arriba
         Route::resource('matriculacion-materias', MatriculacionMateriaController::class)
             ->except(['show']);
+
+
+        // ==========================================
+        // 2. GESTIÓN DE PROGRAMACIÓN DE EXÁMENES
+        // ==========================================
+
+        // A. RUTAS PERSONALIZADAS Y ESPECÍFICAS (Siempre van PRIMERO)
+        Route::get('programacion-examenes/papelera', [ProgramacionExamenController::class, 'papelera'])
+            ->name('programacion-examenes.papelera')
+            ->middleware('can:admin.programacion-examenes.index');
+
+        Route::post('programacion-examenes/{id}/restaurar', [ProgramacionExamenController::class, 'restaurar'])
+            ->name('programacion-examenes.restaurar')
+            ->middleware('can:admin.programacion-examenes.edit');
+
+        // Nuevas rutas personalizadas para Edición Masiva en Lote
+        Route::get('programacion-examenes/edit-masivo', [ProgramacionExamenController::class, 'editMasivo'])
+            ->name('programacion-examenes.edit-masivo')
+            ->middleware('can:admin.programacion-examenes.edit');
+
+        Route::put('programacion-examenes/update-masivo', [ProgramacionExamenController::class, 'updateMasivo'])
+            ->name('programacion-examenes.update-masivo')
+            ->middleware('can:admin.programacion-examenes.edit');
+
+        // <--- NUEVA RUTA PARA ELIMINACIÓN MASIVA EN LOTE --->
+        Route::post('programacion-examenes/destroy-masivo', [ProgramacionExamenController::class, 'destroyMasivo'])
+            ->name('programacion-examenes.destroy-masivo')
+            ->middleware('can:admin.programacion-examenes.destroy'); // o el permiso correspondiente
+
+
+        // B. RECURSO PRINCIPAL DE LARAVEL (Siempre va al ÚLTIMO)
+        Route::resource('programacion-examenes', ProgramacionExamenController::class)
+            ->parameters(['programacion-examenes' => 'programacion_examen'])
+            ->middleware('can:admin.programacion-examenes.index');
     });
 });
 

@@ -412,6 +412,12 @@ return [
             'url'     => 'admin/matriculacion-materias',
             'classes' => 'bg-blue text-white',
         ],
+        [
+            'text'    => 'Programación de Exámenes',
+            'icon'    => 'fas fa-fw fa-calendar-check',
+            'url'     => 'admin/programacion-examenes',
+            'classes' => 'bg-blue text-white',
+        ],
 
 
         [

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Personal extends Model
 {
@@ -40,5 +41,9 @@ class Personal extends Model
     {
         return $this->hasMany(OfertaDocenteHistorial::class, 'docente_id')
             ->whereNull('fecha_fin');
+    }
+    public function programacionesExamen(): HasMany
+    {
+        return $this->hasMany(ProgramacionExamen::class, 'responsable_id');
     }
 }

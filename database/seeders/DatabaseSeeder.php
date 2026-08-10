@@ -174,6 +174,31 @@ class DatabaseSeeder extends Seeder
                 'admin.inscripcion-carreras.destroy',
                 'admin.inscripcion-carreras.papelera',
                 'admin.inscripcion-carreras.restaurar',
+                // Programación de Exámenes
+                'admin.programacion-examenes.index',
+                'admin.programacion-examenes.create',
+                'admin.programacion-examenes.store',
+                'admin.programacion-examenes.show',
+                'admin.programacion-examenes.edit',
+                'admin.programacion-examenes.update',
+                'admin.programacion-examenes.destroy',
+                'admin.programacion-examenes.papelera',
+                'admin.programacion-examenes.restaurar',
+                // Matriculación de Materias
+                'admin.matriculacion-materias.index',
+                'admin.matriculacion-materias.create',
+                'admin.matriculacion-materias.store',
+                'admin.matriculacion-materias.show',
+                'admin.matriculacion-materias.edit',
+                'admin.matriculacion-materias.update',
+                'admin.matriculacion-materias.destroy',
+                'admin.matriculacion-materias.papelera',
+                'admin.matriculacion-materias.restaurar',
+                'admin.matriculacion-materias.fuerza-destruccion',
+                'admin.matriculacion-materias.store-single',
+                'admin.matriculacion-materias.edit-group',
+                'admin.matriculacion-materias.update-group',
+                'admin.matriculacion-materias.procesar-retiro',
             ];
 
             foreach ($permisos as $permiso) {
