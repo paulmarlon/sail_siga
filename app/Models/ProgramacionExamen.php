@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProgramacionExamen extends Model
 {
@@ -32,5 +33,9 @@ class ProgramacionExamen extends Model
     public function responsable()
     {
         return $this->belongsTo(Personal::class, 'responsable_id');
+    }
+    public function foliosExamen(): HasMany
+    {
+        return $this->hasMany(FolioExamen::class, 'programacion_id');
     }
 }

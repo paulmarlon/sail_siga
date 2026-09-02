@@ -104,6 +104,12 @@
                                 </td>
                                 <td class="text-center py-1">
                                     <div class="btn-group btn-group-sm">
+                                        <!-- Botón para auditar asistencia -->
+                                        <a href="{{ route('admin.asistencias.reporte', ['oferta_id' => $oferta->id]) }}"
+                                            class="btn btn-xs btn-primary" title="Auditar Asistencias">
+                                            <i class="fas fa-clipboard-check"></i>
+                                        </a>
+                                        <!-- Botón para gestionar docente y cátedra -->
                                         <a href="{{ route('admin.oferta.docentes.show', $oferta->id) }}"
                                             class="btn btn-xs btn-info" title="Gestionar Docente y Cátedra">
                                             <i class="fas fa-chalkboard-teacher"></i>

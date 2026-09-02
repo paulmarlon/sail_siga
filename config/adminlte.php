@@ -306,81 +306,96 @@ return [
             'url' => 'admin/configuracion/edit',
             'icon' => 'fas fa-fw fa-cogs',
             'classes' => 'bg-blue text-white',
+            'can' => 'admin.configuracion.edit',
         ],
         [
             'text' => 'Gestiones',
             'url'  => 'admin/gestiones',
             'icon' => 'fas fa-fw fa-tasks',
             'classes' => 'bg-blue text-white',
+            'can' => 'admin.gestiones.index',
         ],
         [
             'text' => 'Niveles',
             'url'  => 'admin/niveles',
             'icon' => 'fas fa-fw fa-layer-group',
             'classes' => 'bg-blue text-white',
+            'can' => 'admin.niveles.index',
         ],
         [
             'text' => 'Personas',
             'url'  => 'admin/personas',
             'icon' => 'fas fa-fw fa-users',
             'classes' => 'bg-blue text-white',
+            'can' => 'admin.personas.index',
+        ],
+        [
+            'text'    => 'Gestión de Accesos',
+            'icon'    => 'fas fa-fw fa-users-cog',
+            'url'     => 'admin/usuarios',
+            'active'  => ['admin/usuarios*'],
+            'can'     => 'admin.usuarios.index', // Ajusta si tu permiso es diferente para usuarios
         ],
         [
             'text' => 'Turnos',
             'url'  => 'admin/turnos',
-            'icon' => 'fas fa-fw fa-clock', // Icono de reloj para turnos
+            'icon' => 'fas fa-fw fa-clock',
             'classes' => 'bg-blue text-white',
+            'can' => 'admin.turnos.index',
         ],
         [
             'text' => 'Paralelos',
             'url'  => 'admin/paralelos',
-            'icon' => 'fas fa-fw fa-users', // Icono de grupo para paralelos
+            'icon' => 'fas fa-fw fa-users',
             'classes' => 'bg-blue text-white',
+            'can' => 'admin.paralelos.index',
         ],
         [
             'text' => 'Periodos',
             'url'  => 'admin/periodos',
-            'icon' => 'fas fa-fw fa-calendar-alt', // Icono de calendario para representar periodos
-            'classes' => 'bg-green text-white',    // Puedes cambiar el color para diferenciarlo de Paralelos
+            'icon' => 'fas fa-fw fa-calendar-alt',
+            'classes' => 'bg-green text-white',
+            'can' => 'admin.periodos.index',
         ],
         [
             'text' => 'Materias',
             'url'  => 'admin/materias',
             'icon' => 'fas fa-fw fa-book',
-            'classes' => 'bg-info text-white', // 'bg-info' combina bien con el azul de paralelos
+            'classes' => 'bg-info text-white',
+            'can' => 'admin.materias.index',
         ],
         [
             'text' => 'Grados',
             'url'  => 'admin/grados',
             'icon' => 'fas fa-fw fa-graduation-cap',
             'classes' => 'bg-primary text-white',
+            'can' => 'admin.grados.index',
         ],
         [
             'text' => 'Carreras',
             'url'  => 'admin/carreras',
-            'icon' => 'fas fa-fw fa-graduation-cap', // O también 'fas fa-fw fa-university'
+            'icon' => 'fas fa-fw fa-graduation-cap',
             'classes' => 'bg-navy text-white',
+            'can' => 'admin.carreras.index',
         ],
         [
             'text' => 'Pensum',
-            'url'  => 'admin/pensums', // O la ruta que estés usando para tu gestor drag & drop
+            'url'  => 'admin/pensums',
             'icon' => 'fas fa-fw fa-clipboard-list',
             'classes' => 'bg-blue text-white',
+            'can' => 'admin.pensums.index',
         ],
         [
             'text'    => 'Roles y Permisos',
             'icon'    => 'fas fa-fw fa-user-shield',
             'classes' => 'bg-blue text-white',
+            'can'     => 'admin.roles.index',
             'submenu' => [
                 [
                     'text' => 'Lista de Roles',
                     'url'  => 'admin/roles',
                     'icon' => 'fas fa-fw fa-user-check',
-                ],
-                [
-                    'text' => 'Usuarios del Sistema',
-                    'url'  => 'admin/usuarios', // <-- NUEVA RUTA PARA GESTIONAR ACCESOS
-                    'icon' => 'fas fa-fw fa-users-cog',
+                    'can'  => 'admin.roles.index',
                 ],
             ],
         ],
@@ -388,38 +403,78 @@ return [
             'text'    => 'Personal',
             'icon'    => 'fas fa-fw fa-id-badge',
             'url'     => 'admin/personal',
+            'can'     => 'admin.personal.index',
         ],
         [
             'text'    => 'Oferta Académica',
             'icon'    => 'fas fa-fw fa-graduation-cap',
             'url'     => 'admin/oferta-academica',
+            'can'     => 'admin.oferta-academica.index',
         ],
         [
             'text'    => 'Estudiantes',
             'icon'    => 'fas fa-fw fa-user-graduate',
             'url'     => 'admin/estudiantes',
             'classes' => 'bg-blue text-white',
+            'can'     => 'admin.estudiantes.index',
         ],
         [
             'text'    => 'Inscripción a Carreras',
             'icon'    => 'fas fa-fw fa-file-signature',
             'url'     => 'admin/inscripcion-carreras',
             'classes' => 'bg-blue text-white',
+            'can'     => 'admin.inscripcion-carreras.index', // Si usas can para esto
         ],
         [
             'text'    => 'Matriculación de Materias',
             'icon'    => 'fas fa-fw fa-book-open',
             'url'     => 'admin/matriculacion-materias',
             'classes' => 'bg-blue text-white',
+            'can'     => 'admin.matriculacion-materias.index',
         ],
         [
             'text'    => 'Programación de Exámenes',
             'icon'    => 'fas fa-fw fa-calendar-check',
             'url'     => 'admin/programacion-examenes',
             'classes' => 'bg-blue text-white',
+            'can'     => 'admin.programacion-examenes.index',
+        ],
+        [
+            'text' => 'Gestión de Asistencias',
+            'icon' => 'fas fa-fw fa-calendar-check',
+            'can'  => 'admin.asistencias.index',
+            'submenu' => [
+                [
+                    'text' => 'Registro Diario / Masivo',
+                    'url'  => 'admin/asistencias',
+                    'icon' => 'far fa-circle text-info',
+                    'active' => ['admin/asistencias*'],
+                    'can'  => 'admin.asistencias.index',
+                ],
+            ],
         ],
 
+        [
+            'text' => 'Folios de Examen',
+            'icon' => 'fas fa-fw fa-file-invoice',
+            'can'  => 'admin.folio-examens.index',
+            'submenu' => [
+                [
+                    'text' => 'Listado General',
+                    'url'  => 'admin/folio-examens',
+                    'icon' => 'far fa-circle text-info',
+                    'active' => ['admin/folios*'],
+                ],
+                [
+                    'text' => 'Papelera',
+                    'url'  => 'admin/folios/papelera',
+                    'icon' => 'far fa-circle text-danger',
+                    'active' => ['admin/folios/papelera*'],
+                ],
+            ],
+        ],
 
+        // Líneas originales de multilevel intactas
         [
             'text' => 'multilevel',
             'icon' => 'fas fa-fw fa-share',
@@ -474,7 +529,6 @@ return [
             'icon_color' => 'cyan',
             'url' => '#',
         ],
-
     ],
 
     /*

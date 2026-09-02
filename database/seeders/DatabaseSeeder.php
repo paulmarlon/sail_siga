@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             // 1. Crear Roles y Permisos básicos del sistema
             $roleAdmin = Role::firstOrCreate(['name' => 'Administrador']);
             $roleDocente = Role::firstOrCreate(['name' => 'Docente']);
+            $roleEstudiante = Role::firstOrCreate(['name' => 'Estudiante']);
 
             // Crear algunos permisos esenciales de rutas de administración si los usas
             $permisos = [
@@ -44,6 +45,19 @@ class DatabaseSeeder extends Seeder
                 'admin.roles.update_permisos',
                 'admin.roles.update',
                 'admin.roles.destroy',
+
+                // Gestión de Accesos / Usuarios (¡Añadido aquí!)
+                'admin.usuarios.index',
+                'admin.usuarios.create',
+                'admin.usuarios.store',
+                'admin.usuarios.show',
+                'admin.usuarios.edit',
+                'admin.usuarios.update',
+                'admin.usuarios.destroy',
+                'admin.usuarios.destroy-masivo',
+                'admin.usuarios.prepararEdicionMasiva',
+                'admin.usuarios.vistaEdicionMasiva',
+                'admin.usuarios.updateMasivo',
 
                 // Carreras
                 'admin.carreras.index',
@@ -144,6 +158,7 @@ class DatabaseSeeder extends Seeder
                 'admin.pensums.edit',
                 'admin.pensums.update',
                 'admin.pensums.destroy',
+
                 // Oferta Académica
                 'admin.oferta-academica.index',
                 'admin.oferta-academica.create',
@@ -154,6 +169,7 @@ class DatabaseSeeder extends Seeder
                 'admin.oferta-academica.destroy',
                 'admin.oferta-academica.papelera',
                 'admin.oferta-academica.restaurar',
+
                 // Estudiantes
                 'admin.estudiantes.index',
                 'admin.estudiantes.create',
@@ -164,6 +180,7 @@ class DatabaseSeeder extends Seeder
                 'admin.estudiantes.destroy',
                 'admin.estudiantes.papelera',
                 'admin.estudiantes.restaurar',
+
                 // Inscripción a Carreras
                 'admin.inscripcion-carreras.index',
                 'admin.inscripcion-carreras.create',
@@ -174,6 +191,7 @@ class DatabaseSeeder extends Seeder
                 'admin.inscripcion-carreras.destroy',
                 'admin.inscripcion-carreras.papelera',
                 'admin.inscripcion-carreras.restaurar',
+
                 // Programación de Exámenes
                 'admin.programacion-examenes.index',
                 'admin.programacion-examenes.create',
@@ -184,6 +202,7 @@ class DatabaseSeeder extends Seeder
                 'admin.programacion-examenes.destroy',
                 'admin.programacion-examenes.papelera',
                 'admin.programacion-examenes.restaurar',
+
                 // Matriculación de Materias
                 'admin.matriculacion-materias.index',
                 'admin.matriculacion-materias.create',
@@ -199,6 +218,30 @@ class DatabaseSeeder extends Seeder
                 'admin.matriculacion-materias.edit-group',
                 'admin.matriculacion-materias.update-group',
                 'admin.matriculacion-materias.procesar-retiro',
+
+                // Asistencias
+                'admin.asistencias.index',
+                'admin.asistencias.create',
+                'admin.asistencias.store',
+                'admin.asistencias.show',
+                'admin.asistencias.edit',
+                'admin.asistencias.update',
+                'admin.asistencias.destroy',
+                'admin.asistencias.por-oferta-fecha',
+                'admin.asistencias.store-masiva',
+                'admin.asistencias.historial',
+
+                // Folios de Examen
+                'admin.folio-examens.index',
+                'admin.folio-examens.create',
+                'admin.folio-examens.store',
+                'admin.folio-examens.show',
+                'admin.folio-examens.edit',
+                'admin.folio-examens.update',
+                'admin.folio-examens.destroy',
+                'admin.folio-examens.papelera',
+                'admin.folio-examens.restaurar',
+                'admin.folio-examens.generar-masivo',
             ];
 
             foreach ($permisos as $permiso) {

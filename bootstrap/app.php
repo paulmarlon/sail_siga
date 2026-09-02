@@ -12,9 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // REGISTRA EL ALIAS AQUÍ:
+        // REGISTRA TUS ALIAS AQUÍ:
         $middleware->alias([
             'prevent-back-history' => \App\Http\Middleware\PreventBackHistory::class,
+            'force.password'       => \App\Http\Middleware\ForcePasswordChange::class, // <--- ¡Añadido aquí!
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

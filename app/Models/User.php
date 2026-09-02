@@ -45,10 +45,7 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    public function personal(): HasOne
-    {
-        return $this->hasOne(Personal::class, 'usuario_id');
-    }
+
     // Agrega esta relación en tu modelo User existente
     public function historialesDocentesRegistrados()
     {

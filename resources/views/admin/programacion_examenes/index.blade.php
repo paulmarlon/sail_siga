@@ -26,6 +26,24 @@
         .col-transicion {
             transition: all 0.3s ease-in-out;
         }
+
+        /* Estilo para rotar el texto de la fecha verticalmente hacia arriba */
+        .fecha-vertical {
+            writing-mode: vertical-lr;
+            transform: rotate(180deg);
+            text-orientation: mixed;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            display: inline-block;
+            padding: 2px 0;
+        }
+
+        /* Asegurar que las celdas de las instancias tengan espacio para la rotación */
+        .columna-instancia {
+            text-align: center;
+            vertical-align: middle !important;
+            height: 60px;
+        }
     </style>
 @stop
 
@@ -35,7 +53,13 @@
             <h1><i class="fas fa-calendar-alt text-primary mr-2"></i> Programación y Calendario de Exámenes</h1>
             <p class="text-muted mb-0">Control de instancias evaluativas por oferta académica y periodo activo.</p>
         </div>
-        <div>
+        <div class="d-flex align-items-center">
+            <!-- BOTÓN PRINCIPAL DE CREACIÓN MASIVA EN LA CABECERA -->
+            <button type="submit" form="form-masivo" id="btn-header-crear"
+                class="btn btn-success btn-sm shadow-sm font-weight-bold mr-2 action-btn"
+                data-action="{{ route('admin.programacion-examenes.create') }}" data-method="GET">
+                <i class="fas fa-plus-circle mr-1"></i> Programar Seleccionados
+            </button>
             <!-- Botón de acceso a la Papelera -->
             <a href="{{ route('admin.programacion-examenes.papelera') }}"
                 class="btn btn-outline-secondary btn-sm shadow-sm font-weight-bold">
@@ -66,6 +90,9 @@
 
     <!-- FORMULARIO ENVOLVENTE GENERAL -->
     <form action="{{ route('admin.programacion-examenes.create') }}" method="GET" id="form-masivo">
+        @csrf
+        <!-- Contenedor dinámico para manejar method spoofing (como DELETE o POST) cuando se requiera -->
+        <div id="method-spoofing-container"></div>
 
         <!-- ================= BARRA ESTRATÉGICA DE CONTROL DE PANELES ================= -->
         <div class="row mb-2">
@@ -103,11 +130,13 @@
                             <!-- Filtro por Periodo Académico -->
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold text-secondary mb-1">Periodo Académico:</label>
-                                <select id="filtro-periodo" class="form-control form-control-sm"
+                                <select id="filtro-periodo" name="periodo_id" class="form-control form-control-sm"
                                     style="font-size: 0.75rem;">
                                     <option value="">-- Todos los Periodos --</option>
                                     @foreach ($periodos as $per)
-                                        <option value="{{ $per->id }}">{{ $per->nombre_completo ?? $per->nombre }}
+                                        <option value="{{ $per->id }}"
+                                            {{ isset($periodoId) && $periodoId == $per->id ? 'selected' : '' }}>
+                                            {{ $per->nombre }} - Gestión {{ optional($per->gestion)->nombre }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -160,19 +189,6 @@
                                 </div>
                             </div>
 
-                            <!-- Instancia de Examen -->
-                            <div class="form-group mb-2">
-                                <label class="small font-weight-bold text-secondary mb-1">Instancia de Examen:</label>
-                                <select id="filtro-instancia" class="form-control form-control-sm"
-                                    style="font-size: 0.75rem;">
-                                    <option value="">-- Todas las Instancias --</option>
-                                    <option value="P1">Primer Parcial</option>
-                                    <option value="P2">Segundo Parcial</option>
-                                    <option value="EF">Examen Final</option>
-                                    <option value="2T">Segunda Instancia</option>
-                                </select>
-                            </div>
-
                             <!-- Buscador por Texto -->
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold text-secondary mb-1">Materia (Nombre / Sigla):</label>
@@ -193,6 +209,21 @@
             </div>
 
             <!-- ================= COLUMNA 2: TABLA DE OFERTAS ACADÉMICAS (CENTRAL) ================= -->
+            @php
+                $obtenerClaseModalidad = function ($modalidad) {
+                    switch (strtolower($modalidad ?? '')) {
+                        case 'directa':
+                            return 'badge-success';
+                        case 'a_ciegas':
+                            return 'badge-secondary';
+                        case 'dictada':
+                            return 'badge-warning';
+                        default:
+                            return 'badge-info';
+                    }
+                };
+            @endphp
+
             <div class="col-md-6 px-1 col-transicion" id="panel-tabla">
                 <div class="card card-success card-outline card-scroll shadow-sm mb-0">
                     <div class="card-header bg-white py-2 px-2 d-flex justify-content-between align-items-center">
@@ -205,13 +236,16 @@
                                 for="seleccionar-todos-visibles">Seleccionar Visibles</label>
                         </div>
                     </div>
-                    <div class="card-body p-2 card-body-scroll">
+                    <div class="card-body p-2 card-body-scroll"
+                        style="max-height: none !important; height: auto !important; overflow-y: visible !important;">
                         <table id="tabla-programacion"
                             class="table table-bordered table-striped table-hover text-nowrap w-100 mb-0">
                             <thead class="thead-dark" style="font-size: 0.75rem;">
                                 <tr>
                                     <th class="text-center" style="width: 25px;"><i class="fas fa-check-square"></i>
                                     </th>
+                                    <th class="text-center" style="width: 40px;">N°</th>
+                                    <!-- 👈 NUEVA COLUMNA DE NUMERACIÓN -->
                                     <th>Materia / Sigla</th>
                                     <th>Carrera / Semestre / Periodo</th>
                                     <th class="text-center">T / P</th>
@@ -232,6 +266,12 @@
                                             $ef = $exámenes->get('EF');
                                             $si = $exámenes->get('2T');
 
+                                            // Verificación de folios individuales por cada parcial/instancia
+                                            $tieneFoliosP1 = $p1 && $p1->foliosExamen && $p1->foliosExamen->count() > 0;
+                                            $tieneFoliosP2 = $p2 && $p2->foliosExamen && $p2->foliosExamen->count() > 0;
+                                            $tieneFoliosEF = $ef && $ef->foliosExamen && $ef->foliosExamen->count() > 0;
+                                            $tieneFoliosSI = $si && $si->foliosExamen && $si->foliosExamen->count() > 0;
+
                                             $nombMateria = strtolower($oferta->pensum->materia->nombre ?? '');
                                             $siglaMateria = strtolower($oferta->pensum->materia->sigla ?? '');
                                             $idPeriodo = $oferta->periodo_id ?? '';
@@ -244,6 +284,55 @@
                                             $tieneP2 = $p2 ? '1' : '0';
                                             $tieneEF = $ef ? '1' : '0';
                                             $tiene2T = $si ? '1' : '0';
+
+                                            $fechaP1 = $p1
+                                                ? \Carbon\Carbon::parse($p1->fecha_programada)->format('d-m')
+                                                : null;
+                                            $claseP1 = $p1
+                                                ? $obtenerClaseModalidad($p1->modalidad)
+                                                : 'badge-light text-muted border';
+                                            $estiloP1 =
+                                                $p1 && strtolower($p1->modalidad) === 'a_ciegas'
+                                                    ? 'background-color: #6f42c1; color: #fff;'
+                                                    : '';
+
+                                            $fechaP2 = $p2
+                                                ? \Carbon\Carbon::parse($p2->fecha_programada)->format('d-m')
+                                                : null;
+                                            $claseP2 = $p2
+                                                ? $obtenerClaseModalidad($p2->modalidad)
+                                                : 'badge-light text-muted border';
+                                            $estiloP2 =
+                                                $p2 && strtolower($p2->modalidad) === 'a_ciegas'
+                                                    ? 'background-color: #6f42c1; color: #fff;'
+                                                    : '';
+
+                                            $fechaEF = $ef
+                                                ? \Carbon\Carbon::parse($ef->fecha_programada)->format('d-m')
+                                                : null;
+                                            $claseEF = $ef
+                                                ? $obtenerClaseModalidad($ef->modalidad)
+                                                : 'badge-light text-muted border';
+                                            $estiloEF =
+                                                $ef && strtolower($ef->modalidad) === 'a_ciegas'
+                                                    ? 'background-color: #6f42c1; color: #fff;'
+                                                    : '';
+
+                                            $fechaSI = $si
+                                                ? \Carbon\Carbon::parse($si->modalidad) // Ajustado según tu bloque anterior
+                                                : null; // Nota: Mantengo tu estructura original de fechaSI limpia abajo
+
+                                            // Recalculando fechaSI correctamente como tenías:
+                                            $fechaSI = $si
+                                                ? \Carbon\Carbon::parse($si->fecha_programada)->format('d-m')
+                                                : null;
+                                            $claseSI = $si
+                                                ? $obtenerClaseModalidad($si->modalidad)
+                                                : 'badge-light text-muted border';
+                                            $estiloSI =
+                                                $si && strtolower($si->modalidad) === 'a_ciegas'
+                                                    ? 'background-color: #6f42c1; color: #fff;'
+                                                    : '';
                                         @endphp
                                         <tr class="oferta-row" data-periodo="{{ $idPeriodo }}"
                                             data-carrera="{{ $idCarrera }}" data-grado="{{ $idGrado }}"
@@ -261,6 +350,12 @@
                                                     <label class="custom-control-label"
                                                         for="oferta_chk_{{ $oferta->id }}"></label>
                                                 </div>
+                                            </td>
+                                            <!-- 👈 NÚMERO DE FILA AUTOMÁTICO -->
+                                            <!-- NÚMERO DE FILA -->
+                                            <td class="text-center text-muted font-weight-bold row-index"
+                                                style="font-size: 0.75rem;">
+                                                {{ $loop->iteration }}
                                             </td>
 
                                             <td>
@@ -290,18 +385,148 @@
                                                     class="badge badge-light border">{{ $oferta->paralelo->nombre ?? 'S/P' }}</span>
                                             </td>
 
-                                            <!-- Instancias badges -->
-                                            <td class="text-center"><span
-                                                    class="badge {{ $p1 ? 'badge-success' : 'badge-light text-muted border' }} px-1">{{ $p1 ? 'Sí' : '-' }}</span>
+                                            <!-- P1 -->
+                                            <td
+                                                class="columna-instancia text-center {{ $tieneFoliosP1 ? 'table-success' : '' }}">
+                                                @if ($p1)
+                                                    @php
+                                                        $esCiegaODictadaP1 = in_array(
+                                                            strtolower($p1->modalidad ?? ''),
+                                                            ['a_ciegas', 'dictada'],
+                                                        );
+                                                        $rutaP1 = $esCiegaODictadaP1
+                                                            ? route('admin.folio-examens.plantilla', $p1->id)
+                                                            : '#';
+                                                        $tituloP1 =
+                                                            strtolower($p1->modalidad ?? '') === 'a_ciegas'
+                                                                ? 'Foliar a ciegas'
+                                                                : (strtolower($p1->modalidad ?? '') === 'dictada'
+                                                                    ? 'Volcado por dictado'
+                                                                    : 'Examen programado');
+                                                    @endphp
+                                                    <a href="{{ $rutaP1 }}"
+                                                        class="badge {{ $claseP1 }} p-1 d-inline-block shadow-sm text-decoration-none"
+                                                        style="{{ $estiloP1 }}" title="{{ $tituloP1 }}">
+                                                        <span class="fecha-vertical">{{ $fechaP1 }}</span>
+                                                        @if (strtolower($p1->modalidad ?? '') === 'a_ciegas')
+                                                            <i class="fas fa-barcode d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @elseif(strtolower($p1->modalidad ?? '') === 'dictada')
+                                                            <i class="fas fa-pen-nib d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @endif
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
-                                            <td class="text-center"><span
-                                                    class="badge {{ $p2 ? 'badge-success' : 'badge-light text-muted border' }} px-1">{{ $p2 ? 'Sí' : '-' }}</span>
+
+                                            <!-- P2 -->
+                                            <td
+                                                class="columna-instancia text-center {{ $tieneFoliosP2 ? 'table-success' : '' }}">
+                                                @if ($p2)
+                                                    @php
+                                                        $esCiegaODictadaP2 = in_array(
+                                                            strtolower($p2->modalidad ?? ''),
+                                                            ['a_ciegas', 'dictada'],
+                                                        );
+                                                        $rutaP2 = $esCiegaODictadaP2
+                                                            ? route('admin.folio-examens.plantilla', $p2->id)
+                                                            : '#';
+                                                        $tituloP2 =
+                                                            strtolower($p2->modalidad ?? '') === 'a_ciegas'
+                                                                ? 'Foliar a ciegas'
+                                                                : (strtolower($p2->modalidad ?? '') === 'dictada'
+                                                                    ? 'Volcado por dictado'
+                                                                    : 'Examen programado');
+                                                    @endphp
+                                                    <a href="{{ $rutaP2 }}"
+                                                        class="badge {{ $claseP2 }} p-1 d-inline-block shadow-sm text-decoration-none"
+                                                        style="{{ $estiloP2 }}" title="{{ $tituloP2 }}">
+                                                        <span class="fecha-vertical">{{ $fechaP2 }}</span>
+                                                        @if (strtolower($p2->modalidad ?? '') === 'a_ciegas')
+                                                            <i class="fas fa-barcode d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @elseif(strtolower($p2->modalidad ?? '') === 'dictada')
+                                                            <i class="fas fa-pen-nib d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @endif
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
-                                            <td class="text-center"><span
-                                                    class="badge {{ $ef ? 'badge-primary' : 'badge-light text-muted border' }} px-1">{{ $ef ? 'Sí' : '-' }}</span>
+
+                                            <!-- EF -->
+                                            <td
+                                                class="columna-instancia text-center {{ $tieneFoliosEF ? 'table-success' : '' }}">
+                                                @if ($ef)
+                                                    @php
+                                                        $esCiegaODictadaEF = in_array(
+                                                            strtolower($ef->modalidad ?? ''),
+                                                            ['a_ciegas', 'dictada'],
+                                                        );
+                                                        $rutaEF = $esCiegaODictadaEF
+                                                            ? route('admin.folio-examens.plantilla', $ef->id)
+                                                            : '#';
+                                                        $tituloEF =
+                                                            strtolower($ef->modalidad ?? '') === 'a_ciegas'
+                                                                ? 'Foliar a ciegas'
+                                                                : (strtolower($ef->modalidad ?? '') === 'dictada'
+                                                                    ? 'Volcado por dictado'
+                                                                    : 'Examen programado');
+                                                    @endphp
+                                                    <a href="{{ $rutaEF }}"
+                                                        class="badge {{ $claseEF }} p-1 d-inline-block shadow-sm text-decoration-none"
+                                                        style="{{ $estiloEF }}" title="{{ $tituloEF }}">
+                                                        <span class="fecha-vertical">{{ $fechaEF }}</span>
+                                                        @if (strtolower($ef->modalidad ?? '') === 'a_ciegas')
+                                                            <i class="fas fa-barcode d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @elseif(strtolower($ef->modalidad ?? '') === 'dictada')
+                                                            <i class="fas fa-pen-nib d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @endif
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
-                                            <td class="text-center"><span
-                                                    class="badge {{ $si ? 'badge-warning' : 'badge-light text-muted border' }} px-1">{{ $si ? 'Sí' : '-' }}</span>
+
+                                            <!-- 2T -->
+                                            <td
+                                                class="columna-instancia text-center {{ $tieneFoliosSI ? 'table-success' : '' }}">
+                                                @if ($si)
+                                                    @php
+                                                        $esCiegaODictadaSI = in_array(
+                                                            strtolower($si->modalidad ?? ''),
+                                                            ['a_ciegas', 'dictada'],
+                                                        );
+                                                        $rutaSI = $esCiegaODictadaSI
+                                                            ? route('admin.folio-examens.plantilla', $si->id)
+                                                            : '#';
+                                                        $tituloSI =
+                                                            strtolower($si->modalidad ?? '') === 'a_ciegas'
+                                                                ? 'Foliar a ciegas'
+                                                                : (strtolower($si->modalidad ?? '') === 'dictada'
+                                                                    ? 'Volcado por dictado'
+                                                                    : 'Examen programado');
+                                                    @endphp
+                                                    <a href="{{ $rutaSI }}"
+                                                        class="badge {{ $claseSI }} p-1 d-inline-block shadow-sm text-decoration-none"
+                                                        style="{{ $estiloSI }}" title="{{ $tituloSI }}">
+                                                        <span class="fecha-vertical">{{ $fechaSI }}</span>
+                                                        @if (strtolower($si->modalidad ?? '') === 'a_ciegas')
+                                                            <i class="fas fa-barcode d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @elseif(strtolower($si->modalidad ?? '') === 'dictada')
+                                                            <i class="fas fa-pen-nib d-block mt-1"
+                                                                style="font-size: 0.55rem;"></i>
+                                                        @endif
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
 
                                             <td class="text-center">
@@ -364,7 +589,7 @@
                                     <i class="fas fa-edit mr-1"></i> Editar Lote (<span id="contador-lote-edit">0</span>)
                                 </button>
 
-                                <!-- ================= TERCER BOTÓN (Ej. Eliminar / Reporte en Lote) ================= -->
+                                <!-- Botón 3: Eliminar en Lote -->
                                 <button type="submit" id="btn-tercer-bloque"
                                     class="btn btn-danger btn-sm font-weight-bold py-1 shadow-sm action-btn" disabled
                                     style="font-size: 0.75rem;"
@@ -382,11 +607,51 @@
         </div>
 
     </form>
+
+    <!-- Modal Interactivo para Selección de Instancia antes de Editar / Eliminar Lote -->
+    <div class="modal fade" id="modalSeleccionarInstancia" tabindex="-1" role="dialog"
+        aria-labelledby="modalInstanciaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content shadow-sm">
+                <div class="modal-header bg-success text-white py-2" id="modal-header-container">
+                    <h6 class="modal-title font-weight-bold" id="modalInstanciaLabel" style="font-size: 0.9rem;">
+                        <i class="fas fa-tasks mr-1"></i> Seleccionar Instancia
+                    </h6>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body py-3">
+                    <p class="text-muted small mb-2" id="modal-texto-instruccion">¿Qué instancia evaluativa deseas
+                        modificar en este lote?</p>
+                    <div class="form-group mb-0">
+                        <select id="select-instancia-modal" class="form-control form-control-sm" required
+                            style="font-size: 0.8rem;">
+                            <option value="">-- Selecciona Instancia --</option>
+                            <option value="P1">Primer Parcial (P1)</option>
+                            <option value="P2">Segundo Parcial (P2)</option>
+                            <option value="EF">Examen Final (EF)</option>
+                            <option value="2T">Segunda Instancia (2T)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-xs" data-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btn-confirmar-edicion-masiva"
+                        class="btn btn-success btn-xs font-weight-bold">
+                        <i class="fas fa-arrow-right mr-1"></i> Continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @stop
 
 @section('js')
     <script>
         $(function() {
+            let botonPresionado = null;
+
             // 1. Control del panel izquierdo (Filtros)
             $('#btn-toggle-filtros').on('click', function() {
                 var panelFiltros = $('#panel-filtros');
@@ -431,7 +696,7 @@
                 recalcularAnchoTabla();
             });
 
-            // 3. Función exclusiva para adaptar el ancho de la tabla central
+            // 3. Recalcular ancho de la tabla central
             function recalcularAnchoTabla() {
                 var anchoCentral = 12;
 
@@ -447,13 +712,83 @@
                     .addClass('col-md-' + anchoCentral);
             }
 
-            // Capturar la acción del botón presionado para configurar el formulario dinámicamente al enviar
+            // Capturar la acción de los botones de lote (Incluyendo Programar, Editar y Eliminar)
             $('.action-btn').on('click', function(e) {
                 var targetAction = $(this).data('action');
                 var targetMethod = $(this).data('method');
+                var btnId = $(this).attr('id');
+
+                if (btnId === 'btn-procesar-bloque' || btnId === 'btn-editar-bloque' || btnId ===
+                    'btn-tercer-bloque') {
+                    e.preventDefault();
+                    botonPresionado = $(this);
+
+                    if (btnId === 'btn-tercer-bloque') {
+                        $('#modal-header-container').removeClass('bg-success bg-primary').addClass(
+                            'bg-danger');
+                        $('#modalInstanciaLabel').html(
+                            '<i class="fas fa-trash-alt mr-1"></i> Seleccionar Instancia a Eliminar');
+                        $('#modal-texto-instruccion').text(
+                            '¿Qué instancia evaluativa deseas eliminar en este lote?');
+                        $('#btn-confirmar-edicion-masiva').removeClass('btn-success btn-primary').addClass(
+                            'btn-danger');
+                    } else if (btnId === 'btn-procesar-bloque') {
+                        $('#modal-header-container').removeClass('bg-success bg-danger').addClass(
+                            'bg-primary');
+                        $('#modalInstanciaLabel').html(
+                            '<i class="fas fa-calendar-plus mr-1"></i> Seleccionar Instancia a Programar'
+                        );
+                        $('#modal-texto-instruccion').text(
+                            '¿Qué instancia evaluativa deseas programar para este lote de materias?');
+                        $('#btn-confirmar-edicion-masiva').removeClass('btn-success btn-danger').addClass(
+                            'btn-primary');
+                    } else {
+                        $('#modal-header-container').removeClass('bg-danger bg-primary').addClass(
+                            'bg-success');
+                        $('#modalInstanciaLabel').html(
+                            '<i class="fas fa-tasks mr-1"></i> Seleccionar Instancia a Editar');
+                        $('#modal-texto-instruccion').text(
+                            '¿Qué instancia evaluativa deseas modificar en este lote?');
+                        $('#btn-confirmar-edicion-masiva').removeClass('bg-danger bg-primary').addClass(
+                            'bg-success');
+                    }
+
+                    $('#select-instancia-modal').val('');
+                    $('#modalSeleccionarInstancia').modal('show');
+                    return;
+                }
 
                 $('#form-masivo').attr('action', targetAction);
                 $('#form-masivo').attr('method', targetMethod);
+                $('#method-spoofing-container').empty();
+            });
+
+            // Al confirmar la instancia dentro del Modal
+            $('#btn-confirmar-edicion-masiva').on('click', function() {
+                let instanciaElegida = $('#select-instancia-modal').val();
+                if (!instanciaElegida) {
+                    alert('Por favor, selecciona una instancia evaluativa.');
+                    return;
+                }
+
+                $('#modalSeleccionarInstancia').modal('hide');
+
+                var targetAction = botonPresionado.data('action');
+                var targetMethod = botonPresionado.data('method');
+
+                $('#form-masivo').attr('action', targetAction);
+                $('#form-masivo').attr('method', targetMethod);
+
+                $('#method-spoofing-container').empty();
+                if (targetMethod.toUpperCase() === 'POST') {
+                    $('#form-masivo').attr('method', 'POST');
+                }
+
+                $('#form-masivo').find('input[name="instancia_filtro"]').remove();
+                $('#form-masivo').append(
+                    `<input type="hidden" name="instancia_filtro" value="${instanciaElegida}">`);
+
+                $('#form-masivo').submit();
             });
 
             // FILTRADO DINÁMICO EN TIEMPO REAL
@@ -477,10 +812,17 @@
                     if (paId && row.data('paralelo') != paId) match = false;
 
                     if (inst) {
-                        if (inst === 'P1' && row.data('p1') != 1) match = false;
-                        if (inst === 'P2' && row.data('p2') != 1) match = false;
-                        if (inst === 'EF' && row.data('ef') != 1) match = false;
-                        if (inst === '2T' && row.data('2t') != 1) match = false;
+                        if (inst === 'PENDIENTE') {
+                            if (row.data('p1') == 1 || row.data('p2') == 1 || row.data('ef') == 1 || row
+                                .data('2t') == 1) {
+                                match = false;
+                            }
+                        } else {
+                            if (inst === 'P1' && row.data('p1') != 1) match = false;
+                            if (inst === 'P2' && row.data('p2') != 1) match = false;
+                            if (inst === 'EF' && row.data('ef') != 1) match = false;
+                            if (inst === '2T' && row.data('2t') != 1) match = false;
+                        }
                     }
 
                     if (txt && row.data('texto').indexOf(txt) === -1) match = false;
@@ -491,6 +833,9 @@
                         row.hide();
                     }
                 });
+
+                // 🔥 Recalcular la numeración automáticamente tras filtrar
+                actualizarNumeracionVisible();
             }
 
             $('#filtro-periodo, #filtro-carrera, #filtro-grado, #filtro-turno, #filtro-paralelo, #filtro-instancia')
@@ -502,6 +847,7 @@
                     .val('');
                 $('#filtro-busqueda').val('');
                 $('.oferta-row').show();
+                actualizarNumeracionVisible();
             });
 
             // SINCRONIZACIÓN DE SELECCIONADOS
@@ -510,37 +856,44 @@
                 contenedor.empty();
 
                 var totalChecked = $('.oferta-checkbox:checked').length;
-                // Actualizamos los contadores de todos los botones de acción masiva
                 $('#contador-lote, #contador-lote-edit, #contador-lote-tercer').text(totalChecked);
 
                 if (totalChecked > 0) {
                     $('#sin-seleccion').addClass('d-none');
                     contenedor.removeClass('d-none');
-                    $('.action-btn').prop('disabled', false);
+
+                    if (totalChecked >= 2) {
+                        $('#btn-procesar-bloque').prop('disabled', false);
+                    } else {
+                        $('#btn-procesar-bloque').prop('disabled', true);
+                    }
+
+                    $('.action-btn').not('#btn-procesar-bloque').prop('disabled', false);
 
                     $('.oferta-checkbox:checked').each(function() {
                         var chk = $(this);
                         var row = chk.closest('tr');
                         var id = chk.val();
-                        var materiaTexto = row.find('td:eq(1)').find('span').text();
-                        var siglaTexto = row.find('td:eq(1)').find('small').text();
-                        var carreraTexto = row.find('td:eq(2)').find('span').text();
-                        var turnoParaleloTexto = row.find('td:eq(3)').text().trim().replace(/\s+/g, ' ');
+                        var materiaTexto = row.find('td:eq(2)').find('span')
+                            .text(); // Ajustado por la nueva columna N°
+                        var siglaTexto = row.find('td:eq(2)').find('small').text();
+                        var carreraTexto = row.find('td:eq(3)').find('span').text();
+                        var turnoParaleloTexto = row.find('td:eq(4)').text().trim().replace(/\s+/g, ' ');
 
                         var itemHtml = `
-                            <div class="p-1 mb-1 border rounded bg-white shadow-sm d-flex justify-content-between align-items-center item-seleccionado" data-id="${id}" style="font-size: 0.72rem;">
-                                <div>
-                                    <strong class="text-dark">${materiaTexto}</strong><br>
-                                    <span class="text-muted" style="font-size: 0.65rem;">
-                                        ${siglaTexto} | ${carreraTexto} <br>
-                                        <span class="badge badge-light border px-1">${turnoParaleloTexto}</span>
-                                    </span>
-                                </div>
-                                <button type="button" class="btn btn-xs text-danger quitar-item-btn" data-id="${id}">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                        <div class="p-1 mb-1 border rounded bg-white shadow-sm d-flex justify-content-between align-items-center item-seleccionado" data-id="${id}" style="font-size: 0.72rem;">
+                            <div>
+                                <strong class="text-dark">${materiaTexto}</strong><br>
+                                <span class="text-muted" style="font-size: 0.65rem;">
+                                    ${siglaTexto} | ${carreraTexto} <br>
+                                    <span class="badge badge-light border px-1">${turnoParaleloTexto}</span>
+                                </span>
                             </div>
-                        `;
+                            <button type="button" class="btn btn-xs text-danger quitar-item-btn" data-id="${id}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
                         contenedor.append(itemHtml);
                     });
                 } else {
@@ -569,6 +922,23 @@
                 $('.oferta-row:visible').find('.oferta-checkbox').prop('checked', isChecked);
                 actualizarContadorYLista();
             });
+
+            // Ejecutar al cargar la página por primera vez
+            actualizarNumeracionVisible();
         });
+
+        // Función global de numeración dinámica
+        function actualizarNumeracionVisible() {
+            let contador = 1;
+            document.querySelectorAll('#tabla-programacion tbody tr.oferta-row').forEach(row => {
+                if (row.style.display !== 'none') {
+                    const indexCell = row.querySelector('.row-index');
+                    if (indexCell) {
+                        indexCell.textContent = contador;
+                        contador++;
+                    }
+                }
+            });
+        }
     </script>
-@stop
+@endsection

@@ -17,9 +17,9 @@
 
         #tabla-edicion-masiva th,
         #tabla-edicion-masiva td {
-            padding: 0.35rem 0.4rem !important;
+            padding: 0.25rem 0.35rem !important;
             vertical-align: middle !important;
-            font-size: 0.78rem;
+            font-size: 0.75rem;
         }
     </style>
 @stop
@@ -40,6 +40,10 @@
 @stop
 
 @section('content')
+    @php
+        $hoy = date('Y-m-d');
+    @endphp
+
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="icon fas fa-check"></i> {{ session('success') }}
@@ -82,26 +86,36 @@
                 </span>
             </div>
 
-            <div class="card-body p-2 card-body-scroll table-responsive">
+            <div class="card-body p-1 card-body-scroll table-responsive">
                 <table id="tabla-edicion-masiva"
                     class="table table-bordered table-striped table-hover text-nowrap w-100 mb-0">
-                    <thead class="thead-dark text-center" style="font-size: 0.75rem;">
+                    <thead class="thead-dark text-center"
+                        style="font-size: 0.75rem; position: sticky; top: 0; z-index: 10;">
                         <tr>
-                            <th style="width: 22%;">Materia / Carrera / Turno</th>
-                            <th style="width: 12%;">Instancia</th>
-                            <th style="width: 12%;">Modalidad</th>
-                            <th style="width: 11%;">Tipo Proceso</th>
-                            <th style="width: 15%;">Fecha Programada</th>
-                            <th style="width: 16%;">Responsable</th>
-                            <th style="width: 12%;">Observaciones Legales</th>
+                            <th style="width: 22%; padding: 5px;">Materia / Carrera / Turno</th>
+                            <th style="width: 12%; padding: 5px;">Instancia</th>
+                            <th style="width: 12%; padding: 5px;">Modalidad</th>
+                            <th style="width: 11%; padding: 5px;">Tipo Proceso</th>
+                            <th style="width: 15%; padding: 5px;">Fecha Programada</th>
+                            <th style="width: 16%; padding: 5px;">Responsable</th>
+                            <th style="width: 12%; padding: 5px;">Observaciones Legales</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (isset($listaOfertas) && count($listaOfertas) > 0)
                             @foreach ($listaOfertas as $index => $oferta)
                                 @php
-                                    // Verificamos si la oferta ya tiene un examen asociado (tomamos el primero o permitimos evaluar por filas)
+                                    // Verificamos si la oferta ya tiene un examen asociado
                                     $examenExistente = $oferta->programacionesExamen->first();
+                                    $modActual = optional($examenExistente)->modalidad ?? 'directa';
+
+                                    // Definir clase de color inicial según la modalidad guardada
+                                    $claseColorMod = 'bg-success text-white';
+                                    if ($modActual === 'a_ciegas') {
+                                        $claseColorMod = 'bg-indigo text-white';
+                                    } elseif ($modActual === 'dictada') {
+                                        $claseColorMod = 'bg-warning text-dark';
+                                    }
                                 @endphp
                                 <tr>
                                     <!-- ID oculto del examen existente (indispensable para evitar duplicar registros) -->
@@ -113,10 +127,10 @@
                                         value="{{ $oferta->id }}">
 
                                     <!-- Columna 1: Datos de la Oferta Académica -->
-                                    <td>
-                                        <span
-                                            class="font-weight-bold text-dark">{{ $oferta->pensum->materia->nombre ?? 'S/N' }}</span><br>
-                                        <small class="text-muted">
+                                    <td class="align-middle py-1 px-2">
+                                        <span class="font-weight-bold text-dark"
+                                            style="font-size: 0.78rem;">{{ $oferta->pensum->materia->nombre ?? 'S/N' }}</span><br>
+                                        <small class="text-muted" style="font-size: 0.68rem;">
                                             {{ $oferta->pensum->carrera->nombre ?? 'S/C' }} |
                                             <span
                                                 class="badge badge-light border">{{ $oferta->turno->nombre ?? 'S/T' }}</span>
@@ -126,9 +140,11 @@
                                     </td>
 
                                     <!-- Columna 2: Instancia -->
-                                    <td class="text-center">
+                                    <td class="text-center align-middle py-1 px-2">
                                         <select name="programaciones[{{ $index }}][instancia]"
-                                            class="form-control form-control-sm" style="font-size: 0.75rem;" required>
+                                            class="form-control form-control-xs text-xs"
+                                            style="height: calc(1.4em + 0.4rem + 2px); padding: 0.1rem 0.4rem; font-size: 0.75rem;"
+                                            required>
                                             <option value="P1"
                                                 {{ optional($examenExistente)->instancia == 'P1' ? 'selected' : '' }}>
                                                 Primer Parcial</option>
@@ -145,25 +161,27 @@
                                     </td>
 
                                     <!-- Columna 3: Modalidad -->
-                                    <td class="text-center">
+                                    <td class="text-center align-middle py-1 px-2">
                                         <select name="programaciones[{{ $index }}][modalidad]"
-                                            class="form-control form-control-sm" style="font-size: 0.75rem;">
-                                            <option value="directa"
-                                                {{ optional($examenExistente)->modalidad == 'directa' ? 'selected' : '' }}>
+                                            class="form-control form-control-xs text-xs select-modalidad font-weight-bold {{ $claseColorMod }}"
+                                            style="height: calc(1.4em + 0.4rem + 2px); padding: 0.1rem 0.4rem; font-size: 0.75rem;">
+                                            <option value="directa" class="bg-white text-dark"
+                                                {{ $modActual == 'directa' ? 'selected' : '' }}>
                                                 Directa</option>
-                                            <option value="a_ciegas"
-                                                {{ optional($examenExistente)->modalidad == 'a_ciegas' ? 'selected' : '' }}>
+                                            <option value="a_ciegas" class="bg-white text-dark"
+                                                {{ $modActual == 'a_ciegas' ? 'selected' : '' }}>
                                                 A ciegas</option>
-                                            <option value="dictada"
-                                                {{ optional($examenExistente)->modalidad == 'dictada' ? 'selected' : '' }}>
+                                            <option value="dictada" class="bg-white text-dark"
+                                                {{ $modActual == 'dictada' ? 'selected' : '' }}>
                                                 Dictada</option>
                                         </select>
                                     </td>
 
                                     <!-- Columna 4: Tipo de Proceso -->
-                                    <td class="text-center">
+                                    <td class="text-center align-middle py-1 px-2">
                                         <select name="programaciones[{{ $index }}][tipo_proceso]"
-                                            class="form-control form-control-sm" style="font-size: 0.75rem;">
+                                            class="form-control form-control-xs text-xs"
+                                            style="height: calc(1.4em + 0.4rem + 2px); padding: 0.1rem 0.4rem; font-size: 0.75rem;">
                                             <option value="Ordinario"
                                                 {{ optional($examenExistente)->tipo_proceso == 'Ordinario' ? 'selected' : '' }}>
                                                 Ordinario</option>
@@ -177,18 +195,19 @@
                                     </td>
 
                                     <!-- Columna 5: Fecha Programada -->
-                                    <td>
+                                    <td class="align-middle py-1 px-2">
                                         <input type="date" name="programaciones[{{ $index }}][fecha_programada]"
-                                            class="form-control form-control-sm" style="font-size: 0.75rem;"
-                                            value="{{ optional($examenExistente)->fecha_programada ? \Carbon\Carbon::parse($examenExistente->fecha_programada)->format('Y-m-d') : '' }}"
+                                            class="form-control form-control-xs text-xs"
+                                            style="height: calc(1.4em + 0.4rem + 2px); padding: 0.1rem 0.4rem; font-size: 0.75rem;"
+                                            value="{{ optional($examenExistente)->fecha_programada ? \Carbon\Carbon::parse($examenExistente->fecha_programada)->format('Y-m-d') : $hoy }}"
                                             required>
                                     </td>
 
                                     <!-- Columna 6: Responsable -->
-                                    <td>
+                                    <td class="align-middle py-1 px-2">
                                         <select name="programaciones[{{ $index }}][responsable_id]"
-                                            class="form-control form-control-sm select2" style="font-size: 0.75rem;"
-                                            required>
+                                            class="form-control form-control-xs text-xs select2-responsable"
+                                            style="font-size: 0.75rem;" required>
                                             <option value="">-- Seleccionar Responsable --</option>
                                             @foreach ($listaPersonal as $personal)
                                                 @if ($personal->persona)
@@ -204,9 +223,10 @@
                                     </td>
 
                                     <!-- Columna 7: Observaciones Legales -->
-                                    <td>
+                                    <td class="align-middle py-1 px-2">
                                         <input type="text" name="programaciones[{{ $index }}][observaciones]"
-                                            class="form-control form-control-sm" style="font-size: 0.75rem;"
+                                            class="form-control form-control-xs text-xs"
+                                            style="height: calc(1.4em + 0.4rem + 2px); padding: 0.1rem 0.4rem; font-size: 0.75rem;"
                                             value="{{ optional($examenExistente)->observaciones_legales ?? '' }}"
                                             placeholder="Opcional...">
                                     </td>
@@ -241,11 +261,32 @@
         $(function() {
             // Inicialización de Select2 con compatibilidad Bootstrap 4 para los selectores de personal
             if ($.fn.select2) {
-                $('.select2').select2({
+                $('.select2-responsable').select2({
                     theme: 'bootstrap4',
-                    width: '100%'
+                    width: '100%',
+                    placeholder: '-- Seleccionar --',
+                    allowClear: true
                 });
             }
+
+            // Función para cambiar colores dinámicamente según la modalidad seleccionada
+            function actualizarColorModalidad(selectElement) {
+                var val = $(selectElement).val();
+                $(selectElement).removeClass('bg-success bg-indigo bg-warning text-white text-dark');
+
+                if (val === 'directa') {
+                    $(selectElement).addClass('bg-success text-white');
+                } else if (val === 'a_ciegas') {
+                    $(selectElement).addClass('bg-indigo text-white');
+                } else if (val === 'dictada') {
+                    $(selectElement).addClass('bg-warning text-dark');
+                }
+            }
+
+            // Evento change para aplicar color al instante al cambiar de opción
+            $(document).on('change', '.select-modalidad', function() {
+                actualizarColorModalidad(this);
+            });
         });
     </script>
 @stop

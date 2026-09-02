@@ -276,9 +276,12 @@ Table asistencia {
 Table folio_examen {
   id int [pk, increment]
   programacion_id int [ref: > programacion_examen.id]
-  codigo_folio varchar [unique]
   estudiante_id int [ref: > estudiante.id]
-  estado_folio varchar [default: 'Entregado', note: 'Control de ciclo de vida del folio físico: Entregado, Anulado, Calificado, Extraviado']
+  numero_taco varchar [null, note: 'Identificador físico del taco con datos personales']
+  codigo_folio varchar [unique, note: 'Código correlativo impreso tanto en el examen como en el taco tras la separación']
+  estado_folio varchar [default: 'Generado', note: 'Generado, Foliado_Y_Separado, Calificado, Consolidado']
+  nota decimal(5,2) [null, note: 'Calificación obtenida en este folio']
+  observacion varchar [null, note: 'Ej: Sin taco, Anulado, etc.']
 }
 
 Table calificacion_parcial {

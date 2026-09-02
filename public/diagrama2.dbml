@@ -124,8 +124,20 @@ Table user {
   estado_id int [ref: > estado.id]
   email varchar [unique]
   password varchar
+  must_change_password boolean [default: true, note: 'Indica si el usuario debe cambiar su contraseña obligatoriamente']
   remember_token varchar
   created_at timestamp
+}
+
+Table asignacion_rols {
+  id int [pk, increment]
+  persona_id int [ref: > persona.id]
+  role_id int [note: 'Relación con roles de Spatie']
+  entidad_id int [null, note: 'Contexto (ej: ID de Carrera)']
+  entidad_type varchar [null, note: 'Contexto (ej: App\\Models\\Carrera)']
+  estado_id int [ref: > estado.id]
+  created_at timestamp
+  updated_at timestamp
 }
 
 Table personal {
@@ -273,22 +285,23 @@ Table asistencia {
 Table folio_examen {
   id int [pk, increment]
   programacion_id int [ref: > programacion_examen.id]
-  codigo_folio varchar [unique]
   estudiante_id int [ref: > estudiante.id]
-  estado_folio varchar [default: 'Entregado']
+  codigo_folio varchar [unique, note: 'Código único impreso en el examen (Ej: FOLIO-017 o TEMP-17)']
+  estado_folio varchar [default: 'Generado', note: 'Generado, Foliado_Y_Separado, Calificado, Consolidado']
+  nota decimal(5,2) [null, note: 'Nota ingresada por el docente']
+  observacion varchar [null, note: 'Ej: Sin taco, Anulado, Copiando']
+  updated_at timestamp
 }
 
-Table calificacion_final {
+Table calificacion_consolidada {
   id int [pk, increment]
   matriculacion_id int [ref: > matriculacion_materia.id]
-  programacion_id int [ref: > programacion_examen.id]
-  folio_id int [ref: > folio_examen.id, null]
-  tp_raw float [default: 0]
-  tp_sellado boolean [default: false]
-  exam_raw float [default: 0]
-  exam_sellado boolean [default: false]
-  nota_definitiva float
-  estado_aprobacion varchar
+  programacion_id int [ref: > programacion_examen.id, null, note: 'Instancia evaluativa si aplica (ej: P1, P2)']
+  folio_id int [ref: > folio_examen.id, null, note: 'Vínculo si la instancia fue a ciegas']
+  tp_raw float [default: 0, note: 'Nota de trabajos prácticos o procesos continuos']
+  exam_raw float [default: 0, note: 'Nota obtenida en el examen (directo o por folio)']
+  nota_parcial float [note: 'Suma o ponderación de TP + Examen para esta instancia']
+  estado_consolidado varchar [default: 'Abierto', note: 'Abierto, Consolidado, Cerrado, Modificado_Por_Resolucion']
   registrado_por_user_id int [ref: > user.id]
   log_auditoria json
   created_at timestamp

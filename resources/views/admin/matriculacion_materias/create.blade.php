@@ -300,7 +300,11 @@
                 const filtro = this.value.toLowerCase();
                 document.querySelectorAll('.estudiante-item').forEach(item => {
                     const texto = item.innerText.toLowerCase();
-                    item.style.display = texto.includes(filtro) ? '' : 'none';
+                    const chk = item.querySelector('.estudiante-checkbox');
+                    // Solo filtrar los que no están ocultos por selección
+                    if (!chk.checked) {
+                        item.style.display = texto.includes(filtro) ? '' : 'none';
+                    }
                 });
             });
 
@@ -312,13 +316,22 @@
             function actualizarResumenEstudiantes() {
                 let seleccionados = [];
                 checkboxesEstudiantes.forEach(chk => {
+                    const itemPadre = chk.closest('.estudiante-item');
                     if (chk.checked) {
-                        const itemPadre = chk.closest('.estudiante-item');
+                        itemPadre.classList.add('d-none');
                         const textoLabel = itemPadre.querySelector('span.font-weight-bold').innerText;
                         seleccionados.push({
                             id: chk.value,
                             nombre: textoLabel
                         });
+                    } else {
+                        const filtro = inputFiltrar.value.toLowerCase();
+                        const texto = itemPadre.innerText.toLowerCase();
+                        if (!filtro || texto.includes(filtro)) {
+                            itemPadre.classList.remove('d-none');
+                        } else {
+                            itemPadre.classList.add('d-none');
+                        }
                     }
                 });
 
@@ -334,12 +347,25 @@
                     contenedorSeleccionados.classList.remove('d-none');
                     let html = '';
                     seleccionados.forEach(est => {
-                        html += `<div class="py-1 px-2 mb-1 bg-white border rounded small text-dark d-flex justify-content-between align-items-center">
+                        html += `<div class="py-1 px-2 mb-1 bg-white border rounded small text-dark d-flex justify-content-between align-items-center shadow-sm">
                                     <span>${est.nombre}</span>
-                                    <i class="fas fa-check text-success"></i>
+                                    <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1 quitar-estudiante" data-id="${est.id}" title="Quitar del lote">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                </div>`;
                     });
                     contenedorSeleccionados.innerHTML = html;
+
+                    contenedorSeleccionados.querySelectorAll('.quitar-estudiante').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            const chk = document.getElementById(`est_chk_${id}`);
+                            if (chk) {
+                                chk.checked = false;
+                                actualizarResumenEstudiantes();
+                            }
+                        });
+                    });
                 }
             }
 
@@ -394,6 +420,9 @@
                 const par = filtroParalelo.value.toLowerCase().trim();
 
                 document.querySelectorAll('.oferta-item').forEach(item => {
+                    const chk = item.querySelector('.oferta-checkbox');
+                    if (chk.checked) return; // Si ya fue seleccionada, se mantiene oculta del origen
+
                     const itemCar = item.getAttribute('data-carrera').toLowerCase().trim();
                     const itemGra = item.getAttribute('data-grado').toLowerCase().trim();
                     const itemPer = item.getAttribute('data-periodo').toLowerCase().trim();
@@ -426,7 +455,6 @@
                 filtroParalelo.value = '';
                 aplicarFiltrosOferta();
 
-                // Deseleccionar todas las materias al hacer click en limpiar
                 checkboxesOfertas.forEach(chk => chk.checked = false);
                 actualizarResumenMaterias();
             });
@@ -438,16 +466,23 @@
             function actualizarResumenMaterias() {
                 let seleccionadas = [];
                 checkboxesOfertas.forEach(chk => {
+                    const itemPadre = chk.closest('.oferta-item');
                     if (chk.checked) {
-                        const itemPadre = chk.closest('.oferta-item');
+                        itemPadre.classList.add('d-none');
                         const textoEtiqueta = itemPadre.querySelector('strong').innerText;
                         const badgeSigla = itemPadre.querySelector('.badge').innerText;
                         seleccionadas.push({
+                            id: chk.value,
                             sigla: badgeSigla,
                             nombre: textoEtiqueta
                         });
+                    } else {
+                        itemPadre.classList.remove('d-none');
                     }
                 });
+
+                // Re-aplicar filtros para que las no seleccionadas sigan respetando los selects si están activos
+                aplicarFiltrosOferta();
 
                 document.getElementById('resumen-materias-txt').innerHTML =
                     `Materias: <b class="text-success">${seleccionadas.length}</b>`;
@@ -461,11 +496,25 @@
                     contenedorMateriasSel.classList.remove('d-none');
                     let html = '';
                     seleccionadas.forEach(mat => {
-                        html += `<div class="py-1 px-1 mb-1 bg-white border rounded small text-dark">
-                                    <span class="badge badge-info">${mat.sigla}</span> <span>${mat.nombre}</span>
+                        html += `<div class="py-1 px-2 mb-1 bg-white border rounded small text-dark d-flex justify-content-between align-items-center shadow-sm">
+                                    <div><span class="badge badge-info">${mat.sigla}</span> <span>${mat.nombre}</span></div>
+                                    <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1 quitar-oferta" data-id="${mat.id}" title="Quitar materia">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                </div>`;
                     });
                     contenedorMateriasSel.innerHTML = html;
+
+                    contenedorMateriasSel.querySelectorAll('.quitar-oferta').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.getAttribute('data-id');
+                            const chk = document.getElementById(`oferta_chk_${id}`);
+                            if (chk) {
+                                chk.checked = false;
+                                actualizarResumenMaterias();
+                            }
+                        });
+                    });
                 }
             }
 

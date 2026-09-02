@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Persona extends Model
 {
@@ -40,6 +41,10 @@ class Persona extends Model
     {
         return $this->hasOne(Personal::class, 'persona_id');
     }
+    public function asignaciones()
+    {
+        return $this->hasMany(AsignacionRol::class, 'persona_id');
+    }
 
     // Una persona puede ser un estudiante registrado (relación 1 a 1 inversa)
     public function estudiante()
@@ -53,5 +58,18 @@ class Persona extends Model
         return $this->belongsToMany(Estudiante::class, 'estudiante_ppff', 'ppff_persona_id', 'estudiante_id')
             ->withPivot('parentesco', 'es_tutor_principal')
             ->withTimestamps();
+    }
+    protected function nombreCompleto(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => trim("{$this->ap_paterno} {$this->ap_materno} {$this->nombres}")
+        );
+    }
+
+    protected function nombreCompletoInvertido(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => trim("{$this->ap_paterno} {$this->ap_materno}, {$this->nombres}")
+        );
     }
 }

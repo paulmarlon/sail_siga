@@ -58,4 +58,8 @@ class Estado extends Model
     {
         return $this->hasMany(MatriculacionMateria::class);
     }
+    public function asistencias(): HasMany
+    {
+        return $this->hasMany(Asistencia::class, 'estado_id');
+    }
 }

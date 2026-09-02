@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class MatriculacionMateria extends Model
 {
@@ -49,10 +51,18 @@ class MatriculacionMateria extends Model
     /**
      * Scope para filtrar solo materias activas (muy útil para reportes).
      */
-    public function scopeActivas($query)
+    public function scopeActivas(Builder $query): Builder
     {
         return $query->whereHas('estado', function ($q) {
             $q->where('slug', 'matriculado');
         });
+    }
+
+    /**
+     * Relación con los registros de asistencia.
+     */
+    public function asistencias(): HasMany
+    {
+        return $this->hasMany(Asistencia::class, 'matriculacion_id');
     }
 }
