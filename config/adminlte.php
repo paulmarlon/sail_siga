@@ -454,80 +454,37 @@ return [
             ],
         ],
 
-        [
-            'text' => 'Folios de Examen',
-            'icon' => 'fas fa-fw fa-file-invoice',
-            'can'  => 'admin.folio-examens.index',
-            'submenu' => [
-                [
-                    'text' => 'Listado General',
-                    'url'  => 'admin/folio-examens',
-                    'icon' => 'far fa-circle text-info',
-                    'active' => ['admin/folios*'],
-                ],
-                [
-                    'text' => 'Papelera',
-                    'url'  => 'admin/folios/papelera',
-                    'icon' => 'far fa-circle text-danger',
-                    'active' => ['admin/folios/papelera*'],
-                ],
-            ],
-        ],
 
-        // Líneas originales de multilevel intactas
+
+        // ==========================================
+        // AQUÍ PEGATELO EL MÓDULO DOCENTE (PRIMERA CHAMBA)
+        // ==========================================
+        ['header' => 'ZONA DOCENTE'],
         [
-            'text' => 'multilevel',
-            'icon' => 'fas fa-fw fa-share',
+            'text'    => 'Portal Docente',
+            'icon'    => 'fas fa-fw fa-chalkboard-teacher',
+            'classes' => 'bg-purple text-white',
+            'can'     => 'docente.panel', // Solo lo verá quien tenga este permiso
             'submenu' => [
                 [
-                    'text' => 'level_one',
-                    'url' => '#',
+                    'text'   => 'Seleccionar Materia',
+                    'url'    => 'docente/seleccionar-materia', // El selector donde elige sus materias
+                    'icon'   => 'fas fa-fw fa-exchange-alt text-warning',
+                    'active' => ['docente/seleccionar-materia*'],
                 ],
                 [
-                    'text' => 'level_one',
-                    'url' => '#',
-                    'submenu' => [
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                        ],
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                            'submenu' => [
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                            ],
-                        ],
-                    ],
+                    'text'   => 'Estación de Foliado',
+                    'url'    => 'docente/foliacion', // La vista de foliado que ya armamos
+                    'icon'   => 'fas fa-fw fa-file-invoice text-info',
+                    'active' => ['docente/foliacion*'],
                 ],
                 [
-                    'text' => 'level_one',
-                    'url' => '#',
+                    'text'   => 'Registro de Notas',
+                    'url'    => 'docente/notas',
+                    'icon'   => 'fas fa-fw fa-marker text-success',
+                    'active' => ['docente/notas*'],
                 ],
             ],
-        ],
-        ['header' => 'labels'],
-        [
-            'text' => 'important',
-            'icon_color' => 'red',
-            'url' => '#',
-        ],
-        [
-            'text' => 'warning',
-            'icon_color' => 'yellow',
-            'url' => '#',
-        ],
-        [
-            'text' => 'information',
-            'icon_color' => 'cyan',
-            'url' => '#',
         ],
     ],
 

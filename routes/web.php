@@ -174,17 +174,22 @@ Route::middleware('auth')->group(function () {
         Route::get('programacion-examenes/edit-masivo', [ProgramacionExamenController::class, 'editMasivo'])->name('programacion-examenes.edit-masivo')->middleware('can:admin.programacion-examenes.edit');
         Route::put('programacion-examenes/update-masivo', [ProgramacionExamenController::class, 'updateMasivo'])->name('programacion-examenes.update-masivo')->middleware('can:admin.programacion-examenes.edit');
         Route::post('programacion-examenes/destroy-masivo', [ProgramacionExamenController::class, 'destroyMasivo'])->name('programacion-examenes.destroy-masivo')->middleware('can:admin.programacion-examenes.destroy');
-        Route::resource('programacion-examenes', ProgramacionExamenController::class)->parameters(['programacion-examenes' => 'programacion_examen'])->middleware('can:admin.programacion-examenes.index');
 
-        // --- GESTIÓN DE ASISTENCIAS ---
+        // 🚀 AÑADE ESTAS TRES LÍNEAS DE LOTE AQUÍ:
+        Route::post('programacion-examenes/store-lote', [ProgramacionExamenController::class, 'storeLote'])->name('programacion-examenes.store-lote')->middleware('can:admin.programacion-examenes.edit');
+        Route::put('programacion-examenes/update-lote', [ProgramacionExamenController::class, 'updateLote'])->name('programacion-examenes.update-lote')->middleware('can:admin.programacion-examenes.edit');
+        Route::delete('programacion-examenes/destroy-lote', [ProgramacionExamenController::class, 'destroyLote'])->name('programacion-examenes.destroy-lote')->middleware('can:admin.programacion-examenes.destroy');
+
+        Route::resource('programacion-examenes', ProgramacionExamenController::class)->parameters(['programacion-examenes' => 'programacion_examen'])->middleware('can:admin.programacion-examenes.index');
+        Route::patch('programacion-examenes/{id}/sellar', [ProgramacionExamenController::class, 'sellarInstancia'])->name('programacion-examenes.sellar')->middleware('can:admin.programacion-examenes.edit');
+        Route::patch('programacion-examenes/{id}/desbloquear', [ProgramacionExamenController::class, 'desbloquear'])->name('programacion-examenes.desbloquear')->middleware('can:admin.programacion-examenes.edit');
+        Route::get('programacion-examenes/{id}/examenes-calificados', [ProgramacionExamenController::class, 'examenesCalificados'])->name('programacion-examenes.examenes-calificados')->middleware('can:admin.programacion-examenes.index');      // --- GESTIÓN DE ASISTENCIAS ---
         Route::get('asistencias/reporte-admin', [AsistenciaController::class, 'reporteAdmin'])->name('asistencias.reporte')->middleware('can:admin.asistencias.index');
         Route::get('asistencias/oferta-fecha', [AsistenciaController::class, 'porOfertaYFecha'])->name('asistencias.por-oferta-fecha')->middleware('can:admin.asistencias.index');
         Route::post('asistencias/masiva', [AsistenciaController::class, 'storeMasiva'])->name('asistencias.store-masiva')->middleware('can:admin.asistencias.edit');
         Route::get('asistencias/historial/{matriculacionId}', [AsistenciaController::class, 'historialPorMatriculacion'])->name('asistencias.historial')->middleware('can:admin.asistencias.index');
         Route::resource('asistencias', AsistenciaController::class)->middleware('can:admin.asistencias.index');
 
-        // --- GESTIÓN DE FOLIOS DE EXAMEN ---
-        // --- GESTIÓN DE FOLIOS DE EXAMEN ---
         // --- GESTIÓN DE FOLIOS DE EXAMEN ---
         // 1. RUTAS FIJAS Y ESPECIALES (PRIMERO SIEMPRE)
         Route::get('folio-examens/papelera', [FolioExamenController::class, 'papelera'])->name('folio-examens.papelera')->middleware('can:admin.folio-examens.index');
@@ -198,7 +203,44 @@ Route::middleware('auth')->group(function () {
 
         // 2. RESOURCE (AL FINAL PARA QUE NO INTERCEPTE LAS OTRAS RUTAS)
         Route::resource('folio-examens', FolioExamenController::class)->parameters(['folio-examens' => 'folioExamen'])->middleware('can:admin.folio-examens.index');
-    });
+    }); // Cierre del grupo de administración
+}); // Cierre del grupo auth general
+
+// ==========================================
+// RUTAS DEL PORTAL DOCENTE (FUERA DEL ADMIN)
+// ==========================================
+Route::middleware(['auth', 'force.password', 'can:docente.panel'])->prefix('docente')->name('docente.')->group(function () {
+
+    // 1. Selector de materias
+    Route::get('seleccionar-materia', [FolioExamenController::class, 'docenteSeleccionarMateria'])
+        ->name('seleccionar-materia');
+
+    // 2. Acción POST para fijar la materia en sesión
+    Route::post('fijar-materia', [FolioExamenController::class, 'docenteFijarMateria'])
+        ->name('fijar-materia');
+
+    // 3. Estación de Foliado del Docente
+    Route::get('foliacion', [FolioExamenController::class, 'docenteEstacionFoliado'])
+        ->name('foliacion');
+
+    // 4. Endpoints de guardado reutilizados para el docente
+    Route::post('foliacion/generar-masivo/{programacionId}', [FolioExamenController::class, 'generarMasivo'])
+        ->name('foliacion.generar-masivo');
+
+    Route::post('foliacion/actualizar/{programacionId}', [FolioExamenController::class, 'actualizarFoliacion'])
+        ->name('foliacion.actualizar');
+
+    Route::post('foliacion/guardar-folio-ajax', [FolioExamenController::class, 'guardarFolioAjax'])
+        ->name('foliacion.ajax');
+
+    // 5. Vista de Registro de Notas del Docente
+    Route::get('notas', [FolioExamenController::class, 'docenteRegistroNotas'])
+        ->name('notas');
+
+    // 6. Acción POST para guardar las notas masivamente
+    Route::post('notas/guardar', [FolioExamenController::class, 'docenteGuardarNotas'])
+        ->name('notas.guardar');
+    Route::get('/materias/{id}/calificados', [FolioExamenController::class, 'verExamenesCalificadosDocente'])->name('examenes.calificados');
 });
 
 require __DIR__ . '/auth.php';

@@ -91,7 +91,7 @@
     <!-- FORMULARIO ENVOLVENTE GENERAL -->
     <form action="{{ route('admin.programacion-examenes.create') }}" method="GET" id="form-masivo">
         @csrf
-        <!-- Contenedor dinámico para manejar method spoofing (como DELETE o POST) cuando se requiera -->
+        <!-- Contenedor dinámico para manejar method spoofing (como DELETE o PUT) cuando se requiera -->
         <div id="method-spoofing-container"></div>
 
         <!-- ================= BARRA ESTRATÉGICA DE CONTROL DE PANELES ================= -->
@@ -208,7 +208,6 @@
                 </div>
             </div>
 
-            <!-- ================= COLUMNA 2: TABLA DE OFERTAS ACADÉMICAS (CENTRAL) ================= -->
             @php
                 $obtenerClaseModalidad = function ($modalidad) {
                     switch (strtolower($modalidad ?? '')) {
@@ -224,6 +223,7 @@
                 };
             @endphp
 
+            <!-- ================= COLUMNA 2: TABLA DE OFERTAS ACADÉMICAS (CENTRAL) ================= -->
             <div class="col-md-6 px-1 col-transicion" id="panel-tabla">
                 <div class="card card-success card-outline card-scroll shadow-sm mb-0">
                     <div class="card-header bg-white py-2 px-2 d-flex justify-content-between align-items-center">
@@ -242,10 +242,8 @@
                             class="table table-bordered table-striped table-hover text-nowrap w-100 mb-0">
                             <thead class="thead-dark" style="font-size: 0.75rem;">
                                 <tr>
-                                    <th class="text-center" style="width: 25px;"><i class="fas fa-check-square"></i>
-                                    </th>
+                                    <th class="text-center" style="width: 25px;"><i class="fas fa-check-square"></i></th>
                                     <th class="text-center" style="width: 40px;">N°</th>
-                                    <!-- 👈 NUEVA COLUMNA DE NUMERACIÓN -->
                                     <th>Materia / Sigla</th>
                                     <th>Carrera / Semestre / Periodo</th>
                                     <th class="text-center">T / P</th>
@@ -266,7 +264,6 @@
                                             $ef = $exámenes->get('EF');
                                             $si = $exámenes->get('2T');
 
-                                            // Verificación de folios individuales por cada parcial/instancia
                                             $tieneFoliosP1 = $p1 && $p1->foliosExamen && $p1->foliosExamen->count() > 0;
                                             $tieneFoliosP2 = $p2 && $p2->foliosExamen && $p2->foliosExamen->count() > 0;
                                             $tieneFoliosEF = $ef && $ef->foliosExamen && $ef->foliosExamen->count() > 0;
@@ -319,11 +316,6 @@
                                                     : '';
 
                                             $fechaSI = $si
-                                                ? \Carbon\Carbon::parse($si->modalidad) // Ajustado según tu bloque anterior
-                                                : null; // Nota: Mantengo tu estructura original de fechaSI limpia abajo
-
-                                            // Recalculando fechaSI correctamente como tenías:
-                                            $fechaSI = $si
                                                 ? \Carbon\Carbon::parse($si->fecha_programada)->format('d-m')
                                                 : null;
                                             $claseSI = $si
@@ -351,7 +343,7 @@
                                                         for="oferta_chk_{{ $oferta->id }}"></label>
                                                 </div>
                                             </td>
-                                            <!-- 👈 NÚMERO DE FILA AUTOMÁTICO -->
+
                                             <!-- NÚMERO DE FILA -->
                                             <td class="text-center text-muted font-weight-bold row-index"
                                                 style="font-size: 0.75rem;">
@@ -530,10 +522,82 @@
                                             </td>
 
                                             <td class="text-center">
-                                                <a href="{{ route('admin.programacion-examenes.create', ['oferta_id' => $oferta->id]) }}"
-                                                    class="btn btn-info btn-xs px-1" title="Gestionar individual">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
+                                                <div class="btn-group">
+                                                    <!-- Botón principal de editar -->
+                                                    <a href="{{ route('admin.programacion-examenes.create', ['oferta_id' => $oferta->id]) }}"
+                                                        class="btn btn-info btn-xs px-1" title="Gestionar / Programar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+
+                                                    <!-- Botón toggle dropdown -->
+                                                    <button type="button"
+                                                        class="btn btn-info btn-xs dropdown-toggle dropdown-icon px-1"
+                                                        data-toggle="dropdown" aria-expanded="false">
+                                                        <span class="sr-only">Toggle Dropdown</span>
+                                                    </button>
+
+                                                    <!-- MENÚ DESPLEGABLE CORPORATIVO -->
+                                                    <div class="dropdown-menu dropdown-menu-right shadow"
+                                                        style="font-size: 0.75rem;">
+                                                        <h6
+                                                            class="dropdown-header font-weight-bold text-secondary py-1 mb-1">
+                                                            <i class="fas fa-list-ol mr-1"></i> Ir a Foliación / Plantilla
+                                                        </h6>
+                                                        <div class="dropdown-divider my-1"></div>
+
+                                                        <!-- 📊 Planilla Docente / Estación por cada instancia existente -->
+                                                        @foreach ([['instancia' => 'P1', 'obj' => $p1], ['instancia' => 'P2', 'obj' => $p2], ['instancia' => 'EF', 'obj' => $ef], ['instancia' => '2T', 'obj' => $si]] as $item)
+                                                            @if ($item['obj'])
+                                                                <a href="{{ route('admin.programacion-examenes.examenes-calificados', $item['obj']->id) }}"
+                                                                    class="dropdown-item py-1 font-weight-bold text-primary">
+                                                                    <i class="fas fa-clipboard-list mr-1"></i>
+                                                                    Ver Planilla Calificada ({{ $item['instancia'] }})
+                                                                </a>
+                                                            @endif
+                                                        @endforeach
+
+                                                        <div class="dropdown-divider my-1"></div>
+
+                                                        <!-- 🛡️ Control y Cierre (Sellar / Desbloquear) -->
+                                                        <h6 class="dropdown-header font-weight-bold text-danger py-0 mb-1">
+                                                            <i class="fas fa-lock mr-1"></i> Control y Cierre
+                                                        </h6>
+
+                                                        @foreach ([['instancia' => 'P1', 'obj' => $p1], ['instancia' => 'P2', 'obj' => $p2], ['instancia' => 'EF', 'obj' => $ef], ['instancia' => '2T', 'obj' => $si]] as $item)
+                                                            @if ($item['obj'])
+                                                                @if (!$item['obj']->bloqueado)
+                                                                    <!-- Botón para Sellar -->
+                                                                    <form
+                                                                        action="{{ route('admin.programacion-examenes.sellar', $item['obj']->id) }}"
+                                                                        method="POST"
+                                                                        onsubmit="return confirm('¿Estás seguro de sellar la instancia {{ $item['instancia'] }}? El docente ya no podrá modificar notas.');">
+                                                                        @csrf
+                                                                        @method('PATCH')
+                                                                        <button type="submit"
+                                                                            class="dropdown-item py-1 text-danger font-weight-bold">
+                                                                            <i class="fas fa-lock mr-1"></i> Sellar
+                                                                            {{ $item['instancia'] }}
+                                                                        </button>
+                                                                    </form>
+                                                                @else
+                                                                    <!-- 🔓 Botón para Desbloquear -->
+                                                                    <form
+                                                                        action="{{ route('admin.programacion-examenes.desbloquear', $item['obj']->id) }}"
+                                                                        method="POST"
+                                                                        onsubmit="return confirm('¿Estás seguro de desbloquear la instancia {{ $item['instancia'] }}? El docente volverá a tener acceso para modificar notas.');">
+                                                                        @csrf
+                                                                        @method('PATCH')
+                                                                        <button type="submit"
+                                                                            class="dropdown-item py-1 text-success font-weight-bold">
+                                                                            <i class="fas fa-lock-open mr-1"></i>
+                                                                            Desbloquear {{ $item['instancia'] }}
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -558,57 +622,52 @@
                         class="card-body p-2 card-body-scroll d-flex flex-column justify-content-between contenido-lateral">
 
                         <!-- Lista dinámica de seleccionadas -->
-                        <div class="flex-grow-1 overflow-hidden d-flex flex-column">
-                            <div id="sin-seleccion" class="text-muted text-center py-4">
-                                <i class="fas fa-hand-pointer fa-2x mb-2 text-secondary"></i>
-                                <p class="small mb-0">Marca materias para configurar el lote.</p>
-                            </div>
-                            <div id="lista-seleccionadas-container" class="flex-grow-1 overflow-auto pr-1 d-none">
-                                <!-- Se llena dinámicamente con JavaScript en tiempo real -->
+                        <div class="flex-grow-1 overflow-hidden" style="max-height: 250px; overflow-y: auto !important;">
+                            <ul id="lista-seleccionados-resumen" class="list-group list-group-flush small">
+                                <li class="list-group-item text-muted text-center py-3">No hay elementos seleccionados</li>
+                            </ul>
+                        </div>
+
+                        <!-- 🔘 BOTONES DE ACCIÓN MASIVA (Programar, Actualizar y Borrar) -->
+                        <div class="mt-2 pt-2 border-top">
+                            <div class="d-flex flex-column" style="gap: 4px;">
+                                <!-- Botón 1: Programar / Añadir -->
+                                <button type="button" id="btn-procesar-bloque"
+                                    class="action-btn btn btn-primary btn-sm font-weight-bold text-left py-1 px-2"
+                                    data-action="{{ route('admin.programacion-examenes.create') }}" data-method="GET"
+                                    disabled style="font-size: 0.75rem;">
+                                    <i class="fas fa-calendar-plus mr-1"></i> Programar Lote
+                                </button>
+
+                                <!-- Botón 2: Actualizar / Editar -->
+                                <button type="button" id="btn-editar-bloque"
+                                    class="action-btn btn btn-success btn-sm font-weight-bold text-left py-1 px-2"
+                                    data-action="{{ route('admin.programacion-examenes.create') }}" data-method="GET"
+                                    disabled style="font-size: 0.75rem;">
+                                    <i class="fas fa-tasks mr-1"></i> Actualizar Lote
+                                </button>
+
+                                <!-- Botón 3: Borrar / Eliminar -->
+                                <button type="button" id="btn-tercer-bloque"
+                                    class="action-btn btn btn-danger btn-sm font-weight-bold text-left py-1 px-2"
+                                    data-action="{{ route('admin.programacion-examenes.create') }}" data-method="DELETE"
+                                    disabled style="font-size: 0.75rem;">
+                                    <i class="fas fa-trash-alt mr-1"></i> Borrar Lote
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Botones de Acción Masiva -->
-                        <div class="border-top pt-2 mt-2">
-                            <div class="btn-group-vertical w-100">
-                                <!-- Botón 1: Programación Masiva -->
-                                <button type="submit" id="btn-procesar-bloque"
-                                    class="btn btn-primary btn-sm font-weight-bold py-1 mb-1 shadow-sm action-btn" disabled
-                                    style="font-size: 0.75rem;"
-                                    data-action="{{ route('admin.programacion-examenes.create') }}" data-method="GET">
-                                    <i class="fas fa-calendar-plus mr-1"></i> Programar Lote (<span
-                                        id="contador-lote">0</span>)
-                                </button>
-
-                                <!-- Botón 2: Edición Masiva Alternativa -->
-                                <button type="submit" id="btn-editar-bloque"
-                                    class="btn btn-success btn-sm font-weight-bold py-1 mb-1 shadow-sm action-btn" disabled
-                                    style="font-size: 0.75rem;"
-                                    data-action="{{ route('admin.programacion-examenes.edit-masivo') }}"
-                                    data-method="GET">
-                                    <i class="fas fa-edit mr-1"></i> Editar Lote (<span id="contador-lote-edit">0</span>)
-                                </button>
-
-                                <!-- Botón 3: Eliminar en Lote -->
-                                <button type="submit" id="btn-tercer-bloque"
-                                    class="btn btn-danger btn-sm font-weight-bold py-1 shadow-sm action-btn" disabled
-                                    style="font-size: 0.75rem;"
-                                    data-action="{{ route('admin.programacion-examenes.destroy-masivo') }}"
-                                    data-method="POST">
-                                    <i class="fas fa-trash-alt mr-1"></i> Eliminar Lote (<span
-                                        id="contador-lote-tercer">0</span>)
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
 
-        </div>
+        </div> <!-- Cierre del row principal -->
+    </form> <!-- Cierre del form masivo -->
 
-    </form>
 
-    <!-- Modal Interactivo para Selección de Instancia antes de Editar / Eliminar Lote -->
+    <!-- ================================================================= -->
+    <!-- MODAL PARA SELECCIONAR INSTANCIA E INSTRUCTIVA                    -->
+    <!-- ================================================================= -->
     <div class="modal fade" id="modalSeleccionarInstancia" tabindex="-1" role="dialog"
         aria-labelledby="modalInstanciaLabel" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
@@ -624,7 +683,11 @@
                 <div class="modal-body py-3">
                     <p class="text-muted small mb-2" id="modal-texto-instruccion">¿Qué instancia evaluativa deseas
                         modificar en este lote?</p>
-                    <div class="form-group mb-0">
+
+                    <!-- Select de Instancia -->
+                    <div class="form-group mb-2">
+                        <label for="select-instancia-modal"
+                            class="small font-weight-bold text-dark mb-1">Instancia:</label>
                         <select id="select-instancia-modal" class="form-control form-control-sm" required
                             style="font-size: 0.8rem;">
                             <option value="">-- Selecciona Instancia --</option>
@@ -634,6 +697,15 @@
                             <option value="2T">Segunda Instancia (2T)</option>
                         </select>
                     </div>
+
+                    <!-- 📝 Campo para la Instructiva / Observación -->
+                    <div class="form-group mb-0" id="contenedor-instructiva-modal">
+                        <label for="input-instructiva-modal" class="small font-weight-bold text-dark mb-1">Instructiva /
+                            Memorándum:</label>
+                        <input type="text" id="input-instructiva-modal" class="form-control form-control-sm"
+                            placeholder="Ej: Cite N° 045/2026" style="font-size: 0.8rem;">
+                    </div>
+
                 </div>
                 <div class="modal-footer bg-light py-2">
                     <button type="button" class="btn btn-secondary btn-xs" data-dismiss="modal">Cancelar</button>
@@ -647,9 +719,10 @@
     </div>
 @stop
 
+
 @section('js')
     <script>
-        $(function() {
+        document.addEventListener('DOMContentLoaded', function() {
             let botonPresionado = null;
 
             // 1. Control del panel izquierdo (Filtros)
@@ -670,7 +743,6 @@
                     txtSpan.text('Ocultar Filtros');
                     $(this).removeClass('btn-primary').addClass('btn-outline-primary');
                 }
-
                 recalcularAnchoTabla();
             });
 
@@ -692,38 +764,46 @@
                     txtSpan.text('Ocultar Lote');
                     $(this).removeClass('btn-warning').addClass('btn-outline-warning');
                 }
-
                 recalcularAnchoTabla();
             });
 
-            // 3. Recalcular ancho de la tabla central
             function recalcularAnchoTabla() {
                 var anchoCentral = 12;
-
-                if (!$('#panel-filtros').hasClass('d-none')) {
-                    anchoCentral -= 3;
-                }
-
-                if (!$('#panel-seleccion').hasClass('d-none')) {
-                    anchoCentral -= 3;
-                }
-
+                if (!$('#panel-filtros').hasClass('d-none')) anchoCentral -= 3;
+                if (!$('#panel-seleccion').hasClass('d-none')) anchoCentral -= 3;
                 $('#panel-tabla').removeClass('col-md-5 col-md-6 col-md-7 col-md-9 col-md-10 col-md-12')
                     .addClass('col-md-' + anchoCentral);
             }
 
-            // Capturar la acción de los botones de lote (Incluyendo Programar, Editar y Eliminar)
-            $('.action-btn').on('click', function(e) {
-                var targetAction = $(this).data('action');
-                var targetMethod = $(this).data('method');
+            // --- 4. CAPTURAR ACCIONES DE LOTE Y ABRIR MODAL ---
+            $(document).on('click', '.action-btn', function(e) {
                 var btnId = $(this).attr('id');
+
+                if (btnId === 'btn-header-crear') {
+                    return;
+                }
+
+                if ($('.oferta-checkbox:checked').length === 0) {
+                    e.preventDefault();
+                    alert('Por favor, selecciona al menos una oferta académica del lote.');
+                    return;
+                }
 
                 if (btnId === 'btn-procesar-bloque' || btnId === 'btn-editar-bloque' || btnId ===
                     'btn-tercer-bloque') {
                     e.preventDefault();
                     botonPresionado = $(this);
 
+                    // Limpiar campos del modal previamente
+                    $('#select-instancia-modal').val('');
+                    $('#input-instructiva-modal').val('');
+
                     if (btnId === 'btn-tercer-bloque') {
+                        // Eliminar
+                        botonPresionado.attr('data-action',
+                            "{{ route('admin.programacion-examenes.destroy-lote') }}");
+                        botonPresionado.attr('data-method', 'DELETE');
+
                         $('#modal-header-container').removeClass('bg-success bg-primary').addClass(
                             'bg-danger');
                         $('#modalInstanciaLabel').html(
@@ -732,109 +812,109 @@
                             '¿Qué instancia evaluativa deseas eliminar en este lote?');
                         $('#btn-confirmar-edicion-masiva').removeClass('btn-success btn-primary').addClass(
                             'btn-danger');
+                        $('#contenedor-instructiva-modal').hide();
                     } else if (btnId === 'btn-procesar-bloque') {
+                        // Programar / Añadir
+                        botonPresionado.attr('data-action',
+                            "{{ route('admin.programacion-examenes.store-lote') }}");
+                        botonPresionado.attr('data-method', 'POST');
+
                         $('#modal-header-container').removeClass('bg-success bg-danger').addClass(
                             'bg-primary');
                         $('#modalInstanciaLabel').html(
-                            '<i class="fas fa-calendar-plus mr-1"></i> Seleccionar Instancia a Programar'
-                        );
+                            '<i class="fas fa-calendar-plus mr-1"></i> Programar Lote de Exámenes');
                         $('#modal-texto-instruccion').text(
-                            '¿Qué instancia evaluativa deseas programar para este lote de materias?');
-                        $('#btn-confirmar-edicion-masiva').removeClass('btn-success btn-danger').addClass(
+                            'Indica la instancia y la instructiva de apertura:');
+                        $('#btn-confirmar-edicion-masiva').removeClass('btn-success bg-danger').addClass(
                             'btn-primary');
-                    } else {
+                        $('#contenedor-instructiva-modal').show();
+                    } else if (btnId === 'btn-editar-bloque') {
+                        // Editar
+                        botonPresionado.attr('data-action',
+                            "{{ route('admin.programacion-examenes.update-lote') }}");
+                        botonPresionado.attr('data-method', 'PUT');
+
                         $('#modal-header-container').removeClass('bg-danger bg-primary').addClass(
                             'bg-success');
                         $('#modalInstanciaLabel').html(
-                            '<i class="fas fa-tasks mr-1"></i> Seleccionar Instancia a Editar');
+                            '<i class="fas fa-tasks mr-1"></i> Modificar Lote de Exámenes');
                         $('#modal-texto-instruccion').text(
-                            '¿Qué instancia evaluativa deseas modificar en este lote?');
-                        $('#btn-confirmar-edicion-masiva').removeClass('bg-danger bg-primary').addClass(
-                            'bg-success');
+                            'Indica la instancia y la instructiva de modificación:');
+                        $('#btn-confirmar-edicion-masiva').removeClass('btn-danger bg-primary').addClass(
+                            'btn-success');
+                        $('#contenedor-instructiva-modal').show();
                     }
 
-                    $('#select-instancia-modal').val('');
                     $('#modalSeleccionarInstancia').modal('show');
-                    return;
                 }
-
-                $('#form-masivo').attr('action', targetAction);
-                $('#form-masivo').attr('method', targetMethod);
-                $('#method-spoofing-container').empty();
             });
 
-            // Al confirmar la instancia dentro del Modal
+            // --- 5. AL CONFIRMAR DENTRO DEL MODAL ---
             $('#btn-confirmar-edicion-masiva').on('click', function() {
                 let instanciaElegida = $('#select-instancia-modal').val();
+                let instructivaTexto = $('#input-instructiva-modal').val();
+
                 if (!instanciaElegida) {
                     alert('Por favor, selecciona una instancia evaluativa.');
                     return;
                 }
 
+                if (botonPresionado.attr('id') === 'btn-tercer-bloque') {
+                    if (!confirm(
+                            '¿Estás totalmente seguro de eliminar las instancias seleccionadas de este lote? Esta acción no se puede deshacer.'
+                            )) {
+                        return;
+                    }
+                }
+
                 $('#modalSeleccionarInstancia').modal('hide');
 
                 var targetAction = botonPresionado.data('action');
-                var targetMethod = botonPresionado.data('method');
+                var targetMethod = botonPresionado.data('method') || 'POST';
 
                 $('#form-masivo').attr('action', targetAction);
-                $('#form-masivo').attr('method', targetMethod);
+                $('#form-masivo').attr('method', 'POST');
 
                 $('#method-spoofing-container').empty();
-                if (targetMethod.toUpperCase() === 'POST') {
-                    $('#form-masivo').attr('method', 'POST');
+                if (targetMethod.toUpperCase() !== 'POST') {
+                    $('#method-spoofing-container').html(
+                        `<input type="hidden" name="_method" value="${targetMethod}">`
+                    );
                 }
 
                 $('#form-masivo').find('input[name="instancia_filtro"]').remove();
+                $('#form-masivo').find('input[name="instructiva"]').remove();
+
                 $('#form-masivo').append(
-                    `<input type="hidden" name="instancia_filtro" value="${instanciaElegida}">`);
+                    `<input type="hidden" name="instancia_filtro" value="${instanciaElegida}">`
+                );
+                $('#form-masivo').append(
+                    `<input type="hidden" name="instructiva" value="${instructivaTexto}">`
+                );
 
                 $('#form-masivo').submit();
             });
 
-            // FILTRADO DINÁMICO EN TIEMPO REAL
+            // --- 6. FILTRADO DINÁMICO ---
             function aplicarFiltrosDinamicos() {
                 var pId = $('#filtro-periodo').val();
                 var cId = $('#filtro-carrera').val();
                 var gId = $('#filtro-grado').val();
                 var tId = $('#filtro-turno').val();
                 var paId = $('#filtro-paralelo').val();
-                var inst = $('#filtro-instancia').val();
                 var txt = $('#filtro-busqueda').val().toLowerCase().trim();
 
                 $('.oferta-row').each(function() {
                     var row = $(this);
                     var match = true;
-
                     if (pId && row.data('periodo') != pId) match = false;
                     if (cId && row.data('carrera') != cId) match = false;
                     if (gId && row.data('grado') != gId) match = false;
                     if (tId && row.data('turno') != tId) match = false;
                     if (paId && row.data('paralelo') != paId) match = false;
-
-                    if (inst) {
-                        if (inst === 'PENDIENTE') {
-                            if (row.data('p1') == 1 || row.data('p2') == 1 || row.data('ef') == 1 || row
-                                .data('2t') == 1) {
-                                match = false;
-                            }
-                        } else {
-                            if (inst === 'P1' && row.data('p1') != 1) match = false;
-                            if (inst === 'P2' && row.data('p2') != 1) match = false;
-                            if (inst === 'EF' && row.data('ef') != 1) match = false;
-                            if (inst === '2T' && row.data('2t') != 1) match = false;
-                        }
-                    }
-
                     if (txt && row.data('texto').indexOf(txt) === -1) match = false;
-
-                    if (match) {
-                        row.show();
-                    } else {
-                        row.hide();
-                    }
+                    row.toggle(match);
                 });
-
-                // 🔥 Recalcular la numeración automáticamente tras filtrar
                 actualizarNumeracionVisible();
             }
 
@@ -850,92 +930,65 @@
                 actualizarNumeracionVisible();
             });
 
-            // SINCRONIZACIÓN DE SELECCIONADOS
+            // --- 7. SINCRONIZACIÓN DE SELECCIONADOS ---
             function actualizarContadorYLista() {
-                var contenedor = $('#lista-seleccionadas-container');
+                var contenedor = $('#lista-seleccionados-resumen');
                 contenedor.empty();
-
                 var totalChecked = $('.oferta-checkbox:checked').length;
-                $('#contador-lote, #contador-lote-edit, #contador-lote-tercer').text(totalChecked);
 
                 if (totalChecked > 0) {
-                    $('#sin-seleccion').addClass('d-none');
-                    contenedor.removeClass('d-none');
-
-                    if (totalChecked >= 2) {
-                        $('#btn-procesar-bloque').prop('disabled', false);
-                    } else {
-                        $('#btn-procesar-bloque').prop('disabled', true);
-                    }
-
-                    $('.action-btn').not('#btn-procesar-bloque').prop('disabled', false);
+                    $('#btn-ejecutar-lote').prop('disabled', false);
+                    $('.action-btn').prop('disabled', false);
 
                     $('.oferta-checkbox:checked').each(function() {
                         var chk = $(this);
                         var row = chk.closest('tr');
                         var id = chk.val();
-                        var materiaTexto = row.find('td:eq(2)').find('span')
-                            .text(); // Ajustado por la nueva columna N°
-                        var siglaTexto = row.find('td:eq(2)').find('small').text();
-                        var carreraTexto = row.find('td:eq(3)').find('span').text();
-                        var turnoParaleloTexto = row.find('td:eq(4)').text().trim().replace(/\s+/g, ' ');
+                        var materiaTexto = row.find('td:nth-child(3) span').text();
+                        var siglaTexto = row.find('td:nth-child(3) small').text();
 
-                        var itemHtml = `
-                        <div class="p-1 mb-1 border rounded bg-white shadow-sm d-flex justify-content-between align-items-center item-seleccionado" data-id="${id}" style="font-size: 0.72rem;">
-                            <div>
-                                <strong class="text-dark">${materiaTexto}</strong><br>
-                                <span class="text-muted" style="font-size: 0.65rem;">
-                                    ${siglaTexto} | ${carreraTexto} <br>
-                                    <span class="badge badge-light border px-1">${turnoParaleloTexto}</span>
-                                </span>
-                            </div>
-                            <button type="button" class="btn btn-xs text-danger quitar-item-btn" data-id="${id}">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    `;
-                        contenedor.append(itemHtml);
+                        contenedor.append(`
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2" data-id="${id}">
+                                <span><strong>${siglaTexto}</strong> - ${materiaTexto}</span>
+                                <button type="button" class="btn btn-xs text-danger quitar-item-btn p-0" data-id="${id}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </li>
+                        `);
                     });
                 } else {
-                    $('#sin-seleccion').removeClass('d-none');
-                    contenedor.addClass('d-none');
+                    contenedor.html(
+                        '<li class="list-group-item text-muted text-center py-3">No hay elementos seleccionados</li>'
+                    );
+                    $('#btn-ejecutar-lote').prop('disabled', true);
                     $('.action-btn').prop('disabled', true);
                 }
             }
 
-            $(document).on('change', '.oferta-checkbox', function() {
-                actualizarContadorYLista();
-            });
-
+            $(document).on('change', '.oferta-checkbox', actualizarContadorYLista);
             $(document).on('click', '.quitar-item-btn', function() {
-                var id = $(this).data('id');
-                $('#oferta_chk_' + id).prop('checked', false).trigger('change');
+                $('#oferta_chk_' + $(this).data('id')).prop('checked', false).trigger('change');
             });
-
             $('#btn-limpiar-seleccion').on('click', function() {
                 $('.oferta-checkbox').prop('checked', false).trigger('change');
                 $('#seleccionar-todos-visibles').prop('checked', false);
             });
-
             $('#seleccionar-todos-visibles').on('change', function() {
-                var isChecked = $(this).is(':checked');
-                $('.oferta-row:visible').find('.oferta-checkbox').prop('checked', isChecked);
+                $('.oferta-row:visible').find('.oferta-checkbox').prop('checked', this.checked);
                 actualizarContadorYLista();
             });
 
-            // Ejecutar al cargar la página por primera vez
             actualizarNumeracionVisible();
+            actualizarContadorYLista();
         });
 
-        // Función global de numeración dinámica
         function actualizarNumeracionVisible() {
             let contador = 1;
             document.querySelectorAll('#tabla-programacion tbody tr.oferta-row').forEach(row => {
                 if (row.style.display !== 'none') {
                     const indexCell = row.querySelector('.row-index');
                     if (indexCell) {
-                        indexCell.textContent = contador;
-                        contador++;
+                        indexCell.textContent = contador++;
                     }
                 }
             });

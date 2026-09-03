@@ -14,6 +14,7 @@ use App\Models\MatriculacionMateria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class FolioExamenController extends Controller
 {
@@ -203,20 +204,23 @@ class FolioExamenController extends Controller
             $programacion = ProgramacionExamen::findOrFail($programacionId);
 
             DB::transaction(function () use ($programacion, $foliosData) {
-                // Limpiar folios previos de esta programación para sobreescribir limpiamente
-                FolioExamen::where('programacion_id', $programacion->id)->delete();
-
                 foreach ($foliosData as $posicion => $ruEstudiante) {
                     if (!empty($ruEstudiante)) {
                         $estudiante = \App\Models\Estudiante::where('registro_universitario', $ruEstudiante)->first();
 
                         if ($estudiante) {
-                            FolioExamen::create([
-                                'programacion_id' => $programacion->id,
-                                'estudiante_id'   => $estudiante->id,
-                                'codigo_folio'    => 'FOLIO-' . str_pad($posicion, 3, '0', STR_PAD_LEFT),
-                                'estado_folio'    => 'Foliado_Y_Separado'
-                            ]);
+                            $codigoFolioGenerado = 'FOLIO-' . str_pad($posicion, 3, '0', STR_PAD_LEFT);
+
+                            FolioExamen::updateOrCreate(
+                                [
+                                    'programacion_id' => $programacion->id,
+                                    'codigo_folio'    => $codigoFolioGenerado,
+                                ],
+                                [
+                                    'estudiante_id'   => $estudiante->id,
+                                    'estado_folio'    => 'Foliado_Y_Separado'
+                                ]
+                            );
                         }
                     }
                 }
@@ -230,7 +234,7 @@ class FolioExamenController extends Controller
             logger("Error en generarMasivo: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Error al guardar: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -242,31 +246,58 @@ class FolioExamenController extends Controller
     {
         $request->validate([
             'folios'                => 'required|array',
-            'folios.*.id'           => 'required|exists:folio_examens,id',
+            'folios.*.estudiante_id' => 'required|exists:estudiantes,id',
             'folios.*.codigo_folio' => 'required|string|max:100',
             'folios.*.nota'         => 'nullable|numeric|min:0|max:100',
         ]);
 
-        try {
-            DB::transaction(function () use ($request) {
-                foreach ($request->folios as $data) {
-                    $folio = FolioExamen::findOrFail($data['id']);
+        $programacion = ProgramacionExamen::findOrFail($programacionId);
 
-                    $nuevaNota = $data['nota'] !== null && $data['nota'] !== '' ? $data['nota'] : null;
+        if ($programacion->bloqueado) {
+            return back()->with('error', 'Acción denegada: Esta programación de examen está bloqueada.');
+        }
+
+        try {
+            DB::transaction(function () use ($request, $programacionId) {
+                $codigosEnviados = collect($request->folios)->pluck('codigo_folio')->filter();
+                if ($codigosEnviados->count() !== $codigosEnviados->unique()->count()) {
+                    throw new \Exception("Hay códigos de folio repetidos en el formulario. Cada estudiante debe tener un código único.");
+                }
+
+                foreach ($request->folios as $data) {
+                    $estudianteId = $data['estudiante_id'];
+                    $codigoFolio  = trim($data['codigo_folio']);
+
+                    $nuevaNota   = isset($data['nota']) && $data['nota'] !== '' ? $data['nota'] : null;
                     $nuevoEstado = $nuevaNota !== null ? 'Calificado' : 'Foliado_Y_Separado';
 
-                    $folio->update([
-                        'codigo_folio' => $data['codigo_folio'],
-                        'nota'         => $nuevaNota,
-                        'estado_folio' => $nuevoEstado
-                    ]);
+                    $existenteConMismoCodigo = FolioExamen::where('programacion_id', $programacionId)
+                        ->where('codigo_folio', $codigoFolio)
+                        ->where('estudiante_id', '!=', $estudianteId)
+                        ->exists();
+
+                    if ($existenteConMismoCodigo) {
+                        throw new \Exception("El código de folio '{$codigoFolio}' ya está asignado a otro estudiante en este mismo examen.");
+                    }
+
+                    FolioExamen::updateOrCreate(
+                        [
+                            'programacion_id' => $programacionId,
+                            'estudiante_id'   => $estudianteId,
+                        ],
+                        [
+                            'codigo_folio'    => $codigoFolio,
+                            'nota'            => $nuevaNota,
+                            'estado_folio'    => $nuevoEstado,
+                        ]
+                    );
                 }
             });
 
             return redirect()->route('admin.folio-examens.plantilla', $programacionId)
                 ->with('success', '¡Folios y calificaciones guardados correctamente!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al guardar los datos (verifique que el código de folio no esté repetido): ' . $e->getMessage());
+            return back()->with('error', 'Error al guardar: ' . $e->getMessage());
         }
     }
 
@@ -309,5 +340,255 @@ class FolioExamenController extends Controller
             return redirect()->route('admin.folio-examens.index')
                 ->with('error', 'Error al procesar la solicitud: ' . $e->getMessage());
         }
+    }
+
+    // ==========================================
+    // MÓDULO PORTAL DOCENTE
+    // ==========================================
+
+    /**
+     * Muestra la lista de materias/exámenes asignados únicamente al docente logueado.
+     */
+// ==========================================
+    // MÓDULO PORTAL DOCENTE
+    // ==========================================
+
+    /**
+     * Muestra la lista de materias/exámenes asignados únicamente al docente logueado.
+     */
+    public function docenteSeleccionarMateria()
+    {
+        // 🔒 Obtenemos el usuario de forma segura con el Facade Auth
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        // Buscamos el personal vinculado a la persona del usuario actual
+        $personalId = optional($user->persona)->personal->id ?? null;
+
+        // Filtramos utilizando estrictamente responsable_id
+        $materiasAsignadas = ProgramacionExamen::where('responsable_id', $personalId)
+            ->with([
+                'ofertaAcademica.pensum.materia',
+                'ofertaAcademica.pensum.carrera',
+                'ofertaAcademica.pensum.grado',
+                'ofertaAcademica.turno',
+                'ofertaAcademica.paralelo',
+                'ofertaAcademica.periodo'
+            ])
+            ->get();
+
+        return view('admin.docente.seleccionar_materia', compact('materiasAsignadas'));
+    }
+
+    /**
+     * Guarda la materia seleccionada en la sesión y redirige a la estación de foliado.
+     */
+    public function docenteFijarMateria(Request $request)
+    {
+        $request->validate([
+            'programacion_id' => 'required|exists:programacion_examens,id'
+        ]);
+
+        $programacionId = $request->programacion_id;
+
+        // 🔒 Obtenemos el usuario de forma segura
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $personalId = optional($user->persona)->personal->id ?? null;
+
+        // Validamos propiedad utilizando responsable_id
+        $perteneceAlDocente = ProgramacionExamen::where('id', $programacionId)
+            ->where('responsable_id', $personalId)
+            ->exists();
+
+        // Verificamos si es administrador usando el método seguro de Spatie
+        $esAdmin = method_exists($user, 'hasRole') ? $user->hasRole('Administrador') : false;
+
+        if (!$perteneceAlDocente && !$esAdmin) {
+            return back()->with('error', 'No tienes autorización para gestionar esta materia.');
+        }
+
+        // Guardamos el ID activo en la sesión del profesor
+        session(['docente_programacion_id' => $programacionId]);
+
+        return redirect()->route('docente.foliacion')
+            ->with('success', 'Materia seleccionada correctamente. Ya puedes gestionar tus folios.');
+    }
+
+    /**
+     * Muestra la estación de foliado utilizando el ID guardado en la sesión del docente.
+     */
+    /**
+     * Muestra la estación de foliado a ciegas para el docente.
+     */
+    /**
+     * Muestra la estación de foliado a ciegas para el docente cargando los folios existentes.
+     */
+    public function docenteEstacionFoliado()
+    {
+        $programacionId = session('docente_programacion_id');
+
+        if (!$programacionId) {
+            return redirect()->route('docente.seleccionar-materia')
+                ->with('error', 'Primero debes seleccionar una materia de tu lista.');
+        }
+
+        $programacion = ProgramacionExamen::with([
+            'ofertaAcademica.pensum.materia',
+            'ofertaAcademica.pensum.carrera',
+            'ofertaAcademica.pensum.grado',
+            'ofertaAcademica.turno',
+            'ofertaAcademica.paralelo',
+            'foliosExamen' // Trae los folios generados previamente por el admin
+        ])->findOrFail($programacionId);
+
+        // Obtenemos directamente la colección de folios ya registrados en la BD para esta programación
+        $folios = $programacion->foliosExamen;
+
+        return view('admin.docente.foliacion_ciega', compact('programacion', 'folios'));
+    }
+
+    /**
+     * Muestra la vista de Registro de Notas para el docente basado en su materia activa en sesión.
+     */
+    public function docenteRegistroNotas()
+    {
+        $programacionId = session('docente_programacion_id');
+
+        if (!$programacionId) {
+            return redirect()->route('docente.seleccionar-materia')
+                ->with('error', 'Primero debes seleccionar una materia para registrar notas.');
+        }
+
+        $programacion = ProgramacionExamen::with([
+            'ofertaAcademica.pensum.materia',
+            'ofertaAcademica.pensum.carrera',
+            'ofertaAcademica.pensum.grado',
+            'ofertaAcademica.turno',
+            'ofertaAcademica.paralelo',
+            'foliosExamen.estudiante.persona'
+        ])->findOrFail($programacionId);
+
+        $estudiantesMatriculados = MatriculacionMateria::where('oferta_id', $programacion->oferta_id)
+            ->with('estudiante.persona')
+            ->get();
+
+        return view('admin.docente.registro_notas', compact('programacion', 'estudiantesMatriculados'));
+    }
+
+    /**
+     * Procesa el guardado masivo de notas ingresadas por el docente mediante Eloquent.
+     */
+    public function docenteGuardarNotas(Request $request)
+    {
+        $programacionId = session('docente_programacion_id');
+
+        if (!$programacionId) {
+            return redirect()->route('docente.seleccionar-materia')
+                ->with('error', 'La sesión de la materia ha expirado.');
+        }
+
+        $programacion = ProgramacionExamen::findOrFail($programacionId);
+
+        if ($programacion->bloqueado) {
+            return back()->with('error', 'Acción denegada: Esta programación de examen está bloqueada.');
+        }
+
+        $request->validate([
+            'notas'                 => 'required|array',
+            'notas.*.estudiante_id' => 'required|exists:estudiantes,id',
+            'notas.*.calificacion'  => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $programacionId, $programacion) {
+                foreach ($request->notas as $data) {
+                    $estudianteId = $data['estudiante_id'];
+                    $nota         = isset($data['calificacion']) && $data['calificacion'] !== '' ? $data['calificacion'] : null;
+
+                    $estadoFolio  = $nota !== null ? 'Calificado' : 'Foliado_Y_Separado';
+
+                    FolioExamen::updateOrCreate(
+                        [
+                            'programacion_id' => $programacionId,
+                            'estudiante_id'   => $estudianteId,
+                        ],
+                        [
+                            'nota'         => $nota,
+                            'estado_folio' => $estadoFolio,
+                        ]
+                    );
+                }
+
+                // 🔍 1. COMPROBACIÓN AUTOMÁTICA DE CIERRE DENTRO DE LA TRANSACCIÓN
+                // Obtenemos cuántos estudiantes están matriculados en esta oferta académica
+                $totalEstudiantes = \App\Models\MatriculacionMateria::where('oferta_id', $programacion->oferta_id)->count();
+
+                // Contamos cuántos folios de esta programación ya tienen una nota registrada (diferente de null)
+                $totalConNota = FolioExamen::where('programacion_id', $programacionId)
+                    ->whereNotNull('nota')
+                    ->count();
+
+                // 🔒 2. SI EL 100% DE LOS ESTUDIANTES TIENEN NOTA, SELLAMOS AUTOMÁTICAMENTE
+                if ($totalEstudiantes > 0 && $totalConNota >= $totalEstudiantes) {
+                    $programacion->update([
+                        'bloqueado' => true
+                    ]);
+                }
+            });
+
+            // Mensaje dinámico según si se selló o no
+            $programacion->refresh(); // Actualizamos la instancia para ver su estado actual
+            if ($programacion->bloqueado) {
+                return redirect()->route('docente.notas')
+                    ->with('success', '¡Calificaciones guardadas! Se ha completado el 100% de los registros y el acta ha sido sellada y cerrada automáticamente.');
+            }
+
+            return redirect()->route('docente.notas')
+                ->with('success', '¡Calificaciones guardadas y consolidadas con éxito!');
+        } catch (\Exception $e) {
+            logger("Error en docenteGuardarNotas: " . $e->getMessage());
+            return back()->with('error', 'Error al guardar las notas: ' . $e->getMessage());
+        }
+    }
+    /**
+     * Vista de exámenes calificados exclusiva para el módulo del docente.
+     */
+    public function verExamenesCalificadosDocente(int $programacionId)
+    {
+        $programacion = ProgramacionExamen::with([
+            'ofertaAcademica.pensum.materia',
+            'ofertaAcademica.pensum.grado',
+            'ofertaAcademica.paralelo',
+            'ofertaAcademica.turno',
+            'ofertaAcademica.periodo.gestion'
+        ])->findOrFail($programacionId);
+
+        // 🔥 Agregamos 'estudiante.persona' para poder extraer el nombre y RU
+        $folios = FolioExamen::with('estudiante.persona')
+            ->where('programacion_id', $programacionId)
+            ->get();
+
+        return view('admin.docente.examenes_calificados', compact('programacion', 'folios'));
+    }
+    public function estacion(int $programacionId)
+    {
+        // Buscamos la programación con sus relaciones necesarias (estudiantes, inscritos, etc.)
+        $programacion = ProgramacionExamen::with(['materia', 'docente', 'folios.estudiante'])->findOrFail($programacionId);
+
+        // Opcional: Si quieres validar si es docente y solo puede ver SUS propias materias, puedes poner una condición:
+        // if (auth()->user()->hasRole('Docente') && $programacion->docente_id !== auth()->user()->persona_id) {
+        //     abort(403, 'No tienes permiso para ver esta programación.');
+        // }
+
+        // Retornamos exactamente la misma vista compartida
+        return view('admin.folio_examens.estacion', compact('programacion'));
     }
 }

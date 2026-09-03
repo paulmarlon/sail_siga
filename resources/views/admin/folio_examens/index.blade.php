@@ -553,18 +553,14 @@
                     return;
                 }
 
-                // Disparamos secuencialmente o mediante un formulario dinámico el envío para cada programación seleccionada
-                // (O enviamos por lotes al endpoint generar-masivo)
                 $('#modalGeneracionMasiva').modal('hide');
 
-                // Creamos un form temporal para procesar el primero o iterar
-                var form = $(
-                    '<form action="{{ route('admin.folio-examens.generar-masivo') }}" method="POST"></form>'
-                    );
+                // Construimos la URL dinámicamente inyectando el ID del primer elemento seleccionado
+                var urlMasiva = "{{ url('admin/folio-examens/generar-masivo') }}/" + ids[0];
+
+                var form = $('<form action="' + urlMasiva + '" method="POST"></form>');
                 form.append('@csrf');
                 form.append('<input type="hidden" name="prefijo" value="' + prefijo + '">');
-                // Tomamos por defecto el primero o adaptamos según requerimiento de lote múltiple
-                form.append('<input type="hidden" name="programacion_id" value="' + ids[0] + '">');
 
                 $('body').append(form);
                 form.submit();

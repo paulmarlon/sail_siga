@@ -34,8 +34,8 @@ class DatabaseSeeder extends Seeder
             $roleDocente = Role::firstOrCreate(['name' => 'Docente']);
             $roleEstudiante = Role::firstOrCreate(['name' => 'Estudiante']);
 
-            // Crear algunos permisos esenciales de rutas de administración si los usas
-            $permisos = [
+            // Lista completa de permisos de ADMINISTRACIÓN
+            $permisosAdmin = [
                 // Roles y Permisos
                 'admin.roles.index',
                 'admin.roles.create',
@@ -45,8 +45,7 @@ class DatabaseSeeder extends Seeder
                 'admin.roles.update_permisos',
                 'admin.roles.update',
                 'admin.roles.destroy',
-
-                // Gestión de Accesos / Usuarios (¡Añadido aquí!)
+                // Gestión de Accesos / Usuarios
                 'admin.usuarios.index',
                 'admin.usuarios.create',
                 'admin.usuarios.store',
@@ -58,7 +57,6 @@ class DatabaseSeeder extends Seeder
                 'admin.usuarios.prepararEdicionMasiva',
                 'admin.usuarios.vistaEdicionMasiva',
                 'admin.usuarios.updateMasivo',
-
                 // Carreras
                 'admin.carreras.index',
                 'admin.carreras.create',
@@ -67,7 +65,6 @@ class DatabaseSeeder extends Seeder
                 'admin.carreras.edit',
                 'admin.carreras.update',
                 'admin.carreras.destroy',
-
                 // Gestiones
                 'admin.gestiones.index',
                 'admin.gestiones.create',
@@ -76,17 +73,14 @@ class DatabaseSeeder extends Seeder
                 'admin.gestiones.edit',
                 'admin.gestiones.update',
                 'admin.gestiones.destroy',
-
                 // Niveles
                 'admin.niveles.index',
                 'admin.niveles.store',
                 'admin.niveles.edit',
                 'admin.niveles.update',
                 'admin.niveles.destroy',
-
                 // Configuración
                 'admin.configuracion.edit',
-
                 // Personas
                 'admin.personas.index',
                 'admin.personas.create',
@@ -95,7 +89,6 @@ class DatabaseSeeder extends Seeder
                 'admin.personas.edit',
                 'admin.personas.update',
                 'admin.personas.destroy',
-
                 // Personal
                 'admin.personal.index',
                 'admin.personal.create',
@@ -104,7 +97,6 @@ class DatabaseSeeder extends Seeder
                 'admin.personal.edit',
                 'admin.personal.update',
                 'admin.personal.destroy',
-
                 // Turnos
                 'admin.turnos.index',
                 'admin.turnos.create',
@@ -113,7 +105,6 @@ class DatabaseSeeder extends Seeder
                 'admin.turnos.edit',
                 'admin.turnos.update',
                 'admin.turnos.destroy',
-
                 // Paralelos
                 'admin.paralelos.index',
                 'admin.paralelos.create',
@@ -122,7 +113,6 @@ class DatabaseSeeder extends Seeder
                 'admin.paralelos.edit',
                 'admin.paralelos.update',
                 'admin.paralelos.destroy',
-
                 // Periodos
                 'admin.periodos.index',
                 'admin.periodos.create',
@@ -131,7 +121,6 @@ class DatabaseSeeder extends Seeder
                 'admin.periodos.edit',
                 'admin.periodos.update',
                 'admin.periodos.destroy',
-
                 // Materias
                 'admin.materias.index',
                 'admin.materias.create',
@@ -140,7 +129,6 @@ class DatabaseSeeder extends Seeder
                 'admin.materias.edit',
                 'admin.materias.update',
                 'admin.materias.destroy',
-
                 // Grados
                 'admin.grados.index',
                 'admin.grados.create',
@@ -149,7 +137,6 @@ class DatabaseSeeder extends Seeder
                 'admin.grados.edit',
                 'admin.grados.update',
                 'admin.grados.destroy',
-
                 // Pensums
                 'admin.pensums.index',
                 'admin.pensums.create',
@@ -158,7 +145,6 @@ class DatabaseSeeder extends Seeder
                 'admin.pensums.edit',
                 'admin.pensums.update',
                 'admin.pensums.destroy',
-
                 // Oferta Académica
                 'admin.oferta-academica.index',
                 'admin.oferta-academica.create',
@@ -169,7 +155,6 @@ class DatabaseSeeder extends Seeder
                 'admin.oferta-academica.destroy',
                 'admin.oferta-academica.papelera',
                 'admin.oferta-academica.restaurar',
-
                 // Estudiantes
                 'admin.estudiantes.index',
                 'admin.estudiantes.create',
@@ -180,7 +165,6 @@ class DatabaseSeeder extends Seeder
                 'admin.estudiantes.destroy',
                 'admin.estudiantes.papelera',
                 'admin.estudiantes.restaurar',
-
                 // Inscripción a Carreras
                 'admin.inscripcion-carreras.index',
                 'admin.inscripcion-carreras.create',
@@ -191,7 +175,6 @@ class DatabaseSeeder extends Seeder
                 'admin.inscripcion-carreras.destroy',
                 'admin.inscripcion-carreras.papelera',
                 'admin.inscripcion-carreras.restaurar',
-
                 // Programación de Exámenes
                 'admin.programacion-examenes.index',
                 'admin.programacion-examenes.create',
@@ -202,7 +185,6 @@ class DatabaseSeeder extends Seeder
                 'admin.programacion-examenes.destroy',
                 'admin.programacion-examenes.papelera',
                 'admin.programacion-examenes.restaurar',
-
                 // Matriculación de Materias
                 'admin.matriculacion-materias.index',
                 'admin.matriculacion-materias.create',
@@ -218,7 +200,6 @@ class DatabaseSeeder extends Seeder
                 'admin.matriculacion-materias.edit-group',
                 'admin.matriculacion-materias.update-group',
                 'admin.matriculacion-materias.procesar-retiro',
-
                 // Asistencias
                 'admin.asistencias.index',
                 'admin.asistencias.create',
@@ -230,8 +211,7 @@ class DatabaseSeeder extends Seeder
                 'admin.asistencias.por-oferta-fecha',
                 'admin.asistencias.store-masiva',
                 'admin.asistencias.historial',
-
-                // Folios de Examen
+                // Folios de Examen (Admin)
                 'admin.folio-examens.index',
                 'admin.folio-examens.create',
                 'admin.folio-examens.store',
@@ -244,21 +224,46 @@ class DatabaseSeeder extends Seeder
                 'admin.folio-examens.generar-masivo',
             ];
 
-            foreach ($permisos as $permiso) {
+            // Permisos exclusivos del DOCENTE
+            $permisosDocente = [
+                'docente.panel',
+                'docente.foliacion.gestionar',
+            ];
+            // 1. Sincronizar permisos del Administrador
+            // (Si prefieres crearlos masivamente antes)
+            foreach ($permisosAdmin as $permiso) {
+                Permission::firstOrCreate(['name' => $permiso]);
+            }
+            $roleAdmin->syncPermissions($permisosAdmin);
+
+            // 2. Sincronizar permisos del Docente
+            foreach ($permisosDocente as $permiso) {
+                Permission::firstOrCreate(['name' => $permiso]);
+            }
+            $roleDocente->syncPermissions($permisosDocente);
+
+            // Unimos todos para crearlos en la base de datos
+            $todosLosPermisos = array_merge($permisosAdmin, $permisosDocente);
+
+            foreach ($todosLosPermisos as $permiso) {
                 Permission::firstOrCreate(['name' => $permiso]);
             }
 
-            // Asignar todos los permisos al rol de Administrador
-            $roleAdmin->givePermissionTo(Permission::all());
+            // 2. Asignar permisos a cada rol de forma independiente
+            // El administrador se lleva todo lo de admin
+            $roleAdmin->givePermissionTo($permisosAdmin);
 
-            // 2. Crear el Domicilio necesario para la Persona
+            // El docente se lleva únicamente sus permisos específicos
+            $roleDocente->givePermissionTo($permisosDocente);
+
+            // 3. Crear el Domicilio necesario para la Persona
             $domicilio = Domicilio::create([
                 'pais' => 'Bolivia',
                 'departamento' => 'La Paz',
                 'ciudad' => 'La Paz',
             ]);
 
-            // 3. Crear la Persona
+            // 4. Crear la Persona
             $persona = Persona::create([
                 'ci' => '12345678',
                 'nombres' => 'Paul Marlon',
@@ -269,14 +274,14 @@ class DatabaseSeeder extends Seeder
                 'domicilio_id' => $domicilio->id
             ]);
 
-            // 4. Crear el Usuario vinculado a la Persona
+            // 5. Crear el Usuario vinculado a la Persona
             $user = User::create([
                 'persona_id' => $persona->id,
                 'email' => 'paul@adhara.tech',
                 'password' => Hash::make('7539518520'),
             ]);
 
-            // 5. Asignar el rol de Administrador al usuario principal
+            // 6. Asignar el rol de Administrador al usuario principal
             $user->assignRole($roleAdmin);
         });
         $this->call([

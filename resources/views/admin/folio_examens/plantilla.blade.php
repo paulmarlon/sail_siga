@@ -51,10 +51,20 @@
                     </div>
                 </div>
                 <div class="col-md-4 text-md-right mt-3 mt-md-0">
-                    <button type="button" id="btnGuardarMasivo" class="btn btn-success font-weight-bold shadow-sm mr-1">
-                        <i class="fas fa-save mr-1"></i> Guardar Toda la Foliación
-                    </button>
-                    <a href="{{ route('admin.folio-examens.index') }}"
+                    {{-- 🔒 SI NO ESTÁ BLOQUEADO, MOSTRAMOS EL BOTÓN DE GUARDAR --}}
+                    @if (!$programacion->bloqueado)
+                        <button type="button" id="btnGuardarMasivo"
+                            class="btn btn-success font-weight-bold shadow-sm mr-1">
+                            <i class="fas fa-save mr-1"></i> Guardar Toda la Foliación
+                        </button>
+                    @else
+                        <span class="badge badge-danger p-2 font-weight-bold mr-1" style="font-size: 0.85rem;">
+                            <i class="fas fa-lock mr-1"></i> ACTA SELLADA Y CERRADA
+                        </span>
+                    @endif
+
+                    {{-- BOTÓN VOLVER INTELIGENTE (ADMIN O DOCENTE) --}}
+                    <a href="{{ auth()->user()->hasRole('Docente') ? route('docente.seleccionar-materia') : route('admin.folio-examens.index') }}"
                         class="btn btn-outline-secondary shadow-sm font-weight-bold">
                         <i class="fas fa-arrow-left mr-1"></i> Volver
                     </a>
@@ -65,6 +75,15 @@
 @stop
 
 @section('content')
+    {{-- ALERTA INFORMATIVA SI ESTÁ BLOQUEADO --}}
+    @if ($programacion->bloqueado)
+        <div class="alert alert-warning shadow-sm py-2 px-3 mb-3" style="font-size: 0.88rem;">
+            <i class="fas fa-exclamation-triangle mr-2"></i> <strong>Modo de Consulta (Bloqueado):</strong> Esta instancia
+            de examen se encuentra sellada. Los campos están protegidos en modo de solo lectura y no se pueden realizar
+            modificaciones.
+        </div>
+    @endif
+
     <div class="row pt-1">
 
         {{-- 1. CARD IZQUIERDA: GRILLA TIPO EXCEL COMPACTA --}}
@@ -116,12 +135,15 @@
                                             class="form-control form-control-xs excel-input input-ru font-weight-bold text-primary py-0 px-1"
                                             style="height: 22px; font-size: 0.78rem;" data-pos="{{ $i }}"
                                             value="{{ $ruGuardado }}" placeholder="Ej. 3412" autocomplete="off"
-                                            maxlength="15">
+                                            maxlength="15" {{ $programacion->bloqueado ? 'readonly disabled' : '' }}>
 
                                         <!-- Contenedor flotante para opciones de autocompletado por 4 dígitos -->
-                                        <div class="dropdown-suggestions shadow-lg rounded" id="sugg-{{ $i }}"
-                                            style="display:none; position:absolute; z-index:1050; background:white; border:1px solid #ddd; width: 230px; max-height: 130px; overflow-y:auto; font-size: 0.75rem;">
-                                        </div>
+                                        @if (!$programacion->bloqueado)
+                                            <div class="dropdown-suggestions shadow-lg rounded"
+                                                id="sugg-{{ $i }}"
+                                                style="display:none; position:absolute; z-index:1050; background:white; border:1px solid #ddd; width: 230px; max-height: 130px; overflow-y:auto; font-size: 0.75rem;">
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="align-middle px-2 py-1">
                                         <span id="lbl-nombre-{{ $i }}"
@@ -140,7 +162,7 @@
         </div>
 
         {{-- 2. CARD DERECHA: BOLSA DE ESTUDIANTES COMPACTA --}}
-        <div class="col-md-5">
+        <div class="col-md-5 bolsa-flotante">
             <div class="card card-outline card-warning shadow-sm mb-2">
                 <div class="card-header border-0 py-1 px-2">
                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -196,10 +218,13 @@
                                 <tr class="fila-estudiante {{ $yaAsignado ? 'd-none ocultar-bolsa' : '' }}"
                                     data-reg="{{ $ru }}" data-search="{{ $searchable }}">
                                     <td class="text-center align-middle p-1 py-1">
-                                        <button type="button" class="btn btn-xs btn-primary btn-asignar py-0 px-1"
-                                            style="font-size: 0.65rem;" title="Asignar al primer folio libre">
-                                            <i class="fas fa-arrow-left"></i>
-                                        </button>
+                                        {{-- 🔒 SI ESTÁ BLOQUEADO, NO MOSTRAMOS EL BOTÓN DE ASIGNAR --}}
+                                        @if (!$programacion->bloqueado)
+                                            <button type="button" class="btn btn-xs btn-primary btn-asignar py-0 px-1"
+                                                style="font-size: 0.65rem;" title="Asignar al primer folio libre">
+                                                <i class="fas fa-arrow-left"></i>
+                                            </button>
+                                        @endif
                                     </td>
                                     <td class="text-center font-weight-bold text-primary align-middle py-1">
                                         {{ $ru }}
@@ -234,6 +259,16 @@
             background-color: #fffef0;
         }
 
+        .input-duplicado {
+            background-color: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #721c24 !important;
+        }
+
+        .fila-duplicada {
+            background-color: rgba(220, 53, 69, 0.08) !important;
+        }
+
         .ocultar-bolsa {
             display: none !important;
         }
@@ -250,21 +285,33 @@
             background-color: #007bff;
             color: white;
         }
+
+        .bolsa-flotante {
+            position: sticky;
+            top: 70px;
+            z-index: 1020;
+            max-height: calc(100vh - 90px);
+            overflow-y: auto;
+        }
     </style>
 @stop
 
 @section('js')
     <script>
         $(function() {
+            let estaBloqueado = @json($programacion->bloqueado);
+
             actualizarBolsaYContador();
 
-            // 1. Navegación por teclado estilo Excel (Flechas Arriba/Abajo, Enter, Tab) en la grilla izquierda
+            // Si está bloqueado, detenemos toda la interactividad de edición
+            if (estaBloqueado) return;
+
+            // 1. Navegación por teclado estilo Excel
             $(document).on('keydown', '.input-ru', function(e) {
                 let currentInput = $(this);
                 let currentPos = parseInt(currentInput.data('pos'));
                 let suggBox = $(`#sugg-${currentPos}`);
 
-                // Si el menú desplegable de sugerencias está abierto
                 if (suggBox.is(':visible')) {
                     let items = suggBox.find('.suggestion-item');
                     let activeItem = suggBox.find('.suggestion-item.active');
@@ -296,7 +343,6 @@
                     }
                 }
 
-                // Navegación estándar entre celdas de la grilla con teclado
                 if (e.key === 'ArrowDown' || e.key === 'Enter') {
                     e.preventDefault();
                     let nextInput = $(`#cuerpoGrilla tr[data-pos="${currentPos + 1}"] .input-ru`);
@@ -312,7 +358,7 @@
                 }
             });
 
-            // 2. Autocompletado inteligente por últimos 4 dígitos (o texto completo)
+            // 2. Autocompletado inteligente
             $(document).on('input', '.input-ru', function() {
                 let input = $(this);
                 let val = input.val().trim();
@@ -326,13 +372,11 @@
                     return;
                 }
 
-                // Buscar coincidencias exactas o en los últimos dígitos entre los estudiantes disponibles/del paralelo
                 let matches = [];
                 $('.fila-estudiante').each(function() {
                     let reg = $(this).data('reg').toString().trim();
                     let nombre = $(this).find('.nombre-col').text();
 
-                    // Comprobar si coincide con el texto completo o con el sufijo (últimos dígitos)
                     let ultimosCuatro = reg.slice(-4);
                     if (reg.includes(val) || ultimosCuatro.includes(val)) {
                         matches.push({
@@ -352,7 +396,6 @@
                     });
                     suggBox.html(html).show();
 
-                    // Si hay una coincidencia exacta de los 4 dígitos o RU completo, autocompletar automáticamente
                     let exactMatch = matches.find(m => m.reg === val || m.reg.slice(-4) === val);
                     if (exactMatch && matches.length === 1) {
                         input.val(exactMatch.reg);
@@ -360,7 +403,6 @@
                         suggBox.hide();
                         actualizarBolsaYContador();
 
-                        // Saltar automáticamente al siguiente input al completar con éxito
                         let nextInput = $(`#cuerpoGrilla tr[data-pos="${pos + 1}"] .input-ru`);
                         if (nextInput.length) nextInput.focus().select();
                     }
@@ -371,13 +413,12 @@
                 actualizarBolsaYContador();
             });
 
-            // 3. Selección al hacer clic en una sugerencia desplegada
+            // 3. Selección al hacer clic en sugerencia
             $(document).on('click', '.suggestion-item', function() {
                 let item = $(this);
                 let reg = item.data('reg');
                 let nombre = item.data('nombre');
 
-                // Buscar el input activo actual
                 let activeRow = item.closest('tr');
                 let pos = activeRow.data('pos');
 
@@ -388,19 +429,17 @@
                 $(`#sugg-${pos}`).hide().empty();
                 actualizarBolsaYContador();
 
-                // Saltar al siguiente input de forma automática
                 let nextInput = $(`#cuerpoGrilla tr[data-pos="${pos + 1}"] .input-ru`);
                 if (nextInput.length) nextInput.focus().select();
             });
 
-            // Ocultar sugerencias si se hace clic fuera
             $(document).on('click', function(e) {
                 if (!$(e.target).closest('.excel-grid').length) {
                     $('.dropdown-suggestions').hide();
                 }
             });
 
-            // 4. Doble clic o clic en la flecha lateral de la derecha para pasar de la bolsa al primer input libre
+            // 4. Asignación desde la bolsa
             $(document).on('click', '.btn-asignar', function() {
                 let filaEst = $(this).closest('.fila-estudiante');
                 let ru = filaEst.data('reg');
@@ -426,10 +465,17 @@
             });
 
             // 5. GUARDADO MASIVO (AJAX)
-            // 5. GUARDADO MASIVO (AJAX)
             $('#btnGuardarMasivo').on('click', function() {
                 let btn = $(this);
                 let foliosData = {};
+                let hayDuplicados = $('.input-duplicado').length > 0;
+
+                if (hayDuplicados) {
+                    alert(
+                        "¡Atención! Tienes códigos de RU duplicados en la grilla. Por favor corrígelos antes de guardar."
+                    );
+                    return;
+                }
 
                 $('.input-ru').each(function() {
                     let pos = $(this).data('pos');
@@ -441,7 +487,6 @@
 
                 btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
 
-                // URL generada limpiamente por Blade para asegurar el método POST con el ID correcto
                 let urlMasiva = "{{ route('admin.folio-examens.generar-masivo', $programacion->id) }}";
 
                 $.post(urlMasiva, {
@@ -461,12 +506,31 @@
                 });
             });
 
-            // Función de sincronización y conteo en tiempo real
+            // Función de sincronización y conteo
             function actualizarBolsaYContador() {
                 let rusEscritos = [];
+                let conteoRus = {};
+
                 $('.input-ru').each(function() {
                     let val = $(this).val().trim();
-                    if (val !== "") rusEscritos.push(val);
+                    if (val !== "") {
+                        rusEscritos.push(val);
+                        conteoRus[val] = (conteoRus[val] || 0) + 1;
+                    }
+                });
+
+                $('.input-ru').each(function() {
+                    let input = $(this);
+                    let val = input.val().trim();
+                    let fila = input.closest('tr');
+
+                    if (val !== "" && conteoRus[val] > 1) {
+                        input.addClass('input-duplicado');
+                        fila.addClass('fila-duplicada');
+                    } else {
+                        input.removeClass('input-duplicado');
+                        fila.removeClass('fila-duplicada');
+                    }
                 });
 
                 $('.fila-estudiante').each(function() {
@@ -485,6 +549,10 @@
                 let pendientes = $('.fila-estudiante').not('.ocultar-bolsa').length;
                 $('#contadorBolsa').text(pendientes);
             }
+
+            $(document).on('input', '.input-ru', function() {
+                actualizarBolsaYContador();
+            });
         });
     </script>
 @stop
