@@ -43,4 +43,8 @@ class Estudiante extends Model
     {
         return $this->hasMany(MatriculacionMateria::class);
     }
+    public function folios()
+    {
+        return $this->hasMany(FolioExamen::class, 'estudiante_id');
+    }
 }

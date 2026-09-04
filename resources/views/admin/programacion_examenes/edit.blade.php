@@ -4,22 +4,71 @@
 
 @section('css')
     <style>
-        .card-scroll {
-            height: 75vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card-body-scroll {
-            flex: 1;
-            overflow-y: auto;
-        }
-
         #tabla-edicion-masiva th,
         #tabla-edicion-masiva td {
             padding: 0.35rem 0.4rem !important;
             vertical-align: middle !important;
             font-size: 0.78rem;
+        }
+
+        /* ==========================================
+               SELECT INSTANCIA (Colores más firmes y visibles)
+               ========================================== */
+        .select-instancia-p1 {
+            background-color: #f5c6cb !important;
+            /* Rojo / Danger más intenso */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        .select-instancia-p2 {
+            background-color: #ffeeba !important;
+            /* Amarillo / Warning más intenso */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        .select-instancia-ef {
+            background-color: #c3e6cb !important;
+            /* Verde / Success más intenso */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        .select-instancia-2t {
+            background-color: #bee5eb !important;
+            /* Azul / Info más intenso */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        /* ==========================================
+               SELECT MODALIDAD (Colores más firmes y visibles)
+               ========================================== */
+        .select-modalidad-directa {
+            background-color: #c3e6cb !important;
+            /* Verde más intenso */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        .select-modalidad-aciegas {
+            background-color: #d1b3e0 !important;
+            /* Morado más intenso y sólido */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        .select-modalidad-dictada {
+            background-color: #ffeeba !important;
+            /* Amarillo más intenso */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        select.form-control option {
+            background-color: #ffffff;
+            color: #212529;
         }
     </style>
 @stop
@@ -72,7 +121,7 @@
         @csrf
         @method('PUT')
 
-        <div class="card card-info card-outline card-scroll shadow-sm mb-0">
+        <div class="card card-info card-outline shadow-sm mb-3">
             <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center">
                 <h6 class="card-title text-dark font-weight-bold mb-0" style="font-size: 0.85rem;">
                     <i class="fas fa-tasks mr-1 text-info"></i> Lote Seleccionado para Edición / Creación
@@ -82,7 +131,7 @@
                 </span>
             </div>
 
-            <div class="card-body p-2 card-body-scroll table-responsive">
+            <div class="card-body p-2 table-responsive">
                 <table id="tabla-edicion-masiva"
                     class="table table-bordered table-striped table-hover text-nowrap w-100 mb-0">
                     <thead class="thead-dark text-center" style="font-size: 0.75rem;">
@@ -100,11 +149,30 @@
                         @if (isset($listaOfertas) && count($listaOfertas) > 0)
                             @foreach ($listaOfertas as $index => $oferta)
                                 @php
-                                    // Verificamos si la oferta ya tiene un examen asociado (tomamos el primero o permitimos evaluar por filas)
                                     $examenExistente = $oferta->programacionesExamen->first();
+
+                                    // Instancia actual y su clase de color inicial
+                                    $instanciaActual = optional($examenExistente)->instancia ?? 'P1';
+                                    $claseInstancia = 'select-instancia-p1';
+                                    if ($instanciaActual === 'P2') {
+                                        $claseInstancia = 'select-instancia-p2';
+                                    } elseif ($instanciaActual === 'EF') {
+                                        $claseInstancia = 'select-instancia-ef';
+                                    } elseif ($instanciaActual === '2T') {
+                                        $claseInstancia = 'select-instancia-2t';
+                                    }
+
+                                    // Modalidad actual y su clase de color inicial
+                                    $modalidadActual = strtolower(optional($examenExistente)->modalidad ?? 'directa');
+                                    $claseModalidad = 'select-modalidad-directa';
+                                    if ($modalidadActual === 'a_ciegas') {
+                                        $claseModalidad = 'select-modalidad-aciegas';
+                                    } elseif ($modalidadActual === 'dictada') {
+                                        $claseModalidad = 'select-modalidad-dictada';
+                                    }
                                 @endphp
                                 <tr>
-                                    <!-- ID oculto del examen existente (indispensable para evitar duplicar registros) -->
+                                    <!-- ID oculto del examen existente -->
                                     <input type="hidden" name="programaciones[{{ $index }}][programacion_id]"
                                         value="{{ optional($examenExistente)->id }}">
 
@@ -128,34 +196,29 @@
                                     <!-- Columna 2: Instancia -->
                                     <td class="text-center">
                                         <select name="programaciones[{{ $index }}][instancia]"
-                                            class="form-control form-control-sm" style="font-size: 0.75rem;" required>
-                                            <option value="P1"
-                                                {{ optional($examenExistente)->instancia == 'P1' ? 'selected' : '' }}>
-                                                Primer Parcial</option>
-                                            <option value="P2"
-                                                {{ optional($examenExistente)->instancia == 'P2' ? 'selected' : '' }}>
-                                                Segundo Parcial</option>
-                                            <option value="EF"
-                                                {{ optional($examenExistente)->instancia == 'EF' ? 'selected' : '' }}>
-                                                Examen Final</option>
-                                            <option value="2T"
-                                                {{ optional($examenExistente)->instancia == '2T' ? 'selected' : '' }}>
-                                                Segunda Instancia</option>
+                                            class="form-control form-control-sm select-instancia-dinamico {{ $claseInstancia }}"
+                                            style="font-size: 0.75rem;" required>
+                                            <option value="P1" {{ $instanciaActual == 'P1' ? 'selected' : '' }}>Primer
+                                                Parcial</option>
+                                            <option value="P2" {{ $instanciaActual == 'P2' ? 'selected' : '' }}>Segundo
+                                                Parcial</option>
+                                            <option value="EF" {{ $instanciaActual == 'EF' ? 'selected' : '' }}>Examen
+                                                Final</option>
+                                            <option value="2T" {{ $instanciaActual == '2T' ? 'selected' : '' }}>Segunda
+                                                Instancia</option>
                                         </select>
                                     </td>
 
                                     <!-- Columna 3: Modalidad -->
                                     <td class="text-center">
                                         <select name="programaciones[{{ $index }}][modalidad]"
-                                            class="form-control form-control-sm" style="font-size: 0.75rem;">
-                                            <option value="directa"
-                                                {{ optional($examenExistente)->modalidad == 'directa' ? 'selected' : '' }}>
+                                            class="form-control form-control-sm select-modalidad-dinamico {{ $claseModalidad }}"
+                                            style="font-size: 0.75rem;">
+                                            <option value="directa" {{ $modalidadActual == 'directa' ? 'selected' : '' }}>
                                                 Directa</option>
                                             <option value="a_ciegas"
-                                                {{ optional($examenExistente)->modalidad == 'a_ciegas' ? 'selected' : '' }}>
-                                                A ciegas</option>
-                                            <option value="dictada"
-                                                {{ optional($examenExistente)->modalidad == 'dictada' ? 'selected' : '' }}>
+                                                {{ $modalidadActual == 'a_ciegas' ? 'selected' : '' }}>A ciegas</option>
+                                            <option value="dictada" {{ $modalidadActual == 'dictada' ? 'selected' : '' }}>
                                                 Dictada</option>
                                         </select>
                                     </td>
@@ -239,13 +302,45 @@
 @section('js')
     <script>
         $(function() {
-            // Inicialización de Select2 con compatibilidad Bootstrap 4 para los selectores de personal
+            // Inicialización de Select2 con compatibilidad Bootstrap 4
             if ($.fn.select2) {
                 $('.select2').select2({
                     theme: 'bootstrap4',
                     width: '100%'
                 });
             }
+
+            // Cambio dinámico de fondo para el select de INSTANCIA
+            $(document).on('change', '.select-instancia-dinamico', function() {
+                var val = $(this).val();
+                $(this).removeClass(
+                    'select-instancia-p1 select-instancia-p2 select-instancia-ef select-instancia-2t');
+
+                if (val === 'P1') {
+                    $(this).addClass('select-instancia-p1');
+                } else if (val === 'P2') {
+                    $(this).addClass('select-instancia-p2');
+                } else if (val === 'EF') {
+                    $(this).addClass('select-instancia-ef');
+                } else if (val === '2T') {
+                    $(this).addClass('select-instancia-2t');
+                }
+            });
+
+            // Cambio dinámico de fondo para el select de MODALIDAD
+            $(document).on('change', '.select-modalidad-dinamico', function() {
+                var val = $(this).val();
+                $(this).removeClass(
+                    'select-modalidad-directa select-modalidad-aciegas select-modalidad-dictada');
+
+                if (val === 'directa') {
+                    $(this).addClass('select-modalidad-directa');
+                } else if (val === 'a_ciegas') {
+                    $(this).addClass('select-modalidad-aciegas');
+                } else if (val === 'dictada') {
+                    $(this).addClass('select-modalidad-dictada');
+                }
+            });
         });
     </script>
 @stop

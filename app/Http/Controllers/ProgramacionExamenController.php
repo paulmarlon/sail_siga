@@ -12,6 +12,7 @@ use App\Models\Turno;
 use App\Models\Paralelo;
 use App\Models\Auditoria;
 use Illuminate\Http\Request;
+
 use Illuminate\Support\Facades\Auth;
 
 class ProgramacionExamenController extends Controller
@@ -124,6 +125,12 @@ class ProgramacionExamenController extends Controller
         $listaPersonal = Personal::with('persona')->get();
 
         $ofertaSeleccionadaId = $request->get('oferta_id');
+
+        // Capturamos la instancia, observaciones y la fecha sugerida (con la fecha de hoy por defecto)
+        $instanciaSugerida = $request->get('instancia_sugerida', 'P1');
+        $observacionesSugeridas = $request->get('observaciones_sugeridas');
+        $fechaSugerida = $request->get('fecha_sugerida', now()->format('Y-m-d\TH:i'));
+
         $examenesExistentes = collect();
         if ($ofertaSeleccionadaId && count($listaOfertas) === 1) {
             $examenesExistentes = ProgramacionExamen::where('oferta_id', $ofertaSeleccionadaId)->get();
@@ -133,7 +140,10 @@ class ProgramacionExamenController extends Controller
             'listaOfertas',
             'listaPersonal',
             'ofertaSeleccionadaId',
-            'examenesExistentes'
+            'examenesExistentes',
+            'instanciaSugerida',
+            'observacionesSugeridas',
+            'fechaSugerida' // <-- Pasado a la vista
         ));
     }
 
@@ -193,9 +203,12 @@ class ProgramacionExamenController extends Controller
     {
         $ids = $request->get('ofertas_ids', []);
 
+        // Obtenemos la instancia que el usuario eligió en el modal (ej. P1, P2, EF, 2T)
+        $instanciaSeleccionada = $request->get('instancia_a_editar', 'P1');
+
         if (empty($ids)) {
             return redirect()->route('admin.programacion-examenes.index')
-                ->with('error', 'No se seleccionaron ofertas académicas para editar en lote.');
+                ->with('error', 'No se seleccionaron ofertas académicas para editar.');
         }
 
         $listaOfertas = OfertaAcademica::with([
@@ -204,12 +217,16 @@ class ProgramacionExamenController extends Controller
             'pensum.grado',
             'turno',
             'paralelo',
-            'programacionesExamen'
+            // Opcional: puedes filtrar la relación para traer únicamente la instancia elegida si lo deseas
+            'programacionesExamen' => function ($query) use ($instanciaSeleccionada) {
+                $query->where('instancia', $instanciaSeleccionada);
+            }
         ])->whereIn('id', $ids)->get();
 
         $listaPersonal = Personal::with('persona')->get();
 
-        return view('admin.programacion_examenes.edit', compact('listaOfertas', 'listaPersonal'));
+        // Pasamos también la instancia seleccionada a la vista
+        return view('admin.programacion_examenes.edit', compact('listaOfertas', 'listaPersonal', 'instanciaSeleccionada'));
     }
 
     /**
@@ -228,6 +245,8 @@ class ProgramacionExamenController extends Controller
         foreach ($request->programaciones as $data) {
             ProgramacionExamen::updateOrCreate(
                 [
+                    // Si mandas el ID específico de la programación de esa instancia, lo actualiza,
+                    // de lo contrario lo busca por oferta_id e instancia para no duplicar.
                     'id' => $data['programacion_id'] ?? null,
                 ],
                 [
@@ -253,6 +272,7 @@ class ProgramacionExamenController extends Controller
     public function destroyMasivo(Request $request)
     {
         $ids = $request->input('ofertas_ids', []);
+        $instancia = $request->input('instancia_a_eliminar', 'TODAS'); // Por defecto 'TODAS' si no viene definida
 
         if (empty($ids)) {
             return redirect()->route('admin.programacion-examenes.index')
@@ -260,22 +280,33 @@ class ProgramacionExamenController extends Controller
         }
 
         try {
-            // REGLA A: Verificar si alguna programación de las ofertas seleccionadas está bloqueada
-            $bloqueadasCount = ProgramacionExamen::whereIn('oferta_id', $ids)
-                ->where('bloqueado', true)
-                ->count();
+            // Construir la consulta base según las ofertas seleccionadas
+            $query = ProgramacionExamen::whereIn('oferta_id', $ids);
+
+            // Si no es "TODAS", filtramos estrictamente por la instancia elegida
+            if ($instancia !== 'TODAS') {
+                $query->where('instancia', $instancia);
+            }
+
+            // REGLA A: Verificar si alguna programación de las seleccionadas está bloqueada
+            $bloqueadasCount = (clone $query)->where('bloqueado', true)->count();
 
             if ($bloqueadasCount > 0) {
                 return redirect()->route('admin.programacion-examenes.index')
                     ->with('error', 'No se puede procesar el lote: uno o más exámenes seleccionados se encuentran BLOQUEADOS (notas cerradas o auditadas).');
             }
 
-            $examenesAEliminar = ProgramacionExamen::whereIn('oferta_id', $ids)->get();
+            $examenesAEliminar = $query->get();
 
-            // Ejecutar Soft Delete
-            ProgramacionExamen::whereIn('oferta_id', $ids)->delete();
+            if ($examenesAEliminar->isEmpty()) {
+                return redirect()->route('admin.programacion-examenes.index')
+                    ->with('error', 'No se encontraron registros activos para las instancias y materias seleccionadas.');
+            }
 
-            // REGLA C: Auditoría obligatoria usando la tabla del Nivel 6
+            // Ejecutar Soft Delete de la consulta filtrada
+            $query->delete();
+
+            // REGLA C: Auditoría obligatoria
             foreach ($examenesAEliminar as $ex) {
                 Auditoria::create([
                     'user_id' => Auth::id(),

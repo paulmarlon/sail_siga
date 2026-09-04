@@ -246,9 +246,9 @@ Route::middleware('auth')->group(function () {
             ->middleware('can:admin.programacion-examenes.edit');
 
         // <--- NUEVA RUTA PARA ELIMINACIÓN MASIVA EN LOTE --->
-        Route::post('programacion-examenes/destroy-masivo', [ProgramacionExamenController::class, 'destroyMasivo'])
+        Route::delete('programacion-examenes/destroy-masivo', [ProgramacionExamenController::class, 'destroyMasivo'])
             ->name('programacion-examenes.destroy-masivo')
-            ->middleware('can:admin.programacion-examenes.destroy'); // o el permiso correspondiente
+            ->middleware('can:admin.programacion-examenes.destroy');
 
 
         // B. RECURSO PRINCIPAL DE LARAVEL (Siempre va al ÚLTIMO)

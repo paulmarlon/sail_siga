@@ -33,4 +33,8 @@ class ProgramacionExamen extends Model
     {
         return $this->belongsTo(Personal::class, 'responsable_id');
     }
+    public function folios()
+    {
+        return $this->hasMany(FolioExamen::class, 'programacion_id');
+    }
 }

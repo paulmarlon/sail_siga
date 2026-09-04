@@ -273,9 +273,17 @@ Table asistencia {
 Table folio_examen {
   id int [pk, increment]
   programacion_id int [ref: > programacion_examen.id]
-  codigo_folio varchar [unique]
   estudiante_id int [ref: > estudiante.id]
-  estado_folio varchar [default: 'Entregado']
+  codigo_folio varchar
+  estado_folio varchar [default: 'Generado']
+  nota decimal(5,2)
+  observacion varchar
+  deleted_at timestamp
+
+  indexes {
+    (programacion_id, codigo_folio) [unique]
+  }
+
 }
 
 Table calificacion_final {

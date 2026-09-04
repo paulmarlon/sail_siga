@@ -46,6 +46,51 @@
 @stop
 
 @section('content')
+    @php
+        $renderFechaVertical = function ($examen, $badgeColorPorDefecto) {
+            if (!$examen) {
+                return '<span class="text-muted" style="font-size: 0.65rem;">--/--</span>';
+            }
+
+            // Formatear la fecha para mostrar SOLAMENTE día y mes (ej: 31-12)
+            $fecha = \Carbon\Carbon::parse($examen->fecha_programada);
+            $diaMes = $fecha->format('d-m');
+
+            // Determinar la clase de color según la modalidad guardada en el examen
+            $modalidad = strtolower($examen->modalidad ?? 'directa');
+            $estiloModalidad = 'bg-success text-white'; // Por defecto Directa (Verde)
+            $styleExtra = '';
+
+            if ($modalidad === 'a_ciegas') {
+                $estiloModalidad = 'text-white';
+                $styleExtra = 'background-color: #6f42c1 !important;'; // Morado / Purple
+            } elseif ($modalidad === 'dictada') {
+                $estiloModalidad = 'bg-warning text-dark'; // Amarillo
+            }
+
+            // Icono de bloqueo si aplica
+            $iconoBloqueo = $examen->bloqueado ? '<i class="fas fa-lock text-danger ml-1" title="Bloqueado"></i>' : '';
+
+            // Estilo CSS para orientación vertical hacia arriba (writing-mode o transform)
+            return '
+            <div class="d-flex flex-column align-items-center justify-content-center" style="height: 45px;">
+                <span class="badge ' .
+                $estiloModalidad .
+                ' px-1 py-1 text-center" style="font-size: 0.60rem; ' .
+                $styleExtra .
+                ' writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; letter-spacing: 0.5px;" title="Modalidad: ' .
+                ucfirst(str_replace('_', ' ', $modalidad)) .
+                '">' .
+                $diaMes .
+                '</span>
+                ' .
+                $iconoBloqueo .
+                '
+            </div>
+        ';
+        };
+    @endphp
+
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="icon fas fa-check"></i> {{ session('success') }}
@@ -160,19 +205,6 @@
                                 </div>
                             </div>
 
-                            <!-- Instancia de Examen -->
-                            <div class="form-group mb-2">
-                                <label class="small font-weight-bold text-secondary mb-1">Instancia de Examen:</label>
-                                <select id="filtro-instancia" class="form-control form-control-sm"
-                                    style="font-size: 0.75rem;">
-                                    <option value="">-- Todas las Instancias --</option>
-                                    <option value="P1">Primer Parcial</option>
-                                    <option value="P2">Segundo Parcial</option>
-                                    <option value="EF">Examen Final</option>
-                                    <option value="2T">Segunda Instancia</option>
-                                </select>
-                            </div>
-
                             <!-- Buscador por Texto -->
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold text-secondary mb-1">Materia (Nombre / Sigla):</label>
@@ -210,8 +242,7 @@
                             class="table table-bordered table-striped table-hover text-nowrap w-100 mb-0">
                             <thead class="thead-dark" style="font-size: 0.75rem;">
                                 <tr>
-                                    <th class="text-center" style="width: 25px;"><i class="fas fa-check-square"></i>
-                                    </th>
+                                    <th class="text-center" style="width: 25px;"><i class="fas fa-check-square"></i></th>
                                     <th>Materia / Sigla</th>
                                     <th>Carrera / Semestre / Periodo</th>
                                     <th class="text-center">T / P</th>
@@ -253,7 +284,7 @@
                                             data-texto="{{ $nombMateria }} {{ $siglaMateria }}">
 
                                             <!-- Checkbox -->
-                                            <td class="text-center">
+                                            <td class="text-center align-middle">
                                                 <div class="custom-control custom-checkbox">
                                                     <input type="checkbox" name="ofertas_ids[]"
                                                         value="{{ $oferta->id }}" id="oferta_chk_{{ $oferta->id }}"
@@ -263,14 +294,14 @@
                                                 </div>
                                             </td>
 
-                                            <td>
+                                            <td class="align-middle">
                                                 <span
                                                     class="font-weight-bold text-dark">{{ $oferta->pensum->materia->nombre ?? 'S/N' }}</span><br>
                                                 <small
                                                     class="text-muted">{{ $oferta->pensum->materia->sigla ?? 'S/S' }}</small>
                                             </td>
 
-                                            <td>
+                                            <td class="align-middle">
                                                 <span
                                                     class="text-secondary font-weight-bold">{{ $oferta->pensum->carrera->nombre ?? 'S/C' }}</span><br>
                                                 <small
@@ -283,28 +314,28 @@
                                                 @endif
                                             </td>
 
-                                            <td class="text-center">
+                                            <td class="text-center align-middle">
                                                 <span
                                                     class="badge badge-light border">{{ $oferta->turno->nombre ?? 'S/T' }}</span>
                                                 <span
                                                     class="badge badge-light border">{{ $oferta->paralelo->nombre ?? 'S/P' }}</span>
                                             </td>
 
-                                            <!-- Instancias badges -->
-                                            <td class="text-center"><span
-                                                    class="badge {{ $p1 ? 'badge-success' : 'badge-light text-muted border' }} px-1">{{ $p1 ? 'Sí' : '-' }}</span>
+                                            <!-- Instancias con fechas verticales hacia arriba (Día-Mes y Color de Modalidad) -->
+                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                                {!! $renderFechaVertical($p1, 'badge-success') !!}
                                             </td>
-                                            <td class="text-center"><span
-                                                    class="badge {{ $p2 ? 'badge-success' : 'badge-light text-muted border' }} px-1">{{ $p2 ? 'Sí' : '-' }}</span>
+                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                                {!! $renderFechaVertical($p2, 'badge-success') !!}
                                             </td>
-                                            <td class="text-center"><span
-                                                    class="badge {{ $ef ? 'badge-primary' : 'badge-light text-muted border' }} px-1">{{ $ef ? 'Sí' : '-' }}</span>
+                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                                {!! $renderFechaVertical($ef, 'badge-primary') !!}
                                             </td>
-                                            <td class="text-center"><span
-                                                    class="badge {{ $si ? 'badge-warning' : 'badge-light text-muted border' }} px-1">{{ $si ? 'Sí' : '-' }}</span>
+                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                                {!! $renderFechaVertical($si, 'badge-warning') !!}
                                             </td>
 
-                                            <td class="text-center">
+                                            <td class="text-center align-middle">
                                                 <a href="{{ route('admin.programacion-examenes.create', ['oferta_id' => $oferta->id]) }}"
                                                     class="btn btn-info btn-xs px-1" title="Gestionar individual">
                                                     <i class="fas fa-edit"></i>
@@ -346,30 +377,25 @@
                         <!-- Botones de Acción Masiva -->
                         <div class="border-top pt-2 mt-2">
                             <div class="btn-group-vertical w-100">
-                                <!-- Botón 1: Programación Masiva -->
-                                <button type="submit" id="btn-procesar-bloque"
+                                <!-- Botón 1: Dispara el Modal de Configuración Masiva -->
+                                <button type="button" id="btn-abrir-modal-lote"
                                     class="btn btn-primary btn-sm font-weight-bold py-1 mb-1 shadow-sm action-btn" disabled
-                                    style="font-size: 0.75rem;"
-                                    data-action="{{ route('admin.programacion-examenes.create') }}" data-method="GET">
+                                    style="font-size: 0.75rem;" data-toggle="modal" data-target="#modalConfigurarLote">
                                     <i class="fas fa-calendar-plus mr-1"></i> Programar Lote (<span
                                         id="contador-lote">0</span>)
                                 </button>
 
                                 <!-- Botón 2: Edición Masiva Alternativa -->
-                                <button type="submit" id="btn-editar-bloque"
+                                <button type="button" id="btn-editar-bloque"
                                     class="btn btn-success btn-sm font-weight-bold py-1 mb-1 shadow-sm action-btn" disabled
-                                    style="font-size: 0.75rem;"
-                                    data-action="{{ route('admin.programacion-examenes.edit-masivo') }}"
-                                    data-method="GET">
-                                    <i class="fas fa-edit mr-1"></i> Editar Lote (<span id="contador-lote-edit">0</span>)
+                                    style="font-size: 0.75rem;" data-toggle="modal" data-target="#modalEditarLote">
+                                    <i class="fas fa-edit mr-1"></i> Editar (<span id="contador-lote-edit">0</span>)
                                 </button>
 
-                                <!-- ================= TERCER BOTÓN (Ej. Eliminar / Reporte en Lote) ================= -->
-                                <button type="submit" id="btn-tercer-bloque"
+                                <!-- Botón 3: Eliminar Lote -->
+                                <button type="button" id="btn-tercer-bloque"
                                     class="btn btn-danger btn-sm font-weight-bold py-1 shadow-sm action-btn" disabled
-                                    style="font-size: 0.75rem;"
-                                    data-action="{{ route('admin.programacion-examenes.destroy-masivo') }}"
-                                    data-method="POST">
+                                    style="font-size: 0.75rem;" data-toggle="modal" data-target="#modalEliminarMasivo">
                                     <i class="fas fa-trash-alt mr-1"></i> Eliminar Lote (<span
                                         id="contador-lote-tercer">0</span>)
                                 </button>
@@ -379,6 +405,150 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- ================= MODAL DE CONFIGURACIÓN MASIVA (P1, P2, EF, 2T) ================= -->
+        <div class="modal fade" id="modalConfigurarLote" tabindex="-1" role="dialog"
+            aria-labelledby="modalConfigurarLoteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary py-2">
+                        <h5 class="modal-title font-weight-bold text-white" id="modalConfigurarLoteLabel"
+                            style="font-size: 0.95rem;">
+                            <i class="fas fa-cogs mr-1"></i> Configuración Previa de Instancias para el Lote
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body bg-light">
+                        <p class="small text-muted mb-3">
+                            Seleccione las instancias evaluativas que desea habilitar y configure las observaciones globales
+                            para las materias marcadas.
+                        </p>
+
+                        <!-- Select de Instancia Sugerida -->
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-dark mb-1">Instancia Sugerida para el Lote:</label>
+                            <select name="instancia_sugerida" id="instancia_sugerida"
+                                class="form-control form-control-sm">
+                                <option value="P1">Primer Parcial (P1)</option>
+                                <option value="P2">Segundo Parcial (P2)</option>
+                                <option value="EF">Examen Final (EF)</option>
+                                <option value="2T">Segunda Instancia / Turno (2T)</option>
+                            </select>
+                        </div>
+
+                        <!-- Campo Observaciones -->
+                        <div class="form-group mb-0">
+                            <label class="small font-weight-bold text-dark mb-1">Observaciones Globales /
+                                Comentarios:</label>
+                            <textarea name="observaciones_sugeridas" id="observaciones_sugeridas" class="form-control form-control-sm"
+                                rows="3" placeholder="Ingrese alguna instrucción general para este lote..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-white py-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                        <button type="button" id="btn-ejecutar-programacion-lote"
+                            class="btn btn-primary btn-sm font-weight-bold">
+                            <i class="fas fa-arrow-right mr-1"></i> Continuar al Formulario
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ================= MODAL DE SELECCIÓN PARA EDICIÓN ================= -->
+        <div class="modal fade" id="modalEditarLote" tabindex="-1" role="dialog"
+            aria-labelledby="modalEditarLoteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-success py-2">
+                        <h5 class="modal-title font-weight-bold text-white" id="modalEditarLoteLabel"
+                            style="font-size: 0.95rem;">
+                            <i class="fas fa-edit mr-1"></i> Seleccionar Instancia a Editar
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body bg-light">
+                        <p class="small text-muted mb-3">
+                            Indique qué instancia evaluativa desea modificar de las materias seleccionadas:
+                        </p>
+                        <div class="form-group mb-0">
+                            <label class="small font-weight-bold text-dark mb-1">Instancia:</label>
+                            <select id="instancia_a_editar_modal" class="form-control form-control-sm">
+                                <option value="P1">Primer Parcial (P1)</option>
+                                <option value="P2">Segundo Parcial (P2)</option>
+                                <option value="EF">Examen Final (EF)</option>
+                                <option value="2T">Segunda Instancia / Turno (2T)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-white py-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                        <button type="button" id="btn-ejecutar-edicion-lote"
+                            class="btn btn-success btn-sm font-weight-bold">
+                            <i class="fas fa-arrow-right mr-1"></i> Continuar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal de Confirmación de Eliminación Masiva -->
+        <div class="modal fade" id="modalEliminarMasivo" tabindex="-1" role="dialog"
+            aria-labelledby="modalEliminarMasivoLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <form action="{{ route('admin.programacion-examenes.destroy-masivo') }}" method="POST"
+                        id="formEliminarMasivo">
+                        @csrf
+                        @method('DELETE')
+
+                        <div class="modal-header bg-danger py-2 px-3">
+                            <h6 class="modal-title font-weight-bold text-white" id="modalEliminarMasivoLabel">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Confirmar Eliminación por Lote
+                            </h6>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body py-3">
+                            <p class="mb-2 text-center">¿Está seguro de enviar a la papelera los exámenes seleccionados?
+                            </p>
+
+                            <!-- Selector de Instancia a Eliminar de forma Masiva -->
+                            <div class="form-group mb-3">
+                                <label class="small font-weight-bold text-dark mb-1">Instancia a Eliminar:</label>
+                                <select name="instancia_a_eliminar" id="instancia_a_eliminar"
+                                    class="form-control form-control-sm" required>
+                                    <option value="">-- Seleccionar Instancia --</option>
+                                    <option value="TODAS">Todas las instancias (P1, P2, EF, 2T)</option>
+                                    <option value="P1">Primer Parcial (P1)</option>
+                                    <option value="P2">Segundo Parcial (P2)</option>
+                                    <option value="EF">Examen Final (EF)</option>
+                                    <option value="2T">Segunda Instancia / Turno (2T)</option>
+                                </select>
+                            </div>
+
+                            <div class="alert alert-warning py-2 px-3 mb-0 text-center">
+                                <i class="fas fa-info-circle mr-1"></i> Se procesarán <strong
+                                    id="modal-cantidad-lote">0</strong> registros seleccionados.
+                            </div>
+                        </div>
+
+                        <div class="modal-footer bg-light py-2 px-3">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                                <i class="fas fa-times mr-1"></i> Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-danger btn-sm font-weight-bold px-3 shadow-sm">
+                                <i class="fas fa-trash-alt mr-1"></i> Sí, eliminar lote
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
 
     </form>
@@ -447,13 +617,66 @@
                     .addClass('col-md-' + anchoCentral);
             }
 
-            // Capturar la acción del botón presionado para configurar el formulario dinámicamente al enviar
-            $('.action-btn').on('click', function(e) {
+            // Capturar la acción de los botones submit directos (EXCEPTO el de editar lote que usa modal)
+            $('.action-btn').not('#btn-editar-bloque, #btn-abrir-modal-lote').on('click', function(e) {
                 var targetAction = $(this).data('action');
                 var targetMethod = $(this).data('method');
 
                 $('#form-masivo').attr('action', targetAction);
                 $('#form-masivo').attr('method', targetMethod);
+            });
+
+            // Configurar la acción del formulario al confirmar dentro del modal de programación por lote
+            $('#btn-ejecutar-programacion-lote').on('click', function(e) {
+                $('#form-masivo').attr('action', "{{ route('admin.programacion-examenes.create') }}");
+                $('#form-masivo').attr('method', 'GET');
+                $('#modalConfigurarLote').modal('hide');
+                $('#form-masivo').submit();
+            });
+
+            // 🚀 CONFIGURACIÓN DEL MODAL DE EDICIÓN: Enviar la instancia seleccionada
+            $('#btn-ejecutar-edicion-lote').on('click', function(e) {
+                var instanciaSeleccionada = $('#instancia_a_editar_modal').val();
+
+                if ($('#input-instancia-editar-hidden').length === 0) {
+                    $('#form-masivo').append(
+                        '<input type="hidden" name="instancia_a_editar" id="input-instancia-editar-hidden" value="' +
+                        instanciaSeleccionada + '">');
+                } else {
+                    $('#input-instancia-editar-hidden').val(instanciaSeleccionada);
+                }
+
+                $('#form-masivo').attr('action', "{{ route('admin.programacion-examenes.edit-masivo') }}");
+                $('#form-masivo').attr('method', 'GET');
+
+                $('#modalEditarLote').modal('hide');
+                $('#form-masivo').submit();
+            });
+
+            // Al hacer clic en el botón de eliminar lote, actualizamos el contador en el modal
+            // Al hacer clic en el botón de eliminar lote, actualizamos el contador y la acción del form
+            $('#btn-tercer-bloque').on('click', function() {
+                var seleccionadosCount = $('.oferta-checkbox:checked').length;
+                $('#modal-cantidad-lote').text(seleccionadosCount);
+
+                // 🚀 ASEGURAR QUE APUNTE A LA RUTA DE ELIMINACIÓN MASIVA Y MÉTODO DELETE
+                $('#form-masivo').attr('action',
+                    "{{ route('admin.programacion-examenes.destroy-masivo') }}");
+                $('#form-masivo').attr('method', 'POST'); // Laravel usa POST con _method DELETE
+            });
+
+            // Interceptamos el envío del modal masivo de eliminación (único y limpio)
+            $('#formEliminarMasivo').on('submit', function(e) {
+                $(this).find('input[name="ofertas_ids[]"]').remove();
+
+                $('.oferta-checkbox:checked').each(function() {
+                    var ofertaId = $(this).val();
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'ofertas_ids[]',
+                        value: ofertaId
+                    }).appendTo('#formEliminarMasivo');
+                });
             });
 
             // FILTRADO DINÁMICO EN TIEMPO REAL
@@ -463,7 +686,6 @@
                 var gId = $('#filtro-grado').val();
                 var tId = $('#filtro-turno').val();
                 var paId = $('#filtro-paralelo').val();
-                var inst = $('#filtro-instancia').val();
                 var txt = $('#filtro-busqueda').val().toLowerCase().trim();
 
                 $('.oferta-row').each(function() {
@@ -475,14 +697,6 @@
                     if (gId && row.data('grado') != gId) match = false;
                     if (tId && row.data('turno') != tId) match = false;
                     if (paId && row.data('paralelo') != paId) match = false;
-
-                    if (inst) {
-                        if (inst === 'P1' && row.data('p1') != 1) match = false;
-                        if (inst === 'P2' && row.data('p2') != 1) match = false;
-                        if (inst === 'EF' && row.data('ef') != 1) match = false;
-                        if (inst === '2T' && row.data('2t') != 1) match = false;
-                    }
-
                     if (txt && row.data('texto').indexOf(txt) === -1) match = false;
 
                     if (match) {
@@ -493,12 +707,12 @@
                 });
             }
 
-            $('#filtro-periodo, #filtro-carrera, #filtro-grado, #filtro-turno, #filtro-paralelo, #filtro-instancia')
+            $('#filtro-periodo, #filtro-carrera, #filtro-grado, #filtro-turno, #filtro-paralelo')
                 .on('change', aplicarFiltrosDinamicos);
             $('#filtro-busqueda').on('keyup', aplicarFiltrosDinamicos);
 
             $('#btn-limpiar-filtros').on('click', function() {
-                $('#filtro-periodo, #filtro-carrera, #filtro-grado, #filtro-turno, #filtro-paralelo, #filtro-instancia')
+                $('#filtro-periodo, #filtro-carrera, #filtro-grado, #filtro-turno, #filtro-paralelo')
                     .val('');
                 $('#filtro-busqueda').val('');
                 $('.oferta-row').show();
@@ -510,7 +724,6 @@
                 contenedor.empty();
 
                 var totalChecked = $('.oferta-checkbox:checked').length;
-                // Actualizamos los contadores de todos los botones de acción masiva
                 $('#contador-lote, #contador-lote-edit, #contador-lote-tercer').text(totalChecked);
 
                 if (totalChecked > 0) {
@@ -571,4 +784,4 @@
             });
         });
     </script>
-@stop
+@endsection
