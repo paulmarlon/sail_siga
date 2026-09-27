@@ -18,7 +18,7 @@ class DocentePortalController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Buscamos el registro de Personal usando la persona_id del usuario logueado (respetando tus conexiones actuales)
+        // Buscamos el registro de Personal usando la persona_id del usuario logueado
         $personal = Personal::where('persona_id', $user->persona_id)->first();
         $personalId = $personal->id ?? null;
 
@@ -31,7 +31,7 @@ class DocentePortalController extends Controller
                 'turno',
                 'paralelo',
                 'periodo.gestion',
-                'programacionesExamen.folios', // <--- IMPORTANTE: Preca
+                'programacionesExamen.folios',
                 'docenteActual.docente.persona'
             ])
                 ->has('programacionesExamen')
@@ -61,7 +61,12 @@ class DocentePortalController extends Controller
                 ->get();
         }
 
-        return view('docente.dashboard', compact('ofertasAsignadas'));
+        // Obtenemos todos los catálogos necesarios para los filtros de la vista
+        $periodos = \App\Models\Periodo::with('gestion')->get();
+        $carreras = \App\Models\Carrera::all();
+        $grados = \App\Models\Grado::all(); // <--- Agregado para el filtro de grados/semestres
+
+        return view('docente.dashboard', compact('ofertasAsignadas', 'periodos', 'carreras', 'grados'));
     }
 
     public function llenarNotas(ProgramacionExamen $programacion)

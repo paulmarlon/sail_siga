@@ -246,24 +246,35 @@ Table programacion_examen {
     instancia varchar
     modalidad varchar [note: 'directa, a_ciegas, dictada']
     tipo_proceso varchar [default: 'Ordinario']
-    fecha_programada datetime
+    fecha_programada timestamp//OJO CAMBIAR
     responsable_id int [ref: > personal.id]
     bloqueado boolean [default: false]
     observaciones_legales text
 }
 
 // -----------------------------------------------------------------------------
-// NIVEL 6: EVALUACIÓN, ASISTENCIA, TITULACIÓN Y AUDITORÍA
-// OJO HASTA LO ANTERIOR AVANZADO ACTUALIZADO
+// CONFIGURACIÓN MAESTRA DE EVALUACIÓN (Las reglas institucionales)
 // -----------------------------------------------------------------------------
-Table asistencia {
+Table configuracion_parcial_meta {
     id int [pk, increment]
-    matriculacion_id int [ref: > matriculacion_materia.id]
-    fecha date
+    carrera_id int [ref: > carrera.id, null, note: 'Si es null, aplica por defecto a toda la institución o pensum']
+    nro_parcial int [note: '1, 2, 3']
+    nombre varchar [note: 'Ej: Primer Parcial, Segundo Parcial, Tercer Parcial']
+    ponderacion_parcial decimal(5,2) [note: 'Peso oficial del parcial (Ej: 30.00, 40.00)']
     estado_id int [ref: > estado.id]
-    observacion varchar
 }
 
+Table configuracion_componente_meta {
+    id int [pk, increment]
+    configuracion_parcial_id int [ref: > configuracion_parcial_meta.id]
+    tipo_componente varchar [note: "Valores: 'trabajo_practico', 'examen', 'asistencia'"]
+    ponderacion_componente decimal(5,2) [note: 'Porcentaje interno sobre el 100% del parcial (Ej: 25.00 o 75.00)']
+    es_obligatorio boolean [default: true]
+}
+
+// -----------------------------------------------------------------------------
+// SUBSISTEMA DE EXÁMENES Y FOLIOS
+// -----------------------------------------------------------------------------
 Table folio_examen {
     id int [pk, increment]
     programacion_id int [ref: > programacion_examen.id]
@@ -275,39 +286,50 @@ Table folio_examen {
     deleted_at timestamp
 }
 
+// -----------------------------------------------------------------------------
+// SUBSISTEMA DE CALIFICACIONES Y DETALLES (Transaccional por Estudiante)
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// SUBSISTEMA DE CALIFICACIONES Y DETALLES (Transaccional por Estudiante)
+// -----------------------------------------------------------------------------
 Table calificacion_parcial {
     id int [pk, increment]
     matriculacion_id int [ref: > matriculacion_materia.id]
-    nro_parcial int [note: '1 (Pondera 30%), 2 (Pondera 30%), o 3 (Pondera 40%)']
-    ponderacion_parcial decimal(5,2) [note: '30.00 para 1 y 2, 40.00 para 3']
 
-    // Componentes estándar sobre 100
-    tp_nota decimal(5,2) [default: 0, note: 'Trabajo práctico evaluado sobre 100 (aporta 25%)']
-    exam_nota decimal(5,2) [default: 0, note: 'Examen evaluado sobre 100 (aporta 75%)']
+    // AQUÍ ESTÁ LA RELACIÓN QUE FALTABA CON LA CONFIGURACIÓN META:
+    configuracion_parcial_id int [ref: > configuracion_parcial_meta.id, null, note: 'Plantilla original de donde heredó las ponderaciones']
 
-    // Trazabilidad de examen
-    metodo_registro varchar [default: 'directa', note: 'directa, folio, dictada']
-    folio_id int [ref: > folio_examen.id, null]
+    nro_parcial int [note: '1, 2 o 3']
+    ponderacion_parcial decimal(5,2) [note: 'Peso oficial heredado de la meta (Ej: 30.00)']
+    nota_parcial_calculada decimal(5,2) [note: 'Suma de los componentes ponderados del detalle']
+    estado_id int [ref: > estado.id, note: 'Ej: Vigente, Bloqueado, Modificado']
+    created_at timestamp
+    updated_at timestamp
+}
 
-    nota_parcial_calculada decimal(5,2) [note: 'Calculado: ((tp_nota * 0.25) + (exam_nota * 0.75)) * (ponderacion_parcial / 100)']
-    registrado_por_user_id int [ref: > user.id]
-    estado_id int [ref: > estado.id]
+Table calificacion_detalle {
+    id int [pk, increment]
+    calificacion_parcial_id int [ref: > calificacion_parcial.id]
+    tipo_componente varchar [note: "Valores: 'trabajo_practico', 'examen'"]
+    ponderacion_componente decimal(5,2) [note: 'Porcentaje de peso de este componente (Ej: 25 o 75)']
+    nota decimal(5,2) [note: 'Nota obtenida evaluada sobre 100']
+    modalidad_origen varchar [default: 'directa', note: "'directa', 'a_ciegas', 'dictada', 'extraordinaria'"]
+    folio_id int [ref: > folio_examen.id, null, note: 'Enlace al folio si se originó en examen a ciegas']
+    registrado_por_user_id int [ref: > user.id, note: 'Usuario que ingresó o sincronizó este componente']
+    observacion text [null, note: 'Justificación médica, permiso o nota aclaratoria']
+    created_at timestamp
     updated_at timestamp
 }
 
 Table calificacion_final {
     id int [pk, increment]
     matriculacion_id int [ref: > matriculacion_materia.id, unique]
-    promedio_parciales decimal(5,2) [note: 'Suma acumulada de los tres parciales']
-
-    // Gestión de Segunda Instancia (A lo sumo 3 materias, habilitado si acumulado >= 33% y < 50.5%)
+    promedio_parciales decimal(5,2) [note: 'Suma acumulada de los parciales']
     habilita_segunda_instancia boolean [default: false]
-    nota_segunda_instancia decimal(5,2) [null, note: 'Nota extraordinaria. Si aprueba, el sistema fija nota definitiva en 51.00']
-
-    nota_definitiva decimal(5,2) [note: 'Nota oficial de kárdex (Mínimo de aprobación: 50.5)']
-    estado_aprobacion varchar [note: 'Aprobado, Reprobado Insuficiencia, Segunda Instancia, Retiro Disciplinario']
-    acta_cerrada boolean [default: false, note: 'Candado de seguridad: impide cambios directos tras el cierre oficial']
-
+    nota_segunda_instancia decimal(5,2) [null, note: 'Nota extraordinaria']
+    nota_definitiva decimal(5,2) [note: 'Nota oficial de kárdex']
+    estado_aprobacion varchar [note: 'Aprobado, Reprobado Insuficiencia, Segunda Instancia']
+    acta_cerrada boolean [default: false]
     registrado_por_user_id int [ref: > user.id]
     log_auditoria json
     created_at timestamp
@@ -317,13 +339,13 @@ Table calificacion_final {
 Table recurso_jerarquico_nota {
     id int [pk, increment]
     matriculacion_id int [ref: > matriculacion_materia.id]
-    calificacion_parcial_id int [ref: > calificacion_parcial.id, null, note: 'Si la corrección aplica a un parcial específico']
-    nro_tramite varchar [unique, note: 'Expediente administrativo o solicitud formal de revisión']
-    motivo varchar [note: 'Error de transcripción, Revisión por tribunal de alzada']
+    calificacion_parcial_id int [ref: > calificacion_parcial.id, null]
+    nro_tramite varchar [unique]
+    motivo varchar
     nota_anterior decimal(5,2) [null]
     nota_nueva decimal(5,2) [null]
-    autoridad_responsable_id int [ref: > personal.id, note: 'Personal administrativo/jerárquico que autoriza el cambio']
-    documento_resolucion_path varchar [null, note: 'PDF firmado de la resolución o memorial']
+    autoridad_responsable_id int [ref: > personal.id]
+    documento_resolucion_path varchar [null]
     registrado_por_user_id int [ref: > user.id]
     created_at timestamp [default: `now()`]
 }

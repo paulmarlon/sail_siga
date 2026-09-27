@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('modalidad');
 
             $table->string('tipo_proceso')->default('Ordinario');
-            $table->dateTime('fecha_programada');
+            $table->timestamp('fecha_programada');
 
             // Relación con personal (responsable / docente)
             $table->foreignId('responsable_id')

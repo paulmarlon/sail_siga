@@ -58,4 +58,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(InscripcionCarrera::class, 'registrado_por_user_id');
     }
+    public function calificacionesParcialesRegistradas()
+    {
+        return $this->hasMany(CalificacionParcial::class, 'registrado_por_user_id');
+    }
 }

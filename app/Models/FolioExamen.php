@@ -42,4 +42,8 @@ class FolioExamen extends Model
     {
         return $this->belongsTo(Estudiante::class, 'estudiante_id');
     }
+    public function calificacionParcial()
+    {
+        return $this->hasOne(CalificacionParcial::class, 'folio_id');
+    }
 }

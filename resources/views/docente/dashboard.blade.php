@@ -15,9 +15,44 @@
             text-overflow: ellipsis;
         }
 
-        /* Fondo amarillo suave para celdas de exámenes ya calificados */
+        /* Fondo amarillo suave para celdas de exámenes ya calificados (en el TD) */
         .bg-warning-soft {
-            background-color: #fff3cd !important;
+            background-color: #ffc400 !important;
+        }
+
+        /* Estilo personalizado para modalidad A Ciegas (Morado / Purple) */
+        .btn-purple {
+            background-color: #6f42c1 !important;
+            border-color: #6f42c1 !important;
+            color: #fff !important;
+        }
+
+        .btn-purple:hover {
+            background-color: #59339d !important;
+            border-color: #59339d !important;
+            color: #fff !important;
+        }
+
+        /* Estética optimizada para los botones de notas y fechas verticales hacia arriba */
+        .eval-link-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1px 2px;
+            border-radius: 3px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .eval-fecha-vertical {
+            font-size: 0.58rem;
+            letter-spacing: -0.5px;
+            font-weight: 600;
+            line-height: 1;
+            margin-top: 1px;
+            writing-mode: horizontal-tb;
+            /* Asegura legibilidad vertical compacta */
         }
     </style>
 @stop
@@ -38,6 +73,14 @@
     @if (session('error'))
         <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-3" role="alert">
             <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
@@ -119,25 +162,61 @@
                                 </span>
                             </td>
 
-                            <!-- Celdas de Notas (P1, P2, EF, 2T) -->
                             @foreach ([$p1, $p2, $ef, $si] as $eval)
                                 @php
                                     $tieneNotasCompletas = false;
+                                    $esACiegas = false;
 
-                                    if ($eval && $eval->folios->count() > 0) {
-                                        // Evaluamos si TODOS los folios de este examen tienen una nota registrada (no son nulos)
-                                        // O puedes cambiar 'isNotNull("nota")' por 'estado_folio == "Calificado"' según tu flujo
-                                        $totalFolios = $eval->folios->count();
-                                        $foliosCalificados = $eval->folios->whereNotNull('nota')->count();
+                                    if ($eval) {
+                                        $esACiegas = $eval->modalidad === 'a_ciegas';
 
-                                        // Se pinta solo si hay folios y el 100% de ellos ya tienen nota registrada
-                                        $tieneNotasCompletas = $totalFolios > 0 && $foliosCalificados === $totalFolios;
+                                        if ($esACiegas) {
+                                            // Lógica para A Ciegas: Validamos a través de los folios
+                                            $totalFolios = $eval->relationLoaded('folios')
+                                                ? $eval->folios->count()
+                                                : $eval->folios()->count();
+                                            $foliosCalificados = $eval->relationLoaded('folios')
+                                                ? $eval->folios->whereNotNull('nota')->count()
+                                                : $eval->folios()->whereNotNull('nota')->count();
+
+                                            $tieneNotasCompletas =
+                                                $totalFolios > 0 && $foliosCalificados === $totalFolios;
+                                        } else {
+                                            // Lógica para Directa o Dictada: Mapeamos la instancia string a entero para 'nro_parcial'
+                                            $nroParcialMap = [
+                                                'P1' => 1,
+                                                'P2' => 2,
+                                                'EF' => 3,
+                                                '2T' => 3,
+                                            ];
+                                            $nroParcialInt = $nroParcialMap[$eval->instancia] ?? 1;
+
+                                            $ofertaEval = $eval->ofertaAcademica;
+                                            if ($ofertaEval) {
+                                                $totalMatriculados = $ofertaEval->relationLoaded('matriculaciones')
+                                                    ? $ofertaEval->matriculaciones->count()
+                                                    : $ofertaEval->matriculaciones()->count();
+
+                                                $totalCalificados = \App\Models\CalificacionParcial::whereHas(
+                                                    'matriculacion',
+                                                    function ($q) use ($eval) {
+                                                        $q->where('oferta_id', $eval->oferta_id);
+                                                    },
+                                                )
+                                                    ->where('nro_parcial', $nroParcialInt)
+                                                    ->whereNotNull('nota_parcial_calculada')
+                                                    ->count();
+
+                                                $tieneNotasCompletas =
+                                                    $totalMatriculados > 0 && $totalCalificados === $totalMatriculados;
+                                            }
+                                        }
                                     }
                                 @endphp
 
-                                <!-- Celda pintada de warning solo si sus notas están completas -->
+                                <!-- Celda de nota pintada en amarillo suave (warning-soft) si ya se completó -->
                                 <td class="text-center align-middle p-1 {{ $tieneNotasCompletas ? 'bg-warning-soft' : '' }}"
-                                    style="width: 75px;">
+                                    style="width: 75px; height: 45px;">
                                     @if ($eval)
                                         @if ($eval->bloqueado)
                                             <button class="btn btn-xs btn-danger w-100 py-0" title="Bloqueado por Admin"
@@ -145,17 +224,18 @@
                                                 <i class="fas fa-lock"></i>
                                             </button>
                                         @else
+                                            <!-- Botón principal de notas (Morado si es a_ciegas, Verde/Warning si es directa) -->
                                             <a href="{{ route('docente.programacion.llenar-notas', $eval->id) }}"
-                                                class="btn btn-xs {{ $tieneNotasCompletas ? 'btn-warning text-dark font-weight-bold' : 'btn-success' }} w-100 py-0"
-                                                title="{{ $tieneNotasCompletas ? 'Notas completadas (Modificar)' : 'Gestionar notas' }}"
+                                                class="btn btn-xs {{ $esACiegas ? 'btn-purple' : ($tieneNotasCompletas ? 'btn-warning text-dark font-weight-bold' : 'btn-success') }} eval-link-btn w-100"
+                                                title="{{ $esACiegas ? 'Modalidad A Ciegas' : ($tieneNotasCompletas ? 'Notas completadas' : 'Gestionar notas') }}"
                                                 data-toggle="tooltip">
                                                 <i
-                                                    class="fas {{ $tieneNotasCompletas ? 'fa-check-circle' : 'fa-edit' }}"></i>
+                                                    class="fas {{ $esACiegas ? 'fas fa-user-secret' : ($tieneNotasCompletas ? 'fa-check-circle' : 'fa-edit') }}"></i>
+                                                <span class="eval-fecha-vertical">
+                                                    {{ $eval->fecha_programada ? \Carbon\Carbon::parse($eval->fecha_programada)->format('d/m') : '-' }}
+                                                </span>
                                             </a>
                                         @endif
-                                        <span class="d-block text-muted" style="font-size: 0.6rem;">
-                                            {{ $eval->fecha_programada ? \Carbon\Carbon::parse($eval->fecha_programada)->format('d/m') : '-' }}
-                                        </span>
                                     @else
                                         <span class="text-muted" style="font-size: 0.75rem;">-</span>
                                     @endif
@@ -168,22 +248,6 @@
             </table>
         </div>
     </div>
-@stop
-
-@section('css')
-    <style>
-        .btn-xs {
-            padding: 0.1rem 0.3rem !important;
-            font-size: 0.7rem !important;
-        }
-
-        /* Asegura que los textos largos no rompan la tabla */
-        .table td {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    </style>
 @stop
 
 @section('js')
