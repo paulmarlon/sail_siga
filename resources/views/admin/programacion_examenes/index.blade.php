@@ -26,6 +26,21 @@
         .col-transicion {
             transition: all 0.3s ease-in-out;
         }
+
+        .bg-soft-success {
+            background-color: rgba(40, 167, 69, 0.18) !important;
+            /* Verde transparente */
+        }
+
+        .bg-soft-primary {
+            background-color: rgba(0, 123, 255, 0.18) !important;
+            /* Azul transparente */
+        }
+
+        .bg-soft-warning {
+            background-color: rgba(255, 193, 7, 1) !important;
+            /* Amarillo transparente */
+        }
     </style>
 @stop
 
@@ -71,8 +86,9 @@
             // Icono de bloqueo si aplica
             $iconoBloqueo = $examen->bloqueado ? '<i class="fas fa-lock text-danger ml-1" title="Bloqueado"></i>' : '';
 
-            // Estilo CSS para orientación vertical hacia arriba (writing-mode o transform)
-            return '
+            // Estructura visual interna
+            $contenidoHtml =
+                '
             <div class="d-flex flex-column align-items-center justify-content-center" style="height: 45px;">
                 <span class="badge ' .
                 $estiloModalidad .
@@ -86,8 +102,25 @@
                 ' .
                 $iconoBloqueo .
                 '
-            </div>
-        ';
+            </div>';
+
+            // 🚀 SI ES MODALIDAD A CIEGAS, LO CONVERTIMOS EN UN ENLACE INTERACTIVO HACIA FOLIOS
+            if ($modalidad === 'a_ciegas') {
+                // Apuntamos directo a la ruta de folios
+                $urlFolios = route('admin.programacion-examenes.folios.index', $examen->id);
+
+                return '
+                <a href="' .
+                    $urlFolios .
+                    '" class="text-decoration-none d-block w-100 h-100" title="Modalidad A Ciegas: Click para ver Folios" style="transition: opacity 0.2s;" onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'">
+                    ' .
+                    $contenidoHtml .
+                    '
+                </a>';
+            }
+
+            // Para las demás modalidades (Directa, Dictada), se muestra normal sin enlace
+            return $contenidoHtml;
         };
     @endphp
 
@@ -275,6 +308,25 @@
                                             $tieneP2 = $p2 ? '1' : '0';
                                             $tieneEF = $ef ? '1' : '0';
                                             $tiene2T = $si ? '1' : '0';
+
+                                            // Verificamos si la plantilla tiene datos cargados (o si existe la programación)
+                                            // Ajusta la condición ->folios_count > 0 o ->folios->isNotEmpty() según tu modelo
+                                            $bgP1 =
+                                                $p1 && ($p1->folios_count ?? ($p1->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bgP2 =
+                                                $p2 && ($p2->folios_count ?? ($p2->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bgEF =
+                                                $ef && ($ef->folios_count ?? ($ef->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bg2T =
+                                                $si && ($si->folios_count ?? ($si->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
                                         @endphp
                                         <tr class="oferta-row" data-periodo="{{ $idPeriodo }}"
                                             data-carrera="{{ $idCarrera }}" data-grado="{{ $idGrado }}"
@@ -321,17 +373,21 @@
                                                     class="badge badge-light border">{{ $oferta->paralelo->nombre ?? 'S/P' }}</span>
                                             </td>
 
-                                            <!-- Instancias con fechas verticales hacia arriba (Día-Mes y Color de Modalidad) -->
-                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                            <!-- Instancias con fondo transparente cuando está la plantilla llena -->
+                                            <td class="text-center align-middle p-1 {{ $bgP1 }}"
+                                                style="height: 45px;">
                                                 {!! $renderFechaVertical($p1, 'badge-success') !!}
                                             </td>
-                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                            <td class="text-center align-middle p-1 {{ $bgP2 }}"
+                                                style="height: 45px;">
                                                 {!! $renderFechaVertical($p2, 'badge-success') !!}
                                             </td>
-                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                            <td class="text-center align-middle p-1 {{ $bgEF }}"
+                                                style="height: 45px;">
                                                 {!! $renderFechaVertical($ef, 'badge-primary') !!}
                                             </td>
-                                            <td class="text-center align-middle p-1" style="height: 45px;">
+                                            <td class="text-center align-middle p-1 {{ $bg2T }}"
+                                                style="height: 45px;">
                                                 {!! $renderFechaVertical($si, 'badge-warning') !!}
                                             </td>
 
@@ -718,7 +774,7 @@
                 $('.oferta-row').show();
             });
 
-            // SINCRONIZACIÓN DE SELECCIONADOS
+            // SINCRONIZACIÓN DE SELECCIONADOS (Optimizado)
             function actualizarContadorYLista() {
                 var contenedor = $('#lista-seleccionadas-container');
                 contenedor.empty();
@@ -731,6 +787,8 @@
                     contenedor.removeClass('d-none');
                     $('.action-btn').prop('disabled', false);
 
+                    var htmlAcumulado = ''; // 🚀 Acumulador en memoria
+
                     $('.oferta-checkbox:checked').each(function() {
                         var chk = $(this);
                         var row = chk.closest('tr');
@@ -740,7 +798,7 @@
                         var carreraTexto = row.find('td:eq(2)').find('span').text();
                         var turnoParaleloTexto = row.find('td:eq(3)').text().trim().replace(/\s+/g, ' ');
 
-                        var itemHtml = `
+                        htmlAcumulado += `
                             <div class="p-1 mb-1 border rounded bg-white shadow-sm d-flex justify-content-between align-items-center item-seleccionado" data-id="${id}" style="font-size: 0.72rem;">
                                 <div>
                                     <strong class="text-dark">${materiaTexto}</strong><br>
@@ -754,8 +812,9 @@
                                 </button>
                             </div>
                         `;
-                        contenedor.append(itemHtml);
                     });
+
+                    contenedor.html(htmlAcumulado); // 🚀 Inyección única al DOM
                 } else {
                     $('#sin-seleccion').removeClass('d-none');
                     contenedor.addClass('d-none');

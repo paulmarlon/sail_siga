@@ -20,8 +20,10 @@ use App\Http\Controllers\{
     EstudianteController,
     InscripcionCarreraController,
     MatriculacionMateriaController,
-    ProgramacionExamenController
+    ProgramacionExamenController,
+    FolioExamenController
 };
+use App\Http\Controllers\Docente\DocentePortalController;
 use Illuminate\Support\Facades\Route;
 
 // Ruta principal
@@ -54,8 +56,14 @@ Route::middleware('auth')->group(function () {
         // Configuración
         Route::get('configuracion/edit', [ConfiguracionController::class, 'edit'])->name('configuracion.edit')->middleware('can:admin.configuracion.edit');
         Route::put('configuracion/update', [ConfiguracionController::class, 'update'])->name('configuracion.update')->middleware('can:admin.configuracion.edit');
+        // --- GESTIÓN DE ACCESOS Y USUARIOS ---
+        Route::get('usuarios/papelera', [App\Http\Controllers\Admin\UserController::class, 'papelera'])->name('usuarios.papelera');
+        Route::post('usuarios/preparar-edicion-masiva', [App\Http\Controllers\Admin\UserController::class, 'prepararEdicionMasiva'])->name('usuarios.prepararEdicionMasiva');
+        Route::get('usuarios/edicion-masiva', [App\Http\Controllers\Admin\UserController::class, 'vistaEdicionMasiva'])->name('usuarios.vistaEdicionMasiva');
+        Route::put('usuarios/update-masivo', [App\Http\Controllers\Admin\UserController::class, 'updateMasivo'])->name('usuarios.updateMasivo');
+        Route::delete('usuarios/destroy-masivo', [App\Http\Controllers\Admin\UserController::class, 'destroyMasivo'])->name('usuarios.destroy-masivo');
 
-        // Personas
+        Route::resource('usuarios', App\Http\Controllers\Admin\UserController::class);     // Personas
         Route::get('personas/papelera', [PersonaController::class, 'papelera'])->name('personas.papelera')->middleware('can:admin.personas.index');
         Route::post('personas/{id}/restaurar', [PersonaController::class, 'restaurar'])->name('personas.restaurar')->middleware('can:admin.personas.edit');
         Route::get('personas/buscar-autocomplete', [PersonaController::class, 'buscarAutocomplete'])->name('personas.autocomplete')->middleware('can:admin.personas.index');
@@ -118,11 +126,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('pensums', PensumController::class)->except(['index'])->middleware('can:admin.pensums.index');
 
         // --- GESTIÓN DE ESTUDIANTES ---
-        // 1. Rutas estáticas y personalizadas PRIMERO
         Route::get('estudiantes/papelera', [EstudianteController::class, 'papelera'])->name('estudiantes.papelera')->middleware('can:admin.estudiantes.index');
         Route::post('estudiantes/{id}/restaurar', [EstudianteController::class, 'restaurar'])->name('estudiantes.restaurar')->middleware('can:admin.estudiantes.edit');
-
-        // 2. Route::resource DESPUÉS
         Route::resource('estudiantes', EstudianteController::class)->middleware('can:admin.estudiantes.index');
 
         // --- GESTIÓN DE ROLES Y PERMISOS ---
@@ -134,128 +139,61 @@ Route::middleware('auth')->group(function () {
         Route::post('roles/{id}', [RoleController::class, 'update_permisos'])->name('roles.update_permisos')->middleware('can:admin.roles.update_permisos');
         Route::put('roles/{id}', [RoleController::class, 'update'])->name('roles.update')->middleware('can:admin.roles.update');
         Route::delete('roles/{id}', [RoleController::class, 'destroy'])->name('roles.destroy')->middleware('can:admin.roles.destroy');
-        // --- GESTIÓN DE INSCRIPCIONES A CARRERA ---
 
         // --- GESTIÓN DE INSCRIPCIONES A CARRERA ---
-
-        // ==========================================
-        // RUTAS PERSONALIZADAS (ANTERIORES AL RESOURCE)
-        // ==========================================
-
-        // 1. Papelera (No requiere ID)
-        // ==========================================
-        // RUTAS PERSONALIZADAS DE INSCRIPCIÓN CARRERAS
-        // ==========================================
-        // ==========================================
-        // RUTAS PERSONALIZADAS DE INSCRIPCIÓN A CARRERAS
-        // ==========================================
-
-        // 1. Papelera
-        Route::get('inscripcion-carreras/papelera', [InscripcionCarreraController::class, 'papelera'])
-            ->name('inscripcion-carreras.papelera');
-
-        // 2. Restaurar
-        Route::put('inscripcion-carreras/{inscripcion_carrera}/restaurar', [InscripcionCarreraController::class, 'restaurar'])
-            ->name('inscripcion-carreras.restaurar');
-
-        // 3. Procesar Retiro
-        Route::put('inscripcion-carreras/{inscripcionCarrera}/procesar-retiro', [InscripcionCarreraController::class, 'procesarRetiro'])
-            ->name('inscripcion-carreras.procesar-retiro');
-
-        // 4. NUEVA RUTA: Vista de Edición Individual
-        Route::get('inscripcion-carreras/{id}/edit-individual', [InscripcionCarreraController::class, 'editIndividual'])
-            ->name('inscripcion-carreras.edit-individual');
-
-        // 5. NUEVA RUTA: Procesar Actualización Individual
-        Route::put('inscripcion-carreras/{id}/individual', [InscripcionCarreraController::class, 'updateIndividual'])
-            ->name('inscripcion-carreras.update-individual');
-
-        // 6. RECURSO PRINCIPAL DE LARAVEL (El edit de aquí manejará el masivo que ya tienes)
+        Route::get('inscripcion-carreras/papelera', [InscripcionCarreraController::class, 'papelera'])->name('inscripcion-carreras.papelera');
+        Route::put('inscripcion-carreras/{inscripcion_carrera}/restaurar', [InscripcionCarreraController::class, 'restaurar'])->name('inscripcion-carreras.restaurar');
+        Route::put('inscripcion-carreras/{inscripcionCarrera}/procesar-retiro', [InscripcionCarreraController::class, 'procesarRetiro'])->name('inscripcion-carreras.procesar-retiro');
+        Route::get('inscripcion-carreras/{id}/edit-individual', [InscripcionCarreraController::class, 'editIndividual'])->name('inscripcion-carreras.edit-individual');
+        Route::put('inscripcion-carreras/{id}/individual', [InscripcionCarreraController::class, 'updateIndividual'])->name('inscripcion-carreras.update-individual');
         Route::resource('inscripcion-carreras', InscripcionCarreraController::class);
 
-        // ==========================================
-        // RUTAS PERSONALIZADAS DE MATRICULACIÓN DE MATERIAS
-        // ==========================================
-        // 1. RUTAS PERSONALIZADAS (DEBEN IR SIEMPRE ANTES DEL RESOURCE)
-        // ==========================================
+        // --- GESTIÓN DE MATRICULACIÓN DE MATERIAS ---
+        Route::get('matriculacion-materias/detalle/{estudianteId}/{periodoId}', [MatriculacionMateriaController::class, 'show'])->name('matriculacion-materias.show');
+        Route::post('matriculacion-materias/store-single', [MatriculacionMateriaController::class, 'storeSingle'])->name('matriculacion-materias.store-single');
+        Route::get('matriculacion-materias/grupo/actualizar', [MatriculacionMateriaController::class, 'editGroup'])->name('matriculacion-materias.edit-group');
+        Route::put('matriculacion-materias/grupo/actualizar', [MatriculacionMateriaController::class, 'updateGroup'])->name('matriculacion-materias.update-group');
+        Route::get('matriculacion-materias/papelera', [MatriculacionMateriaController::class, 'papelera'])->name('matriculacion-materias.papelera');
+        Route::post('matriculacion-materias/{id}/restaurar', [MatriculacionMateriaController::class, 'restaurar'])->name('matriculacion-materias.restaurar');
+        Route::delete('matriculacion-materias/{id}/fuerza-destruccion', [MatriculacionMateriaController::class, 'fuerzaDestruccion'])->name('matriculacion-materias.fuerza-destruccion');
+        Route::put('matriculacion-materias/{matriculacionMateria}/procesar-retiro', [MatriculacionMateriaController::class, 'procesarRetiro'])->name('matriculacion-materias.procesar-retiro');
+        Route::resource('matriculacion-materias', MatriculacionMateriaController::class)->except(['show']);
 
-        // ==========================================
-        // 1. RUTAS PERSONALIZADAS (DEBEN IR SIEMPRE ANTES DEL RESOURCE)
-        // ==========================================
+        // --- GESTIÓN DE PROGRAMACIÓN DE EXÁMENES ---
+        Route::get('programacion-examenes/papelera', [ProgramacionExamenController::class, 'papelera'])->name('programacion-examenes.papelera')->middleware('can:admin.programacion-examenes.index');
+        Route::post('programacion-examenes/{id}/restaurar', [ProgramacionExamenController::class, 'restaurar'])->name('programacion-examenes.restaurar')->middleware('can:admin.programacion-examenes.edit');
+        Route::get('programacion-examenes/edit-masivo', [ProgramacionExamenController::class, 'editMasivo'])->name('programacion-examenes.edit-masivo')->middleware('can:admin.programacion-examenes.edit');
+        Route::put('programacion-examenes/update-masivo', [ProgramacionExamenController::class, 'updateMasivo'])->name('programacion-examenes.update-masivo')->middleware('can:admin.programacion-examenes.edit');
+        Route::delete('programacion-examenes/destroy-masivo', [ProgramacionExamenController::class, 'destroyMasivo'])->name('programacion-examenes.destroy-masivo')->middleware('can:admin.programacion-examenes.destroy');
 
-        // Ruta de detalle microscópico (Carga académica por estudiante y periodo)
-        Route::get('matriculacion-materias/detalle/{estudianteId}/{periodoId}', [MatriculacionMateriaController::class, 'show'])
-            ->name('matriculacion-materias.show');
-
-        // Ruta para adición quirúrgica individual desde el show
-        Route::post('matriculacion-materias/store-single', [MatriculacionMateriaController::class, 'storeSingle'])
-            ->name('matriculacion-materias.store-single');
-
-        // ------------------------------------------
-        // Rutas para Actualización Masiva por Grupos
-        // ------------------------------------------
-        Route::get('matriculacion-materias/grupo/actualizar', [MatriculacionMateriaController::class, 'editGroup'])
-            ->name('matriculacion-materias.edit-group');
-
-        Route::put('matriculacion-materias/grupo/actualizar', [MatriculacionMateriaController::class, 'updateGroup'])
-            ->name('matriculacion-materias.update-group');
-
-        // ------------------------------------------
-        // Papelera y Restauración por SoftDeletes
-        // ------------------------------------------
-        Route::get('matriculacion-materias/papelera', [MatriculacionMateriaController::class, 'papelera'])
-            ->name('matriculacion-materias.papelera');
-
-        Route::post('matriculacion-materias/{id}/restaurar', [MatriculacionMateriaController::class, 'restaurar'])
-            ->name('matriculacion-materias.restaurar');
-
-        Route::delete('matriculacion-materias/{id}/fuerza-destruccion', [MatriculacionMateriaController::class, 'fuerzaDestruccion'])
-            ->name('matriculacion-materias.fuerza-destruccion');
-
-        // Ruta opcional para procesar retiro o baja específica de materia vía PUT
-        Route::put('matriculacion-materias/{matriculacionMateria}/procesar-retiro', [MatriculacionMateriaController::class, 'procesarRetiro'])
-            ->name('matriculacion-materias.procesar-retiro');
-
-        // ==========================================
-        // 1. GESTIÓN DE MATRICULACIÓN DE MATERIAS
-        // ==========================================
-        Route::resource('matriculacion-materias', MatriculacionMateriaController::class)
-            ->except(['show']);
-
-
-        // ==========================================
-        // 2. GESTIÓN DE PROGRAMACIÓN DE EXÁMENES
-        // ==========================================
-
-        // A. RUTAS PERSONALIZADAS Y ESPECÍFICAS (Siempre van PRIMERO)
-        Route::get('programacion-examenes/papelera', [ProgramacionExamenController::class, 'papelera'])
-            ->name('programacion-examenes.papelera')
-            ->middleware('can:admin.programacion-examenes.index');
-
-        Route::post('programacion-examenes/{id}/restaurar', [ProgramacionExamenController::class, 'restaurar'])
-            ->name('programacion-examenes.restaurar')
-            ->middleware('can:admin.programacion-examenes.edit');
-
-        // Nuevas rutas personalizadas para Edición Masiva en Lote
-        Route::get('programacion-examenes/edit-masivo', [ProgramacionExamenController::class, 'editMasivo'])
-            ->name('programacion-examenes.edit-masivo')
-            ->middleware('can:admin.programacion-examenes.edit');
-
-        Route::put('programacion-examenes/update-masivo', [ProgramacionExamenController::class, 'updateMasivo'])
-            ->name('programacion-examenes.update-masivo')
-            ->middleware('can:admin.programacion-examenes.edit');
-
-        // <--- NUEVA RUTA PARA ELIMINACIÓN MASIVA EN LOTE --->
-        Route::delete('programacion-examenes/destroy-masivo', [ProgramacionExamenController::class, 'destroyMasivo'])
-            ->name('programacion-examenes.destroy-masivo')
-            ->middleware('can:admin.programacion-examenes.destroy');
-
-
-        // B. RECURSO PRINCIPAL DE LARAVEL (Siempre va al ÚLTIMO)
         Route::resource('programacion-examenes', ProgramacionExamenController::class)
             ->parameters(['programacion-examenes' => 'programacion_examen'])
             ->middleware('can:admin.programacion-examenes.index');
+
+        Route::get('programacion-examenes/{programacion}/folios', [FolioExamenController::class, 'plantilla'])->name('programacion-examenes.folios.index')->middleware('can:admin.programacion-examenes.index');
+        Route::post('programacion-examenes/{programacion}/folios/generar-masivo', [FolioExamenController::class, 'generarMasivo'])->name('folio-examens.generar-masivo')->middleware('can:admin.programacion-examenes.edit');
     });
+
+    // =========================================================================
+    // PORTAL DE EVALUACIÓN Y CARGA DE NOTAS (Docente / Planta / Adm.)
+    // =========================================================================
+    Route::prefix('docente')
+        ->name('docente.')
+        ->middleware(['prevent-back-history', 'role:Docente|Planta|Administrativo|Administrador'])
+        ->group(function () {
+
+            // 1. Dashboard principal: Muestra las materias asignadas al usuario logueado
+            Route::get('/dashboard', [DocentePortalController::class, 'index'])
+                ->name('dashboard');
+
+            // 2. Vista de Carga Ciega de Notas por Folios
+            Route::get('/programacion/{programacion}/llenar-notas', [DocentePortalController::class, 'llenarNotas'])
+                ->name('programacion.llenar-notas');
+
+            // 3. Procesamiento y guardado seguro de las calificaciones
+            Route::post('/programacion/{programacion}/guardar-notas', [DocentePortalController::class, 'guardarNotas'])
+                ->name('programacion.guardar-notas');
+        });
 });
 
 require __DIR__ . '/auth.php';

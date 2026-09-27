@@ -306,6 +306,7 @@ return [
             'url' => 'admin/configuracion/edit',
             'icon' => 'fas fa-fw fa-cogs',
             'classes' => 'bg-blue text-white',
+            'can'  => 'admin.configuraciones.index', // opcional según tus permisos
         ],
         [
             'text' => 'Gestiones',
@@ -328,26 +329,26 @@ return [
         [
             'text' => 'Turnos',
             'url'  => 'admin/turnos',
-            'icon' => 'fas fa-fw fa-clock', // Icono de reloj para turnos
+            'icon' => 'fas fa-fw fa-clock',
             'classes' => 'bg-blue text-white',
         ],
         [
             'text' => 'Paralelos',
             'url'  => 'admin/paralelos',
-            'icon' => 'fas fa-fw fa-users', // Icono de grupo para paralelos
+            'icon' => 'fas fa-fw fa-users',
             'classes' => 'bg-blue text-white',
         ],
         [
             'text' => 'Periodos',
             'url'  => 'admin/periodos',
-            'icon' => 'fas fa-fw fa-calendar-alt', // Icono de calendario para representar periodos
-            'classes' => 'bg-green text-white',    // Puedes cambiar el color para diferenciarlo de Paralelos
+            'icon' => 'fas fa-fw fa-calendar-alt',
+            'classes' => 'bg-green text-white',
         ],
         [
             'text' => 'Materias',
             'url'  => 'admin/materias',
             'icon' => 'fas fa-fw fa-book',
-            'classes' => 'bg-info text-white', // 'bg-info' combina bien con el azul de paralelos
+            'classes' => 'bg-info text-white',
         ],
         [
             'text' => 'Grados',
@@ -358,12 +359,12 @@ return [
         [
             'text' => 'Carreras',
             'url'  => 'admin/carreras',
-            'icon' => 'fas fa-fw fa-graduation-cap', // O también 'fas fa-fw fa-university'
+            'icon' => 'fas fa-fw fa-graduation-cap',
             'classes' => 'bg-navy text-white',
         ],
         [
             'text' => 'Pensum',
-            'url'  => 'admin/pensums', // O la ruta que estés usando para tu gestor drag & drop
+            'url'  => 'admin/pensums',
             'icon' => 'fas fa-fw fa-clipboard-list',
             'classes' => 'bg-blue text-white',
         ],
@@ -379,7 +380,7 @@ return [
                 ],
                 [
                     'text' => 'Usuarios del Sistema',
-                    'url'  => 'admin/usuarios', // <-- NUEVA RUTA PARA GESTIONAR ACCESOS
+                    'url'  => 'admin/usuarios',
                     'icon' => 'fas fa-fw fa-users-cog',
                 ],
             ],
@@ -419,62 +420,32 @@ return [
             'classes' => 'bg-blue text-white',
         ],
 
-
+        // SECCIÓN EXCLUSIVA / PRINCIPAL PARA DOCENTES
+        ['header' => 'ÁREA ACADÉMICA DOCENTE'],
         [
-            'text' => 'multilevel',
-            'icon' => 'fas fa-fw fa-share',
-            'submenu' => [
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                ],
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                    'submenu' => [
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                        ],
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                            'submenu' => [
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                ],
-            ],
+            'text'    => 'Mis Asignaturas',
+            'icon'    => 'fas fa-fw fa-chalkboard-teacher',
+            'route'   => 'docente.dashboard',
+            'classes' => 'bg-success text-white',
         ],
-        ['header' => 'labels'],
+
+        // OPCIONAL: Ejemplos por defecto de AdminLTE
+        ['header' => 'ETIQUETAS Y NIVELES'],
         [
-            'text' => 'important',
+            'text' => 'Importante',
             'icon_color' => 'red',
             'url' => '#',
         ],
         [
-            'text' => 'warning',
+            'text' => 'Advertencia',
             'icon_color' => 'yellow',
             'url' => '#',
         ],
         [
-            'text' => 'information',
+            'text' => 'Información',
             'icon_color' => 'cyan',
             'url' => '#',
         ],
-
     ],
 
     /*

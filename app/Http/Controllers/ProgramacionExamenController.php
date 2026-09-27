@@ -12,14 +12,10 @@ use App\Models\Turno;
 use App\Models\Paralelo;
 use App\Models\Auditoria;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Auth;
 
 class ProgramacionExamenController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $periodoId = $request->get('periodo_id');
@@ -76,14 +72,7 @@ class ProgramacionExamenController extends Controller
             });
         }
 
-        $listaOfertas = OfertaAcademica::with([
-            'pensum.materia',
-            'pensum.carrera',
-            'pensum.grado',
-            'turno',
-            'paralelo',
-            'programacionesExamen'
-        ])->get();
+        $listaOfertas = $query->get();
 
         $periodos = Periodo::all();
         $carreras = Carrera::all();
@@ -100,10 +89,6 @@ class ProgramacionExamenController extends Controller
             'paralelos'
         ));
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create(Request $request)
     {
         $ids = [];
@@ -143,13 +128,10 @@ class ProgramacionExamenController extends Controller
             'examenesExistentes',
             'instanciaSugerida',
             'observacionesSugeridas',
-            'fechaSugerida' // <-- Pasado a la vista
+            'fechaSugerida'
         ));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         if ($request->has('programaciones')) {
@@ -187,23 +169,15 @@ class ProgramacionExamenController extends Controller
         return redirect()->route('admin.programacion-examenes.index')->with('success', 'Examen programado correctamente.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(ProgramacionExamen $programacionExamen)
     {
         $programacionExamen->load(['ofertaAcademica.pensum.materia', 'responsable.persona']);
         return view('admin.programacion_examenes.show', compact('programacionExamen'));
     }
 
-    /**
-     * Muestra el formulario para editar múltiples programaciones en lote.
-     */
     public function editMasivo(Request $request)
     {
         $ids = $request->get('ofertas_ids', []);
-
-        // Obtenemos la instancia que el usuario eligió en el modal (ej. P1, P2, EF, 2T)
         $instanciaSeleccionada = $request->get('instancia_a_editar', 'P1');
 
         if (empty($ids)) {
@@ -217,7 +191,6 @@ class ProgramacionExamenController extends Controller
             'pensum.grado',
             'turno',
             'paralelo',
-            // Opcional: puedes filtrar la relación para traer únicamente la instancia elegida si lo deseas
             'programacionesExamen' => function ($query) use ($instanciaSeleccionada) {
                 $query->where('instancia', $instanciaSeleccionada);
             }
@@ -225,13 +198,9 @@ class ProgramacionExamenController extends Controller
 
         $listaPersonal = Personal::with('persona')->get();
 
-        // Pasamos también la instancia seleccionada a la vista
         return view('admin.programacion_examenes.edit', compact('listaOfertas', 'listaPersonal', 'instanciaSeleccionada'));
     }
 
-    /**
-     * Actualiza las programaciones en lote.
-     */
     public function updateMasivo(Request $request)
     {
         $request->validate([
@@ -245,8 +214,6 @@ class ProgramacionExamenController extends Controller
         foreach ($request->programaciones as $data) {
             ProgramacionExamen::updateOrCreate(
                 [
-                    // Si mandas el ID específico de la programación de esa instancia, lo actualiza,
-                    // de lo contrario lo busca por oferta_id e instancia para no duplicar.
                     'id' => $data['programacion_id'] ?? null,
                 ],
                 [
@@ -266,29 +233,26 @@ class ProgramacionExamenController extends Controller
             ->with('success', 'Actualización masiva de exámenes realizada correctamente.');
     }
 
-    /**
-     * Elimina (o envía a papelera) las programaciones de examen en lote basadas en las ofertas seleccionadas.
-     */
     public function destroyMasivo(Request $request)
     {
         $ids = $request->input('ofertas_ids', []);
-        $instancia = $request->input('instancia_a_eliminar', 'TODAS'); // Por defecto 'TODAS' si no viene definida
+        $instancia = $request->input('instancia_a_eliminar', 'TODAS');
 
         if (empty($ids)) {
             return redirect()->route('admin.programacion-examenes.index')
                 ->with('error', 'No se seleccionaron elementos para eliminar en lote.');
         }
 
+        $clientIp = $request->ip();
+        $userAgent = $request->header('User-Agent');
+
         try {
-            // Construir la consulta base según las ofertas seleccionadas
             $query = ProgramacionExamen::whereIn('oferta_id', $ids);
 
-            // Si no es "TODAS", filtramos estrictamente por la instancia elegida
             if ($instancia !== 'TODAS') {
                 $query->where('instancia', $instancia);
             }
 
-            // REGLA A: Verificar si alguna programación de las seleccionadas está bloqueada
             $bloqueadasCount = (clone $query)->where('bloqueado', true)->count();
 
             if ($bloqueadasCount > 0) {
@@ -303,20 +267,18 @@ class ProgramacionExamenController extends Controller
                     ->with('error', 'No se encontraron registros activos para las instancias y materias seleccionadas.');
             }
 
-            // Ejecutar Soft Delete de la consulta filtrada
             $query->delete();
 
-            // REGLA C: Auditoría obligatoria
             foreach ($examenesAEliminar as $ex) {
                 Auditoria::create([
-                    'user_id' => Auth::id(),
+                    'user_id'            => Auth::id(),
                     'auditable_id'       => $ex->id,
                     'auditable_type'     => ProgramacionExamen::class,
                     'accion'             => 'SOFT_DELETE_MASIVO',
-                    'valores_anteriores' => $ex->toArray(),
-                    'valores_nuevos'     => ['deleted_at' => now()->toDateTimeString()],
-                    'ip_address'         => request()->ip(),
-                    'user_agent'         => request()->header('User-Agent'),
+                    'valores_anteriores' => (object) $ex->toArray(),
+                    'valores_nuevos'     => (object) ['deleted_at' => now()->toDateTimeString()],
+                    'ip_address'         => $clientIp,
+                    'user_agent'         => $userAgent,
                 ]);
             }
 
@@ -328,9 +290,6 @@ class ProgramacionExamenController extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, ProgramacionExamen $programacionExamen)
     {
         $request->validate([
@@ -359,31 +318,29 @@ class ProgramacionExamenController extends Controller
             ->with('success', 'Programación de examen actualizada correctamente.');
     }
 
-    /**
-     * Remove the specified resource from storage (SoftDelete).
-     */
-    public function destroy(ProgramacionExamen $programacionExamen)
+    public function destroy(Request $request, ProgramacionExamen $programacionExamen)
     {
-        // REGLA A: Candado de seguridad por bloqueo
         if ($programacionExamen->bloqueado) {
             return redirect()->route('admin.programacion-examenes.index')
                 ->with('error', 'No se puede eliminar la programación porque se encuentra BLOQUEADA (notas cerradas o auditadas).');
         }
 
+        $clientIp = $request->ip();
+        $userAgent = $request->header('User-Agent');
+
         try {
             $valoresAnteriores = $programacionExamen->toArray();
             $programacionExamen->delete();
 
-            // REGLA C: Auditoría obligatoria usando la tabla del Nivel 6
             Auditoria::create([
-                'user_id' => Auth::id(),
+                'user_id'            => Auth::id(),
                 'auditable_id'       => $programacionExamen->id,
                 'auditable_type'     => ProgramacionExamen::class,
                 'accion'             => 'SOFT_DELETE',
-                'valores_anteriores' => $valoresAnteriores,
-                'valores_nuevos'     => ['deleted_at' => now()->toDateTimeString()],
-                'ip_address'         => request()->ip(),
-                'user_agent'         => request()->header('User-Agent'),
+                'valores_anteriores' => (object) $valoresAnteriores,
+                'valores_nuevos'     => (object) ['deleted_at' => now()->toDateTimeString()],
+                'ip_address'         => $clientIp,
+                'user_agent'         => $userAgent,
             ]);
 
             return redirect()->route('admin.programacion-examenes.index')
@@ -394,9 +351,6 @@ class ProgramacionExamenController extends Controller
         }
     }
 
-    /**
-     * Display a listing of trashed resources.
-     */
     public function papelera()
     {
         $eliminados = ProgramacionExamen::onlyTrashed()
@@ -409,25 +363,21 @@ class ProgramacionExamenController extends Controller
         return view('admin.programacion_examenes.papelera', compact('eliminados'));
     }
 
-    /**
-     * Restore the specified resource from trash.
-     */
-    public function restaurar(string $id)
+    public function restaurar(Request $request, string $id)
     {
         $programacion = ProgramacionExamen::onlyTrashed()->findOrFail($id);
         $deletedAtAnterior = $programacion->deleted_at;
         $programacion->restore();
 
-        // Auditoría opcional de restauración
         Auditoria::create([
-            'user_id' => Auth::id(),
+            'user_id'            => Auth::id(),
             'auditable_id'       => $programacion->id,
             'auditable_type'     => ProgramacionExamen::class,
             'accion'             => 'RESTORE',
-            'valores_anteriores' => ['deleted_at' => $deletedAtAnterior],
-            'valores_nuevos'     => ['deleted_at' => null],
-            'ip_address'         => request()->ip(),
-            'user_agent'         => request()->header('User-Agent'),
+            'valores_anteriores' => (object) ['deleted_at' => $deletedAtAnterior],
+            'valores_nuevos'     => (object) ['deleted_at' => null],
+            'ip_address'         => $request->ip(),
+            'user_agent'         => $request->header('User-Agent'),
         ]);
 
         return redirect()->route('admin.programacion-examenes.papelera')

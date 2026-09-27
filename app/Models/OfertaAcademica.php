@@ -68,4 +68,8 @@ class OfertaAcademica extends Model
     {
         return $this->hasMany(ProgramacionExamen::class, 'oferta_id');
     }
+    public function ofertaDocenteHistorial()
+    {
+        return $this->hasMany(OfertaDocenteHistorial::class, 'oferta_id');
+    }
 }

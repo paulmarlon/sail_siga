@@ -14,16 +14,24 @@ return new class extends Migration
         Schema::create('folio_examens', function (Blueprint $table) {
             $table->id();
 
-            // Relaciones foráneas
+            // Relaciones foráneas principales
             $table->foreignId('programacion_id')->constrained('programacion_examens')->cascadeOnDelete();
             $table->foreignId('estudiante_id')->constrained('estudiantes')->cascadeOnDelete();
+
+            // AUDITORÍA 1: Quién generó o registró el folio (Administrativo / Personal de planta)
+            $table->foreignId('registrado_por_user_id')->nullable()->constrained('users')->nullOnDelete()
+                ->comment('Usuario administrativo que creó el folio y realizó el proceso de foliado.');
+
+            // AUDITORÍA 2: Quién ingresó o modificó la nota (Docente o Administrador que califica)
+            $table->foreignId('calificado_por_user_id')->nullable()->constrained('users')->nullOnDelete()
+                ->comment('Usuario (docente o admin) que ingresó o modificó la calificación de este folio.');
 
             // Campo para el código del folio
             $table->string('codigo_folio')->comment('Código único impreso en el examen (Ej: FOLIO-017 o TEMP-17)');
 
             // Ciclo de vida y calificación
             $table->string('estado_folio')->default('Generado')->comment('Generado, Foliado_Y_Separado, Calificado, Consolidado');
-            $table->decimal('nota', 5, 2)->nullable()->comment('Nota ingresada por el docente');
+            $table->decimal('nota', 5, 2)->nullable()->comment('Nota ingresada');
             $table->string('observacion')->nullable()->comment('Ej: Sin taco, Anulado, Copiando');
 
             $table->timestamps();

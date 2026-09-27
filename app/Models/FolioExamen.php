@@ -19,6 +19,8 @@ class FolioExamen extends Model
         'estado_folio',
         'nota',
         'observacion',
+        'registrado_por_user_id', // <--- Añadido para el Admin (Foliación / Planta)
+        'calificado_por_user_id', // <--- Añadido para el Docente o Admin que califica
     ];
 
     protected $casts = [

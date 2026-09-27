@@ -31,7 +31,8 @@
 
         <!-- Page Content -->
         <main>
-            {{ $slot }}
+            {{ $slot ?? '' }}
+            @yield('content')
         </main>
     </div>
 
