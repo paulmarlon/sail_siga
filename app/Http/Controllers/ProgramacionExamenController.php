@@ -91,6 +91,7 @@ class ProgramacionExamenController extends Controller
     }
     public function create(Request $request)
     {
+        dd($request);
         $ids = [];
         if ($request->has('ofertas_ids')) {
             $ids = $request->get('ofertas_ids', []);

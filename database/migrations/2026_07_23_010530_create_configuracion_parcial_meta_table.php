@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('configuracion_parcial_meta', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('carrera_id')->nullable()->constrained('carreras')->nullOnDelete();
+            $table->integer('nro_parcial');
+            $table->string('nombre');
+            $table->decimal('ponderacion_parcial', 5, 2);
+            $table->foreignId('estado_id')->constrained('estados');
             $table->timestamps();
         });
     }

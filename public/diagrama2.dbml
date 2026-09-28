@@ -315,6 +315,7 @@ Table calificacion_detalle {
     nota decimal(5,2) [note: 'Nota obtenida evaluada sobre 100']
     modalidad_origen varchar [default: 'directa', note: "'directa', 'a_ciegas', 'dictada', 'extraordinaria'"]
     folio_id int [ref: > folio_examen.id, null, note: 'Enlace al folio si se originó en examen a ciegas']
+    estado_id int [ref: > estado.id]// note: vigente, anulado
     registrado_por_user_id int [ref: > user.id, note: 'Usuario que ingresó o sincronizó este componente']
     observacion text [null, note: 'Justificación médica, permiso o nota aclaratoria']
     created_at timestamp

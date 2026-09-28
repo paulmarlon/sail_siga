@@ -78,6 +78,14 @@ class FolioExamenController extends Controller
             'totalCasillas'
         ));
     }
+    public function vistaConsolidacion(ProgramacionExamen $programacion)
+    {
+        // Cargar los folios con los datos del estudiante y su persona biográfica
+        $folios = $programacion->folios()->with('estudiante.persona')->get();
+
+        // Retornar la vista Blade que creamos antes
+        return view('admin.programacion_examenes.consolidar', compact('programacion', 'folios'));
+    }
     public function generarMasivo(Request $request, int $programacionId)
     {
         try {

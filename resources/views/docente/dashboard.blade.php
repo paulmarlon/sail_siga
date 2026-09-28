@@ -8,19 +8,16 @@
             font-size: 0.7rem !important;
         }
 
-        /* Asegura que los textos largos no rompan la tabla */
         .table td {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        /* Fondo amarillo suave para celdas de exámenes ya calificados (en el TD) */
         .bg-warning-soft {
             background-color: #ffc400 !important;
         }
 
-        /* Estilo personalizado para modalidad A Ciegas (Morado / Purple) */
         .btn-purple {
             background-color: #6f42c1 !important;
             border-color: #6f42c1 !important;
@@ -33,7 +30,6 @@
             color: #fff !important;
         }
 
-        /* Estética optimizada para los botones de notas y fechas verticales hacia arriba */
         .eval-link-btn {
             display: flex;
             flex-direction: column;
@@ -52,10 +48,10 @@
             line-height: 1;
             margin-top: 1px;
             writing-mode: horizontal-tb;
-            /* Asegura legibilidad vertical compacta */
         }
     </style>
 @stop
+
 @section('content_header')
     <div class="d-flex justify-content-between align-items-center">
         <div>
@@ -87,40 +83,45 @@
         </div>
     @endif
 
+    {{-- Definimos de forma ordenada las columnas institucionales permitidas (soporta múltiples TP dinámicamente) --}}
+    @php
+        $columnasEvaluacion = ['P1', 'P2', 'P3', 'EF', '2T', 'TP1', 'TP2', 'TP3'];
+        $totalColumnasEval = count($columnasEvaluacion);
+    @endphp
+
     <div class="card shadow-sm border-0">
         <div class="card-body p-2">
             <table id="tablaOfertasDocente"
                 class="table table-bordered table-striped table-hover align-middle w-100 mb-0 small">
                 <thead class="thead-dark text-uppercase">
                     <tr>
-                        <th style="width: 12%;">Carrera</th>
-                        <th style="width: 25%;">Asignatura</th>
-                        <th style="width: 18%;">Docente</th>
-                        <th class="text-center" style="width: 8%;">T / P</th>
-                        <th class="text-center" style="width: 12%;">Gestión</th>
-                        <th class="text-center" style="width: 6%;">P1</th>
-                        <th class="text-center" style="width: 6%;">P2</th>
-                        <th class="text-center" style="width: 6%;">EF</th>
-                        <th class="text-center" style="width: 7%;">2T</th>
+                        <th style="width: 11%;">Carrera</th>
+                        <th style="width: 23%;">Asignatura</th>
+                        <th style="width: 16%;">Docente</th>
+                        <th class="text-center" style="width: 7%;">T / P</th>
+                        <th class="text-center" style="width: 11%;">Gestión</th>
+
+                        {{-- Cabeceras dinámicas basadas en el array de columnas --}}
+                        @foreach ($columnasEvaluacion as $instanciaCol)
+                            <th class="text-center" style="width: 5%;">{{ $instanciaCol }}</th>
+                        @endforeach
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($ofertasAsignadas as $oferta)
+                    @foreach ($ofertasAsignadas as $oferta)
                         @php
-                            $exámenes = $oferta->programacionesExamen->keyBy('instancia');
-                            $p1 = $exámenes->get('P1');
-                            $p2 = $exámenes->get('P2');
-                            $ef = $exámenes->get('EF');
-                            $si = $exámenes->get('2T');
+                            // Indexamos las programaciones por su instancia en mayúsculas de manera segura
+                            $exámenes = $oferta->programacionesExamen->keyBy(function ($item) {
+                                return strtoupper(trim($item->instancia));
+                            });
 
-                            // Usando el atajo limpio de tu modelo:
                             $personaDocente = $oferta->docenteActual?->docente?->persona;
                             $nombreDocente = $personaDocente
                                 ? "{$personaDocente->nombres} {$personaDocente->ap_paterno}"
                                 : 'Sin Asignar';
                         @endphp
                         <tr>
-                            <!-- Carrera (Usando la sigla para ultra compactar) -->
+                            <!-- Carrera -->
                             <td class="align-middle">
                                 <span class="font-weight-bold text-dark"
                                     title="{{ $oferta->pensum->carrera->nombre ?? 'N/A' }}" data-toggle="tooltip">
@@ -130,7 +131,7 @@
                                     style="font-size: 0.7rem;">{{ $oferta->pensum->grado->nombre ?? '' }}</span>
                             </td>
 
-                            <!-- Asignatura (Sigla + Nombre truncado con tooltip) -->
+                            <!-- Asignatura -->
                             <td class="align-middle">
                                 <span class="text-primary font-weight-bold">
                                     [{{ $oferta->pensum->materia->sigla ?? '-' }}]
@@ -162,8 +163,10 @@
                                 </span>
                             </td>
 
-                            @foreach ([$p1, $p2, $ef, $si] as $eval)
+                            {{-- Iteramos dinámicamente sobre cada columna de evaluación institucional --}}
+                            @foreach ($columnasEvaluacion as $instanciaCol)
                                 @php
+                                    $eval = $exámenes->get($instanciaCol);
                                     $tieneNotasCompletas = false;
                                     $esACiegas = false;
 
@@ -171,7 +174,6 @@
                                         $esACiegas = $eval->modalidad === 'a_ciegas';
 
                                         if ($esACiegas) {
-                                            // Lógica para A Ciegas: Validamos a través de los folios
                                             $totalFolios = $eval->relationLoaded('folios')
                                                 ? $eval->folios->count()
                                                 : $eval->folios()->count();
@@ -182,14 +184,24 @@
                                             $tieneNotasCompletas =
                                                 $totalFolios > 0 && $foliosCalificados === $totalFolios;
                                         } else {
-                                            // Lógica para Directa o Dictada: Mapeamos la instancia string a entero para 'nro_parcial'
-                                            $nroParcialMap = [
-                                                'P1' => 1,
-                                                'P2' => 2,
-                                                'EF' => 3,
-                                                '2T' => 3,
-                                            ];
-                                            $nroParcialInt = $nroParcialMap[$eval->instancia] ?? 1;
+                                            // Mapeo inteligente del número de parcial según la instancia actual
+                                            $nroParcialInt = 1;
+                                            if (str_contains($instanciaCol, 'P2')) {
+                                                $nroParcialInt = 2;
+                                            }
+                                            if (
+                                                str_contains($instanciaCol, 'P3') ||
+                                                str_contains($instanciaCol, 'EF') ||
+                                                str_contains($instanciaCol, '2T')
+                                            ) {
+                                                $nroParcialInt = 3;
+                                            }
+                                            if (str_contains($instanciaCol, 'TP')) {
+                                                preg_match('/\d+/', $instanciaCol, $matches);
+                                                $nroParcialInt = isset($matches[0]) ? (int) $matches[0] : 1;
+                                            }
+
+                                            $nroParcialInt = $eval->nro_parcial ?? $nroParcialInt;
 
                                             $ofertaEval = $eval->ofertaAcademica;
                                             if ($ofertaEval) {
@@ -197,14 +209,23 @@
                                                     ? $ofertaEval->matriculaciones->count()
                                                     : $ofertaEval->matriculaciones()->count();
 
-                                                $totalCalificados = \App\Models\CalificacionParcial::whereHas(
-                                                    'matriculacion',
+                                                $tipoCompBusqueda = str_contains($instanciaCol, 'TP')
+                                                    ? 'trabajo_practico'
+                                                    : 'examen';
+
+                                                $totalCalificados = \App\Models\CalificacionDetalle::whereHas(
+                                                    'calificacionParcial.matriculacion',
                                                     function ($q) use ($eval) {
                                                         $q->where('oferta_id', $eval->oferta_id);
                                                     },
                                                 )
-                                                    ->where('nro_parcial', $nroParcialInt)
-                                                    ->whereNotNull('nota_parcial_calculada')
+                                                    ->whereHas('calificacionParcial', function ($q) use (
+                                                        $nroParcialInt,
+                                                    ) {
+                                                        $q->where('nro_parcial', $nroParcialInt);
+                                                    })
+                                                    ->where('tipo_componente', $tipoCompBusqueda)
+                                                    ->whereNotNull('nota')
                                                     ->count();
 
                                                 $tieneNotasCompletas =
@@ -214,9 +235,8 @@
                                     }
                                 @endphp
 
-                                <!-- Celda de nota pintada en amarillo suave (warning-soft) si ya se completó -->
                                 <td class="text-center align-middle p-1 {{ $tieneNotasCompletas ? 'bg-warning-soft' : '' }}"
-                                    style="width: 75px; height: 45px;">
+                                    style="height: 45px;">
                                     @if ($eval)
                                         @if ($eval->bloqueado)
                                             <button class="btn btn-xs btn-danger w-100 py-0" title="Bloqueado por Admin"
@@ -224,13 +244,12 @@
                                                 <i class="fas fa-lock"></i>
                                             </button>
                                         @else
-                                            <!-- Botón principal de notas (Morado si es a_ciegas, Verde/Warning si es directa) -->
                                             <a href="{{ route('docente.programacion.llenar-notas', $eval->id) }}"
                                                 class="btn btn-xs {{ $esACiegas ? 'btn-purple' : ($tieneNotasCompletas ? 'btn-warning text-dark font-weight-bold' : 'btn-success') }} eval-link-btn w-100"
-                                                title="{{ $esACiegas ? 'Modalidad A Ciegas' : ($tieneNotasCompletas ? 'Notas completadas' : 'Gestionar notas') }}"
+                                                title="{{ $instanciaCol }}: {{ $esACiegas ? 'Modalidad A Ciegas' : ($tieneNotasCompletas ? 'Notas completadas' : 'Gestionar notas') }}"
                                                 data-toggle="tooltip">
                                                 <i
-                                                    class="fas {{ $esACiegas ? 'fas fa-user-secret' : ($tieneNotasCompletas ? 'fa-check-circle' : 'fa-edit') }}"></i>
+                                                    class="fas {{ $esACiegas ? 'fas fa-user-secret' : ($tieneNotasCompletas ? 'fas fa-check-circle' : 'fas fa-edit') }}"></i>
                                                 <span class="eval-fecha-vertical">
                                                     {{ $eval->fecha_programada ? \Carbon\Carbon::parse($eval->fecha_programada)->format('d/m') : '-' }}
                                                 </span>
@@ -242,8 +261,7 @@
                                 </td>
                             @endforeach
                         </tr>
-                    @empty
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -255,20 +273,31 @@
 
 <script>
     $(document).ready(function() {
+        if ($.fn.DataTable.isDataTable('#tablaOfertasDocente')) {
+            $('#tablaOfertasDocente').DataTable().destroy();
+        }
+
+        // Generamos dinámicamente los índices de las columnas de evaluación (comienzan a partir de la columna 5)
+        let totalColsEval = @json($totalColumnasEval);
+        let nonOrderableTargets = [];
+        for (let i = 5; i < 5 + totalColsEval; i++) {
+            nonOrderableTargets.push(i);
+        }
+
         $('#tablaOfertasDocente').DataTable({
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json"
+                "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json",
+                "emptyTable": "No se encontraron ofertas académicas asignadas."
             },
             "responsive": true,
             "autoWidth": false,
             "pageLength": 10,
             "columnDefs": [{
                 "orderable": false,
-                "targets": [5, 6, 7, 8] // Columnas de P1, P2, EF, 2T sin ordenamiento
+                "targets": nonOrderableTargets
             }]
         });
 
-        // Activar tooltips de Bootstrap flotantes
         $('[data-toggle="tooltip"]').tooltip();
     });
 </script>

@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('configuracion_componente_meta', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('configuracion_parcial_id')->constrained('configuracion_parcial_meta')->cascadeOnDelete();
+            $table->string('tipo_componente'); // 'examen', 'trabajo_practico', etc.
+            $table->decimal('ponderacion_componente', 5, 2);
+            $table->boolean('es_obligatorio')->default(true);
             $table->timestamps();
         });
     }

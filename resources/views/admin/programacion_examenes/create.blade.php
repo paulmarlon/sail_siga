@@ -79,6 +79,12 @@
                                         <td class="align-middle py-1">
                                             <select name="programaciones[{{ $index }}][instancia]"
                                                 class="form-control form-control-sm" required>
+                                                <option value="TP1" {{ $instanciaDefecto == 'TP1' ? 'selected' : '' }}>
+                                                    Trabajo Práctico 1 (TP1)</option>
+                                                <option value="TP2" {{ $instanciaDefecto == 'TP2' ? 'selected' : '' }}>
+                                                    Trabajo Práctico 2 (TP2)</option>
+                                                <option value="TP3" {{ $instanciaDefecto == 'TP3' ? 'selected' : '' }}>
+                                                    Trabajo Práctico 3 (TP3)</option>
                                                 <option value="P1" {{ $instanciaDefecto == 'P1' ? 'selected' : '' }}>
                                                     Primer Parcial (P1)</option>
                                                 <option value="P2" {{ $instanciaDefecto == 'P2' ? 'selected' : '' }}>
@@ -242,11 +248,18 @@
                                             <label class="small font-weight-bold mb-1">Instancia de Evaluación</label>
                                             <select name="instancia" id="select-instancia"
                                                 class="form-control form-control-sm" required>
+                                                <option value="TP1" {{ $instanciaDefecto == 'TP1' ? 'selected' : '' }}>
+                                                    Trabajo Práctico 1 (TP1)</option>
+                                                <option value="TP2" {{ $instanciaDefecto == 'TP2' ? 'selected' : '' }}>
+                                                    Trabajo Práctico 2 (TP2)</option>
+                                                <option value="TP3" {{ $instanciaDefecto == 'TP3' ? 'selected' : '' }}>
+                                                    Trabajo Práctico 3 (TP3)</option>
                                                 <option value="P1" {{ $instanciaDefecto == 'P1' ? 'selected' : '' }}>
                                                     Primer Parcial</option>
                                                 <option value="P2" {{ $instanciaDefecto == 'P2' ? 'selected' : '' }}>
                                                     Segundo Parcial</option>
-                                                <option value="EF" {{ $instanciaDefecto == 'EF' ? 'selected' : '' }}>
+                                                <option value="EF"
+                                                    {{ $instanciaDefector == 'EF' || $instanciaDefecto == 'EF' ? 'selected' : '' }}>
                                                     Examen Final</option>
                                                 <option value="2T" {{ $instanciaDefecto == '2T' ? 'selected' : '' }}>
                                                     Segunda Instancia (2T)</option>

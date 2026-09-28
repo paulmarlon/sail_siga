@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Planilla Ciega por Folios')
+@section('title', 'Planilla de Calificaciones')
 
 @section('content_header')
     <div class="container-fluid">
@@ -9,7 +9,12 @@
                 <a href="{{ route('docente.dashboard') }}" class="btn btn-secondary btn-sm mb-2">
                     <i class="bi bi-arrow-left me-1"></i> Volver al Portal
                 </a>
-                <h1 class="m-0 fw-bold">Planilla Ciega por Folios</h1>
+                <h1 class="m-0 fw-bold">
+                    @php
+                        $esTrabajoPractico = str_contains(strtoupper($programacion->instancia), 'TP');
+                    @endphp
+                    {{ $esTrabajoPractico ? 'Planilla de Trabajos Prácticos' : 'Planilla Ciega por Folios' }}
+                </h1>
             </div>
             <div class="col-sm-6 text-sm-end mt-2 mt-sm-0">
                 @if ($programacion->bloqueado)
@@ -28,7 +33,6 @@
 
 @section('content')
     <div class="container-fluid">
-        {{-- Usamos una fila centrada para que el contenido ocupe 8 de 12 columnas --}}
         <div class="row justify-content-center">
             <div class="col-lg-8 col-md-10">
 
@@ -75,8 +79,9 @@
                                 <span class="badge bg-info text-dark text-uppercase">
                                     {{ $programacion->instancia ?? 'N/A' }}
                                 </span>
-                                <span
-                                    class="text-muted small">({{ str_replace('_', ' ', $programacion->modalidad) }})</span>
+                                <span class="badge {{ $esTrabajoPractico ? 'bg-warning text-dark' : 'bg-secondary' }}">
+                                    {{ $esTrabajoPractico ? 'Trabajo Práctico' : str_replace('_', ' ', $programacion->modalidad) }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -85,11 +90,12 @@
                 {{-- Contenedor de Alertas dinámicas --}}
                 <div id="alertContainer"></div>
 
-                {{-- Tarjeta Principal con el Listado de Folios Tipo Excel --}}
+                {{-- Tarjeta Principal con el Listado --}}
                 <div class="card card-primary card-outline shadow-sm">
                     <div class="card-header py-2">
                         <h3 class="card-title fs-6 fw-bold mb-0">
-                            <i class="bi bi-journal-text me-1"></i> Registro de Notas (Usa <kbd>Enter</kbd> para bajar)
+                            <i class="bi bi-journal-text me-1"></i>
+                            {{ $esTrabajoPractico ? 'Calificación de Trabajos Prácticos (Usa Enter para bajar)' : 'Registro de Notas por Folios (Usa Enter para bajar)' }}
                         </h3>
                     </div>
                     <div class="card-body p-0">
@@ -100,44 +106,80 @@
                                     <thead class="table-light">
                                         <tr>
                                             <th style="width: 60px;" class="text-center py-2">#</th>
-                                            <th style="width: 220px;" class="py-2">Código de Folio</th>
-                                            <th style="width: 180px;" class="py-2">Estado</th>
-                                            <th class="py-2 text-center">Nota (0 - 100)</th>
+                                            @if ($esTrabajoPractico)
+                                                <th class="py-2">Estudiante</th>
+                                                <th style="width: 150px;" class="py-2 text-center">Tipo Componente</th>
+                                            @else
+                                                <th style="width: 220px;" class="py-2">Código de Folio</th>
+                                                <th style="width: 180px;" class="py-2">Estado</th>
+                                            @endif
+                                            <th class="py-2 text-center" style="width: 180px;">Nota (0 - 100)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($folios as $index =>$folio)
+                                        @forelse($folios as $index =>$item)
                                             <tr>
                                                 <td class="text-center fw-bold text-muted py-1">{{ $index + 1 }}</td>
-                                                <td class="py-1">
-                                                    <span class="badge bg-dark font-monospace px-2 py-1">
-                                                        {{ $folio->codigo_folio }}
-                                                    </span>
-                                                </td>
-                                                <td class="py-1">
-                                                    <span
-                                                        class="badge bg-{{ $folio->nota !== null ? 'success' : 'warning text-dark' }}">
-                                                        {{ $folio->estado_folio }}
-                                                    </span>
-                                                </td>
-                                                <td class="py-1 text-center">
-                                                    @if ($programacion->bloqueado)
-                                                        <input type="number" value="{{ $folio->nota }}"
-                                                            class="form-control form-control-sm text-center fw-bold mx-auto"
-                                                            style="max-width: 130px;" disabled>
-                                                    @else
-                                                        <input type="number" name="notas[{{ $folio->id }}]"
-                                                            value="{{ $folio->nota }}"
-                                                            class="form-control form-control-sm input-nota text-center fw-bold mx-auto"
-                                                            style="max-width: 130px;" min="0" max="100"
-                                                            step="0.1" placeholder="0.0">
-                                                    @endif
-                                                </td>
+
+                                                @if ($esTrabajoPractico)
+                                                    {{-- Si es trabajo práctico, $item representa al detalle de calificación del estudiante --}}
+                                                    <td class="py-1">
+                                                        <span class="fw-bold text-dark">
+                                                            {{ $item->calificacionParcial->matriculacion->estudiante->persona->nombres ?? '' }}
+                                                            {{ $item->calificacionParcial->matriculacion->estudiante->persona->ap_paterno ?? '' }}
+                                                            {{ $item->calificacionParcial->matriculacion->estudiante->persona->ap_materno ?? '' }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-1 text-center">
+                                                        <span class="badge bg-light text-dark border">
+                                                            {{ $item->tipo_componente }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-1 text-center">
+                                                        @if ($programacion->bloqueado)
+                                                            <input type="number" value="{{ $item->nota }}"
+                                                                class="form-control form-control-sm text-center fw-bold mx-auto"
+                                                                style="max-width: 130px;" disabled>
+                                                        @else
+                                                            <input type="number" name="notas[{{ $item->id }}]"
+                                                                value="{{ $item->nota }}"
+                                                                class="form-control form-control-sm input-nota text-center fw-bold mx-auto"
+                                                                style="max-width: 130px;" min="0" max="100"
+                                                                step="0.1" placeholder="0.0">
+                                                        @endif
+                                                    </td>
+                                                @else
+                                                    {{-- Si es examen normal por folios --}}
+                                                    <td class="py-1">
+                                                        <span class="badge bg-dark font-monospace px-2 py-1">
+                                                            {{ $item->codigo_folio }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-1">
+                                                        <span
+                                                            class="badge bg-{{ $item->nota !== null ? 'success' : 'warning text-dark' }}">
+                                                            {{ $item->estado_folio }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-1 text-center">
+                                                        @if ($programacion->bloqueado)
+                                                            <input type="number" value="{{ $item->nota }}"
+                                                                class="form-control form-control-sm text-center fw-bold mx-auto"
+                                                                style="max-width: 130px;" disabled>
+                                                        @else
+                                                            <input type="number" name="notas[{{ $item->id }}]"
+                                                                value="{{ $item->nota }}"
+                                                                class="form-control form-control-sm input-nota text-center fw-bold mx-auto"
+                                                                style="max-width: 130px;" min="0" max="100"
+                                                                step="0.1" placeholder="0.0">
+                                                        @endif
+                                                    </td>
+                                                @endif
                                             </tr>
                                         @empty
                                             <tr>
                                                 <td colspan="4" class="text-center py-4 text-muted fst-italic">
-                                                    No se han generado folios para esta evaluación.
+                                                    No se han encontrado registros para calificar en esta evaluación.
                                                 </td>
                                             </tr>
                                         @endforelse

@@ -19,35 +19,23 @@ return new class extends Migration
                 ->onUpdate('cascade')
                 ->onDelete('cascade');
 
-            $table->integer('nro_parcial')->comment('1 (Pondera 30%), 2 (Pondera 30%), o 3 (Pondera 40%)');
-            $table->decimal('ponderacion_parcial', 5, 2);
-
-            // Componentes estándar sobre 100
-            $table->decimal('tp_nota', 5, 2)->default(0)->comment('Trabajo práctico evaluado sobre 100');
-            $table->decimal('exam_nota', 5, 2)->default(0)->comment('Examen evaluado sobre 100');
-
-            // Trazabilidad de examen
-            $table->string('metodo_registro')->default('directa')->comment('directa, folio, dictada');
-
-            $table->foreignId('folio_id')
+            // Relación opcional con la configuración meta institucional de donde heredó
+            $table->foreignId('configuracion_parcial_id')
                 ->nullable()
-                ->constrained('folio_examens')
+                ->constrained('configuracion_parcial_meta')
                 ->onUpdate('cascade')
                 ->onDelete('set null');
 
-            $table->decimal('nota_parcial_calculada', 5, 2)->nullable();
-
-            $table->foreignId('registrado_por_user_id')
-                ->nullable()
-                ->constrained('users')
-                ->onUpdate('cascade')
-                ->onDelete('set null');
+            $table->integer('nro_parcial')->comment('1, 2 o 3');
+            $table->decimal('ponderacion_parcial', 5, 2)->comment('Peso oficial heredado de la meta (Ej: 30.00)');
+            $table->decimal('nota_parcial_calculada', 5, 2)->nullable()->comment('Suma de los componentes ponderados del detalle');
 
             $table->foreignId('estado_id')
                 ->nullable()
                 ->constrained('estados')
                 ->onUpdate('cascade')
-                ->onDelete('set null');
+                ->onDelete('set null')
+                ->comment('Ej: Vigente, Bloqueado, Modificado');
 
             $table->timestamps();
         });

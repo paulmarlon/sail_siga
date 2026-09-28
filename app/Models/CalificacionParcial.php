@@ -13,10 +13,9 @@ class CalificacionParcial extends Model
 
     protected $fillable = [
         'matriculacion_id',
+        'configuracion_parcial_id', // <-- ¡AQUÍ ESTABA FALTANDO!
         'nro_parcial',
         'ponderacion_parcial',
-        'tp_nota',
-        'exam_nota',
         'metodo_registro',
         'folio_id',
         'nota_parcial_calculada',
@@ -28,14 +27,8 @@ class CalificacionParcial extends Model
     {
         return $this->belongsTo(MatriculacionMateria::class, 'matriculacion_id');
     }
-
-    public function folio()
+    public function detalles()
     {
-        return $this->belongsTo(FolioExamen::class, 'folio_id');
-    }
-
-    public function registradoPor()
-    {
-        return $this->belongsTo(User::class, 'registrado_por_user_id');
+        return $this->hasMany(CalificacionDetalle::class, 'calificacion_parcial_id');
     }
 }

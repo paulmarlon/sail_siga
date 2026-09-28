@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\Carrera;
 use App\Models\Estado;
 use App\Models\Nivel;
+use App\Models\ConfiguracionParcialMeta;
+use App\Models\ConfiguracionComponenteMeta;
 use Illuminate\Database\Seeder;
 
 class CarreraSeeder extends Seeder
@@ -19,21 +21,21 @@ class CarreraSeeder extends Seeder
             ->where('slug', 'vigente')
             ->first();
 
-        // Buscamos un nivel por defecto (asumiendo que ya tienes niveles creados)
+        // Buscamos un nivel por defecto
         $nivelSuperior = Nivel::first();
 
         if (!$estadoVigente || !$nivelSuperior) {
-            return; // Evita errores si faltan los seeders previos de estados o niveles
+            return;
         }
 
-        // 1. Creamos primero el Tronco Común con todos sus campos requeridos (incluyendo sigla)
+        // 1. Creamos primero el Tronco Común
         $troncoComun = Carrera::updateOrCreate(
-            ['sigla' => 'BAS-POL'],
+            ['sigla' => 'FB'],
             [
                 'sigla'           => 'FB',
                 'nombre'          => 'FORMACION BASE CIENCIAS POLICIALES',
                 'resolucion'      => 'RES-MIN-000/2026',
-                'duracion'        => 2, // Semestres iniciales compartidos
+                'duracion'        => 2,
                 'titulo'          => 'CERTIFICADO NOTAS',
                 'es_tronco_comun' => true,
                 'carrera_base_id' => null,
@@ -42,16 +44,19 @@ class CarreraSeeder extends Seeder
             ]
         );
 
-        // 2. Definimos las carreras que se desprenden a partir del 3er semestre
+        // Creamos su configuración de notas por defecto
+        $this->crearConfiguracionParcialParaCarrera($troncoComun->id, $estadoVigente->id);
+
+        // 2. Definimos las carreras que se desprenden
         $carrerasEjemplo = [
             [
                 'sigla'           => 'TV',
                 'nombre'          => 'TRANSITO Y VIALIDAD',
                 'resolucion'      => 'RES-MIN-001/2024',
-                'duracion'        => 6, // Semestres totales
+                'duracion'        => 6,
                 'titulo'          => 'LICENCIATURA EN INGENIERIA DE TRANSITO Y VIALIDAD',
                 'es_tronco_comun' => false,
-                'carrera_base_id' => $troncoComun->id, // Enlazado al tronco común
+                'carrera_base_id' => $troncoComun->id,
             ],
             [
                 'sigla'           => 'IC',
@@ -60,7 +65,7 @@ class CarreraSeeder extends Seeder
                 'duracion'        => 6,
                 'titulo'          => 'LICENCIATURA EN INVESTIGACION CRIMINAL',
                 'es_tronco_comun' => false,
-                'carrera_base_id' => $troncoComun->id, // Enlazado al tronco común
+                'carrera_base_id' => $troncoComun->id,
             ],
             [
                 'sigla'           => 'AP',
@@ -83,7 +88,7 @@ class CarreraSeeder extends Seeder
         ];
 
         foreach ($carrerasEjemplo as $carreraData) {
-            Carrera::updateOrCreate(
+            $carrera = Carrera::updateOrCreate(
                 ['sigla' => $carreraData['sigla']],
                 [
                     'sigla'           => $carreraData['sigla'],
@@ -97,6 +102,53 @@ class CarreraSeeder extends Seeder
                     'estado_id'       => $estadoVigente->id,
                 ]
             );
+
+            // Creamos su configuración de notas asociada a esta carrera
+            $this->crearConfiguracionParcialParaCarrera($carrera->id, $estadoVigente->id);
         }
+    }
+
+    /**
+     * Método auxiliar para evitar duplicar código de configuración de notas
+     */
+    private function crearConfiguracionParcialParaCarrera(int $carreraId, int $estadoId): void
+    {
+        // Si ya existen configuraciones para esta carrera, las omitimos para evitar duplicados en seeders repetidos
+        if (ConfiguracionParcialMeta::where('carrera_id', $carreraId)->exists()) {
+            return;
+        }
+
+        // 1. Primer Parcial (30%)
+        $p1 = ConfiguracionParcialMeta::create([
+            'carrera_id'          => $carreraId,
+            'nro_parcial'         => 1,
+            'nombre'              => 'Primer Parcial',
+            'ponderacion_parcial' => 30.00,
+            'estado_id'           => $estadoId,
+        ]);
+        ConfiguracionComponenteMeta::create(['configuracion_parcial_id' => $p1->id, 'tipo_componente' => 'examen', 'ponderacion_componente' => 75.00]);
+        ConfiguracionComponenteMeta::create(['configuracion_parcial_id' => $p1->id, 'tipo_componente' => 'trabajo_practico', 'ponderacion_componente' => 25.00]);
+
+        // 2. Segundo Parcial (30%)
+        $p2 = ConfiguracionParcialMeta::create([
+            'carrera_id'          => $carreraId,
+            'nro_parcial'         => 2,
+            'nombre'              => 'Segundo Parcial',
+            'ponderacion_parcial' => 30.00,
+            'estado_id'           => $estadoId,
+        ]);
+        ConfiguracionComponenteMeta::create(['configuracion_parcial_id' => $p2->id, 'tipo_componente' => 'examen', 'ponderacion_componente' => 75.00]);
+        ConfiguracionComponenteMeta::create(['configuracion_parcial_id' => $p2->id, 'tipo_componente' => 'trabajo_practico', 'ponderacion_componente' => 25.00]);
+
+        // 3. Tercer Parcial (40%)
+        $p3 = ConfiguracionParcialMeta::create([
+            'carrera_id'          => $carreraId,
+            'nro_parcial'         => 3,
+            'nombre'              => 'Tercer Parcial',
+            'ponderacion_parcial' => 40.00,
+            'estado_id'           => $estadoId,
+        ]);
+        ConfiguracionComponenteMeta::create(['configuracion_parcial_id' => $p3->id, 'tipo_componente' => 'examen', 'ponderacion_componente' => 75.00]);
+        ConfiguracionComponenteMeta::create(['configuracion_parcial_id' => $p3->id, 'tipo_componente' => 'trabajo_practico', 'ponderacion_componente' => 25.00]);
     }
 }

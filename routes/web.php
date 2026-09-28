@@ -23,6 +23,7 @@ use App\Http\Controllers\{
     ProgramacionExamenController,
     FolioExamenController
 };
+use App\Http\Controllers\Admin\AdminCalificacionController;
 use App\Http\Controllers\Docente\DocentePortalController;
 use Illuminate\Support\Facades\Route;
 
@@ -172,6 +173,14 @@ Route::middleware('auth')->group(function () {
 
         Route::get('programacion-examenes/{programacion}/folios', [FolioExamenController::class, 'plantilla'])->name('programacion-examenes.folios.index')->middleware('can:admin.programacion-examenes.index');
         Route::post('programacion-examenes/{programacion}/folios/generar-masivo', [FolioExamenController::class, 'generarMasivo'])->name('folio-examens.generar-masivo')->middleware('can:admin.programacion-examenes.edit');
+
+        // --- RUTA NUEVA: CONSOLIDACIÓN DE NOTAS DE EXAMEN ---
+        Route::get('programacion-examenes/{programacion}/consolidacion', [FolioExamenController::class, 'vistaConsolidacion'])
+            ->name('programacion-examenes.consolidacion')
+            ->middleware('can:admin.programacion-examenes.index');
+        Route::post('/calificaciones/consolidar/{programacion}', [AdminCalificacionController::class, 'consolidarNotasFolio'])
+            ->name('calificaciones.consolidar')
+            ->middleware('can:admin.programacion-examenes.edit');
     });
 
     // =========================================================================
@@ -186,11 +195,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/dashboard', [DocentePortalController::class, 'index'])
                 ->name('dashboard');
 
-            // 2. Vista de Carga Ciega de Notas por Folios
+            // 2. Vista de Carga de Notas (Soporta modalidad a ciegas y modalidad directa inteligentemente desde el controlador)
             Route::get('/programacion/{programacion}/llenar-notas', [DocentePortalController::class, 'llenarNotas'])
                 ->name('programacion.llenar-notas');
 
-            // 3. Procesamiento y guardado seguro de las calificaciones
+            // 3. Procesamiento y guardado seguro de las calificaciones (Soporta ambas modalidades)
             Route::post('/programacion/{programacion}/guardar-notas', [DocentePortalController::class, 'guardarNotas'])
                 ->name('programacion.guardar-notas');
         });
