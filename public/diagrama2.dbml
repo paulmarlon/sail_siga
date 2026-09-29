@@ -12,7 +12,7 @@ Table domicilio {
     referencia text
     latitud decimal(10, 8)
     longitud decimal(11, 8)
-    tipo_domicilio varchar
+    tipo_domicilio varchar [note: 'RESIDENCIA, TRABAJO, REFERENCIA']
     deleted_at timestamp
 }
 
@@ -31,16 +31,19 @@ Indexes {(slug, contexto) [unique]}
 Table nivel {
     id int [pk, increment]
     nombre varchar [note: 'Pregrado, Posgrado, Técnico']
+    deleted_at timestamp
 }
 
 Table turno {
     id int [pk, increment]
     nombre varchar
+    deleted_at timestamp
 }
 
 Table paralelo {
     id int [pk, increment]
     nombre varchar
+    deleted_at timestamp
 }
 
 // -----------------------------------------------------------------------------
@@ -50,6 +53,7 @@ Table gestion {
     id int [pk, increment]
     nombre varchar(4) [unique]
     estado_id int [ref: > estado.id]
+    deleted_at timestamp
 }
 
 Table periodo {
@@ -279,10 +283,14 @@ Table folio_examen {
     id int [pk, increment]
     programacion_id int [ref: > programacion_examen.id]
     estudiante_id int [ref: > estudiante.id]
+    registrado_por_user_id int [ref: > user.id, null]
+    calificado_por_user_id int [ref: > user.id, null]
     codigo_folio varchar
     estado_folio varchar [default: 'Generado']
-    nota decimal(5,2)
-    observacion varchar
+    nota decimal(5,2) [null]
+    observacion varchar [null]
+    created_at timestamp
+    updated_at timestamp
     deleted_at timestamp
 }
 
@@ -295,14 +303,11 @@ Table folio_examen {
 Table calificacion_parcial {
     id int [pk, increment]
     matriculacion_id int [ref: > matriculacion_materia.id]
-
-    // AQUÍ ESTÁ LA RELACIÓN QUE FALTABA CON LA CONFIGURACIÓN META:
-    configuracion_parcial_id int [ref: > configuracion_parcial_meta.id, null, note: 'Plantilla original de donde heredó las ponderaciones']
-
-    nro_parcial int [note: '1, 2 o 3']
-    ponderacion_parcial decimal(5,2) [note: 'Peso oficial heredado de la meta (Ej: 30.00)']
-    nota_parcial_calculada decimal(5,2) [note: 'Suma de los componentes ponderados del detalle']
-    estado_id int [ref: > estado.id, note: 'Ej: Vigente, Bloqueado, Modificado']
+    configuracion_parcial_id int [ref: > configuracion_parcial_meta.id, null]
+    nro_parcial int
+    ponderacion_parcial decimal(5,2)
+    nota_parcial_calculada decimal(5,2) [null]
+    estado_id int [ref: > estado.id, null]
     created_at timestamp
     updated_at timestamp
 }
@@ -310,14 +315,14 @@ Table calificacion_parcial {
 Table calificacion_detalle {
     id int [pk, increment]
     calificacion_parcial_id int [ref: > calificacion_parcial.id]
-    tipo_componente varchar [note: "Valores: 'trabajo_practico', 'examen'"]
-    ponderacion_componente decimal(5,2) [note: 'Porcentaje de peso de este componente (Ej: 25 o 75)']
-    nota decimal(5,2) [note: 'Nota obtenida evaluada sobre 100']
-    modalidad_origen varchar [default: 'directa', note: "'directa', 'a_ciegas', 'dictada', 'extraordinaria'"]
-    folio_id int [ref: > folio_examen.id, null, note: 'Enlace al folio si se originó en examen a ciegas']
-    estado_id int [ref: > estado.id]// note: vigente, anulado
-    registrado_por_user_id int [ref: > user.id, note: 'Usuario que ingresó o sincronizó este componente']
-    observacion text [null, note: 'Justificación médica, permiso o nota aclaratoria']
+    tipo_componente varchar [note: "'trabajo_practico', 'examen'"]
+    ponderacion_componente decimal(5,2)
+    nota decimal(5,2)
+    modalidad_origen varchar [default: 'directa']
+    folio_id int [ref: > folio_examen.id, null]
+    estado_id int [ref: > estado.id, null]
+    registrado_por_user_id int [ref: > user.id, null]
+    observacion text [null]
     created_at timestamp
     updated_at timestamp
 }

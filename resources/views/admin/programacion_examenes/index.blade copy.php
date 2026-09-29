@@ -22,8 +22,21 @@
             font-size: 0.78rem;
         }
 
+        /* Transición suave para el colapso lateral */
         .col-transicion {
             transition: all 0.3s ease-in-out;
+        }
+
+        .bg-soft-success {
+            background-color: rgba(40, 167, 69, 0.18) !important;
+        }
+
+        .bg-soft-primary {
+            background-color: rgba(0, 123, 255, 0.18) !important;
+        }
+
+        .bg-soft-warning {
+            background-color: rgba(255, 193, 7, 1) !important;
         }
 
         #tabla-programacion th,
@@ -49,6 +62,7 @@
             <p class="text-muted mb-0">Control de instancias evaluativas por oferta académica y periodo activo.</p>
         </div>
         <div>
+            <!-- Botón de acceso a la Papelera -->
             <a href="{{ route('admin.programacion-examenes.papelera') }}"
                 class="btn btn-outline-secondary btn-sm shadow-sm font-weight-bold">
                 <i class="fas fa-trash-restore mr-1 text-danger"></i> Ver Papelera
@@ -65,48 +79,86 @@
             $ofertaId = null,
             $instanciaKey = null,
         ) {
-            // Si no hay examen programado para esta instancia
             if (!$examen) {
-                return '<div class="d-flex flex-column align-items-center justify-content-center" style="height: 45px;"><span class="text-muted" style="font-size: 0.55rem;">--/--</span></div>';
+                // Si no hay examen programado y se proporcionó oferta e instancia, mostramos el botón rápido
+                if ($ofertaId && $instanciaKey) {
+                    $urlCrearIndividual = route('admin.programacion-examenes.create', [
+                        'oferta_id' => $ofertaId,
+                        'instancia' => $instanciaKey,
+                    ]);
+                    return '
+                    <div class="d-flex flex-column align-items-center justify-content-center" style="height: 45px;">
+                        <a href="' .
+                        $urlCrearIndividual .
+                        '" class="btn btn-xs btn-light border text-muted px-1 py-0 shadow-none" style="font-size: 0.60rem;" title="Programar ' .
+                        $instanciaKey .
+                        '">
+                            <i class="fas fa-plus"></i>
+                        </a>
+                        <span class="text-muted" style="font-size: 0.55rem;">--/--</span>
+                    </div>';
+                }
+                return '<span class="text-muted" style="font-size: 0.55rem;">--/--</span>';
             }
 
             $fecha = \Carbon\Carbon::parse($examen->fecha_programada);
             $diaMes = $fecha->format('d-m');
 
-            // Recuperamos los colores originales según la modalidad del examen
             $modalidad = strtolower($examen->modalidad ?? 'directa');
             $estiloModalidad = 'bg-success text-white';
             $styleExtra = '';
 
             if ($modalidad === 'a_ciegas') {
                 $estiloModalidad = 'text-white';
-                $styleExtra = 'background-color: #6f42c1 !important;'; // Morado
+                $styleExtra = 'background-color: #6f42c1 !important;';
             } elseif ($modalidad === 'dictada') {
-                $estiloModalidad = 'bg-warning text-dark'; // Amarillo
+                $estiloModalidad = 'bg-warning text-dark';
             }
 
             $iconoBloqueo = $examen->bloqueado ? '<i class="fas fa-lock text-danger ml-1" title="Bloqueado"></i>' : '';
 
-            // Retornamos el bloque estático con color y tooltip, SIN etiquetas <a>
-            return '
-            <div class="d-flex flex-column align-items-center justify-content-center" style="height: 45px;" title="Modalidad: ' .
-                ucfirst(str_replace('_', ' ', $modalidad)) .
-                ' (' .
-                $instanciaKey .
-                ')">
+            $contenidoHtml =
+                '
+            <div class="d-flex flex-column align-items-center justify-content-center" style="height: 45px;">
                 <span class="badge ' .
                 $estiloModalidad .
                 ' px-1 py-1 text-center" style="font-size: 0.60rem; ' .
                 $styleExtra .
-                ' writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; letter-spacing: 0.5px;">
-                    ' .
+                ' writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; letter-spacing: 0.5px;" title="Modalidad: ' .
+                ucfirst(str_replace('_', ' ', $modalidad)) .
+                '">' .
                 $diaMes .
-                '
-                </span>
+                '</span>
                 ' .
                 $iconoBloqueo .
                 '
             </div>';
+
+            // Si es A ciegas, redirige a folios; de lo contrario, si hay oferta/instancia, permite ir al formulario de creación/edición
+            if ($modalidad === 'a_ciegas') {
+                $urlAccion = route('admin.programacion-examenes.folios.index', $examen->id);
+                $tituloTooltip = 'Modalidad A Ciegas: Click para ver Folios';
+            } elseif ($ofertaId && $instanciaKey) {
+                $urlAccion = route('admin.programacion-examenes.create', [
+                    'oferta_id' => $ofertaId,
+                    'instancia' => $instanciaKey,
+                ]);
+                $tituloTooltip = "Click para editar / ver {$instanciaKey}";
+            } else {
+                $urlAccion = '#';
+                $tituloTooltip = 'Información de examen';
+            }
+
+            return '
+            <a href="' .
+                $urlAccion .
+                '" class="text-decoration-none d-block w-100 h-100" title="' .
+                $tituloTooltip .
+                '" style="transition: opacity 0.2s;" onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'">
+                ' .
+                $contenidoHtml .
+                '
+            </a>';
         };
     @endphp
 
@@ -128,9 +180,10 @@
         </div>
     @endif
 
+    <!-- FORMULARIO ENVOLVENTE GENERAL -->
     <form action="{{ route('admin.programacion-examenes.create') }}" method="GET" id="form-masivo">
 
-        <!-- BARRA DE CONTROL DE PANELES -->
+        <!-- ================= BARRA ESTRATÉGICA DE CONTROL DE PANELES ================= -->
         <div class="row mb-2">
             <div class="col-12 d-flex justify-content-between align-items-center bg-light p-2 rounded border shadow-sm">
                 <div>
@@ -153,7 +206,7 @@
 
         <div class="row">
 
-            <!-- ================= COLUMNA 1: FILTROS ================= -->
+            <!-- ================= COLUMNA 1: FILTROS DINÁMICOS (IZQUIERDA) ================= -->
             <div class="col-md-3 px-1 col-transicion" id="panel-filtros">
                 <div class="card card-primary card-outline h-100 mb-0 shadow-sm d-flex flex-column">
                     <div class="card-header bg-white py-2 px-2 d-flex justify-content-between align-items-center">
@@ -163,6 +216,7 @@
                     </div>
                     <div class="card-body p-2 d-flex flex-column justify-content-between contenido-lateral">
                         <div>
+                            <!-- Filtro por Periodo Académico -->
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold text-secondary mb-1">Periodo Académico:</label>
                                 <select id="filtro-periodo" class="form-control form-control-sm"
@@ -175,6 +229,7 @@
                                 </select>
                             </div>
 
+                            <!-- Filtro por Carrera -->
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold text-secondary mb-1">Carrera:</label>
                                 <select id="filtro-carrera" class="form-control form-control-sm"
@@ -186,6 +241,7 @@
                                 </select>
                             </div>
 
+                            <!-- Filtro por Grado / Semestre -->
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold text-secondary mb-1">Grado / Semestre:</label>
                                 <select id="filtro-grado" class="form-control form-control-sm" style="font-size: 0.75rem;">
@@ -196,6 +252,7 @@
                                 </select>
                             </div>
 
+                            <!-- Turno y Paralelo en Fila -->
                             <div class="form-row mb-2">
                                 <div class="col-6">
                                     <label class="small font-weight-bold text-secondary mb-1">Turno:</label>
@@ -219,6 +276,7 @@
                                 </div>
                             </div>
 
+                            <!-- Buscador por Texto -->
                             <div class="form-group mb-2">
                                 <label class="small font-weight-bold text-secondary mb-1">Materia (Nombre / Sigla):</label>
                                 <input type="text" id="filtro-busqueda" class="form-control form-control-sm"
@@ -226,6 +284,7 @@
                             </div>
                         </div>
 
+                        <!-- Botón Limpiar Filtros -->
                         <div>
                             <button type="button" id="btn-limpiar-filtros"
                                 class="btn btn-xs btn-outline-secondary btn-block" style="font-size: 0.75rem;">
@@ -236,7 +295,7 @@
                 </div>
             </div>
 
-            <!-- ================= COLUMNA 2: TABLA PRINCIPAL ================= -->
+            <!-- ================= COLUMNA 2: TABLA DE OFERTAS ACADÉMICAS (CENTRAL) ================= -->
             <div class="col-md-6 px-1 col-transicion" id="panel-tabla">
                 <div class="card card-success card-outline card-scroll shadow-sm mb-0">
                     <div class="card-header bg-white py-2 px-2 d-flex justify-content-between align-items-center">
@@ -264,6 +323,8 @@
                                     <th class="text-center">P1</th>
                                     <th class="text-center">P2</th>
                                     <th class="text-center">EF</th>
+                                    <th class="text-center">2T</th>
+                                    <th class="text-center" style="width: 60px;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -277,6 +338,7 @@
                                             $p1 = $exámenes->get('P1');
                                             $p2 = $exámenes->get('P2');
                                             $ef = $exámenes->get('EF');
+                                            $si = $exámenes->get('2T');
 
                                             $nombMateria = strtolower($oferta->pensum->materia->nombre ?? '');
                                             $siglaMateria = strtolower($oferta->pensum->materia->sigla ?? '');
@@ -285,16 +347,54 @@
                                             $idGrado = $oferta->pensum->grado_id ?? '';
                                             $idTurno = $oferta->turno_id ?? '';
                                             $idParalelo = $oferta->paralelo_id ?? '';
+
+                                            $tieneTP1 = $tp1 ? '1' : '0';
+                                            $tieneTP2 = $tp2 ? '1' : '0';
+                                            $tieneTP3 = $tp3 ? '1' : '0';
+                                            $tieneP1 = $p1 ? '1' : '0';
+                                            $tieneP2 = $p2 ? '1' : '0';
+                                            $tieneEF = $ef ? '1' : '0';
+                                            $tiene2T = $si ? '1' : '0';
+
+                                            $bgTP1 =
+                                                $tp1 && ($tp1->folios_count ?? ($tp1->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bgTP2 =
+                                                $tp2 && ($tp2->folios_count ?? ($tp2->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bgTP3 =
+                                                $tp3 && ($tp3->folios_count ?? ($tp3->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bgP1 =
+                                                $p1 && ($p1->folios_count ?? ($p1->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bgP2 =
+                                                $p2 && ($p2->folios_count ?? ($p2->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bgEF =
+                                                $ef && ($ef->folios_count ?? ($ef->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
+                                            $bg2T =
+                                                $si && ($si->folios_count ?? ($si->folios->count() ?? 0)) > 0
+                                                    ? 'bg-soft-warning'
+                                                    : '';
                                         @endphp
                                         <tr class="oferta-row" data-periodo="{{ $idPeriodo }}"
                                             data-carrera="{{ $idCarrera }}" data-grado="{{ $idGrado }}"
                                             data-turno="{{ $idTurno }}" data-paralelo="{{ $idParalelo }}"
-                                            data-tp1="{{ $tp1 ? 1 : 0 }}" data-tp2="{{ $tp2 ? 1 : 0 }}"
-                                            data-tp3="{{ $tp3 ? 1 : 0 }}" data-p1="{{ $p1 ? 1 : 0 }}"
-                                            data-p2="{{ $p2 ? 1 : 0 }}" data-ef="{{ $ef ? 1 : 0 }}"
+                                            data-tp1="{{ $tieneTP1 }}" data-tp2="{{ $tieneTP2 }}"
+                                            data-tp3="{{ $tieneTP3 }}" data-p1="{{ $tieneP1 }}"
+                                            data-p2="{{ $tieneP2 }}" data-ef="{{ $tieneEF }}"
+                                            data-2t="{{ $tiene2T }}"
                                             data-texto="{{ $nombMateria }} {{ $siglaMateria }}">
 
-                                            <!-- Checkbox de selección masiva -->
+                                            <!-- Checkbox -->
                                             <td class="text-center align-middle">
                                                 <div class="custom-control custom-checkbox">
                                                     <input type="checkbox" name="ofertas_ids[]"
@@ -305,7 +405,6 @@
                                                 </div>
                                             </td>
 
-                                            <!-- Materia y Sigla -->
                                             <td class="align-middle">
                                                 <span
                                                     class="font-weight-bold text-dark">{{ $oferta->pensum->materia->nombre ?? 'S/N' }}</span><br>
@@ -313,48 +412,139 @@
                                                     class="text-muted">{{ $oferta->pensum->materia->sigla ?? 'S/S' }}</small>
                                             </td>
 
-                                            <!-- Carrera, Periodo y Grado -->
                                             <td class="align-middle">
                                                 <span
                                                     class="badge badge-info float-left">{{ $oferta->pensum->carrera->sigla ?? 'S/C' }}
                                                     @if (isset($oferta->periodo))
                                                         {{ $oferta->periodo->nombre }}
                                                     @endif
-                                                </span><br>
+                                                </span>
+                                                <br>
                                                 <small
                                                     class="text-muted">{{ $oferta->pensum->grado->nombre ?? 'S/G' }}</small>
                                             </td>
 
-                                            <!-- Turno y Paralelo -->
                                             <td class="text-center align-middle">
                                                 <span
                                                     class="badge badge-light border">{{ $oferta->turno->nombre ?? 'S/T' }}<br>{{ $oferta->paralelo->nombre ?? 'S/P' }}</span>
                                             </td>
-
-                                            <!-- Instancias de Exámenes Regulares (TP1 a EF) -->
-                                            <td class="text-center align-middle p-0"
+                                            <!-- Columnas TP1, TP2, TP3 -->
+                                            <!-- Columna TP1 -->
+                                            <td class="text-center align-middle p-0 {{ $bgTP1 }}"
                                                 style="height: 45px; line-height: 1;">
                                                 {!! $renderFechaVertical($tp1, 'badge-secondary', $oferta->id, 'TP1') !!}
+                                                @if ($tp1)
+                                                    <div style="margin-top: -2px;">
+                                                        <a href="{{ route('admin.programacion-examenes.consolidacion', $tp1->id) }}"
+                                                            class="btn btn-xs {{ $tp1->bloqueado ? 'btn-secondary' : 'btn-primary' }} px-1 py-0"
+                                                            style="font-size: 0.65rem;" title="Consolidar TP1">
+                                                            <i
+                                                                class="fas {{ $tp1->bloqueado ? 'fa-lock' : 'fa-clipboard-check' }}"></i>
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             </td>
-                                            <td class="text-center align-middle p-0"
+
+                                            <!-- Columna TP2 -->
+                                            <td class="text-center align-middle p-0 {{ $bgTP2 }}"
                                                 style="height: 45px; line-height: 1;">
                                                 {!! $renderFechaVertical($tp2, 'badge-secondary', $oferta->id, 'TP2') !!}
+                                                @if ($tp2)
+                                                    <div style="margin-top: -2px;">
+                                                        <a href="{{ route('admin.programacion-examenes.consolidacion', $tp2->id) }}"
+                                                            class="btn btn-xs {{ $tp2->bloqueado ? 'btn-secondary' : 'btn-primary' }} px-1 py-0"
+                                                            style="font-size: 0.65rem;" title="Consolidar TP2">
+                                                            <i
+                                                                class="fas {{ $tp2->bloqueado ? 'fa-lock' : 'fa-clipboard-check' }}"></i>
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             </td>
-                                            <td class="text-center align-middle p-0"
+
+                                            <!-- Columna TP3 -->
+                                            <td class="text-center align-middle p-0 {{ $bgTP3 }}"
                                                 style="height: 45px; line-height: 1;">
                                                 {!! $renderFechaVertical($tp3, 'badge-secondary', $oferta->id, 'TP3') !!}
+                                                @if ($tp3)
+                                                    <div style="margin-top: -2px;">
+                                                        <a href="{{ route('admin.programacion-examenes.consolidacion', $tp3->id) }}"
+                                                            class="btn btn-xs {{ $tp3->bloqueado ? 'btn-secondary' : 'btn-primary' }} px-1 py-0"
+                                                            style="font-size: 0.65rem;" title="Consolidar TP3">
+                                                            <i
+                                                                class="fas {{ $tp3->bloqueado ? 'fa-lock' : 'fa-clipboard-check' }}"></i>
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             </td>
-                                            <td class="text-center align-middle p-0"
+
+                                            <!-- Columna P1 -->
+                                            <td class="text-center align-middle p-0 {{ $bgP1 }}"
                                                 style="height: 45px; line-height: 1;">
                                                 {!! $renderFechaVertical($p1, 'badge-success', $oferta->id, 'P1') !!}
+                                                @if ($p1)
+                                                    <div style="margin-top: -2px;">
+                                                        <a href="{{ route('admin.programacion-examenes.consolidacion', $p1->id) }}"
+                                                            class="btn btn-xs {{ $p1->bloqueado ? 'btn-secondary' : 'btn-primary' }} px-1 py-0"
+                                                            style="font-size: 0.65rem;" title="Consolidar P1">
+                                                            <i
+                                                                class="fas {{ $p1->bloqueado ? 'fa-lock' : 'fa-clipboard-check' }}"></i>
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             </td>
-                                            <td class="text-center align-middle p-0"
+
+                                            <!-- Columna P2 -->
+                                            <td class="text-center align-middle p-0 {{ $bgP2 }}"
                                                 style="height: 45px; line-height: 1;">
                                                 {!! $renderFechaVertical($p2, 'badge-success', $oferta->id, 'P2') !!}
+                                                @if ($p2)
+                                                    <div style="margin-top: -2px;">
+                                                        <a href="{{ route('admin.programacion-examenes.consolidacion', $p2->id) }}"
+                                                            class="btn btn-xs {{ $p2->bloqueado ? 'btn-secondary' : 'btn-primary' }} px-1 py-0"
+                                                            style="font-size: 0.65rem;" title="Consolidar P2">
+                                                            <i
+                                                                class="fas {{ $p2->bloqueado ? 'fa-lock' : 'fa-clipboard-check' }}"></i>
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             </td>
-                                            <td class="text-center align-middle p-0"
+
+                                            <!-- Columna EF -->
+                                            <td class="text-center align-middle p-0 {{ $bgEF }}"
                                                 style="height: 45px; line-height: 1;">
                                                 {!! $renderFechaVertical($ef, 'badge-primary', $oferta->id, 'EF') !!}
+                                                @if ($ef)
+                                                    <div style="margin-top: -2px;">
+                                                        <a href="{{ route('admin.programacion-examenes.consolidacion', $ef->id) }}"
+                                                            class="btn btn-xs {{ $ef->bloqueado ? 'btn-secondary' : 'btn-primary' }} px-1 py-0"
+                                                            style="font-size: 0.65rem;" title="Consolidar EF">
+                                                            <i
+                                                                class="fas {{ $ef->bloqueado ? 'fa-lock' : 'fa-clipboard-check' }}"></i>
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                            </td>
+
+                                            <!-- Columna 2T (Asegúrate de cambiar $si por tu variable correcta de 2T, ej: $t2 o $segundaInstancia) -->
+                                            <td class="text-center align-middle p-0 {{ $bg2T }}"
+                                                style="height: 45px; line-height: 1;">
+                                                {!! $renderFechaVertical($si, 'badge-warning', $oferta->id, '2T') !!}
+                                                @if ($si)
+                                                    <div style="margin-top: -2px;">
+                                                        <a href="{{ route('admin.programacion-examenes.consolidacion', $si->id) }}"
+                                                            class="btn btn-xs {{ $si->bloqueado ? 'btn-secondary' : 'btn-primary' }} px-1 py-0"
+                                                            style="font-size: 0.65rem;" title="Consolidar 2T">
+                                                            <i
+                                                                class="fas {{ $si->bloqueado ? 'fa-lock' : 'fa-clipboard-check' }}"></i>
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <a href="{{ route('admin.programacion-examenes.create', ['oferta_id' => $oferta->id]) }}"
+                                                    class="btn btn-info btn-xs px-1" title="Gestionar individual">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -365,7 +555,7 @@
                 </div>
             </div>
 
-            <!-- ================= COLUMNA 3: SELECCIONADOS Y ACCIÓN MASIVA ================= -->
+            <!-- ================= COLUMNA 3: SELECCIONADOS Y ACCIÓN MASIVA (DERECHA) ================= -->
             <div class="col-md-3 px-1 col-transicion" id="panel-seleccion">
                 <div class="card card-warning card-outline card-scroll shadow-sm mb-0 d-flex flex-column">
                     <div class="card-header bg-white py-2 px-2 d-flex justify-content-between align-items-center">
@@ -377,18 +567,22 @@
                     </div>
                     <div
                         class="card-body p-2 card-body-scroll d-flex flex-column justify-content-between contenido-lateral">
+
+                        <!-- Lista dinámica de seleccionadas -->
                         <div class="flex-grow-1 overflow-hidden d-flex flex-column">
                             <div id="sin-seleccion" class="text-muted text-center py-4">
                                 <i class="fas fa-hand-pointer fa-2x mb-2 text-secondary"></i>
                                 <p class="small mb-0">Marca materias para configurar el lote.</p>
                             </div>
                             <div id="lista-seleccionadas-container" class="flex-grow-1 overflow-auto pr-1 d-none">
-                                <!-- Se llena dinámicamente -->
+                                <!-- Se llena dinámicamente con JavaScript en tiempo real -->
                             </div>
                         </div>
 
+                        <!-- Botones de Acción Masiva -->
                         <div class="border-top pt-2 mt-2">
                             <div class="btn-group-vertical w-100">
+                                <!-- Botón 1: Dispara el Modal de Configuración Masiva -->
                                 <button type="button" id="btn-abrir-modal-lote"
                                     class="btn btn-primary btn-sm font-weight-bold py-1 mb-1 shadow-sm action-btn" disabled
                                     style="font-size: 0.75rem;" data-toggle="modal" data-target="#modalConfigurarLote">
@@ -396,12 +590,14 @@
                                         id="contador-lote">0</span>)
                                 </button>
 
+                                <!-- Botón 2: Edición Masiva Alternativa -->
                                 <button type="button" id="btn-editar-bloque"
                                     class="btn btn-success btn-sm font-weight-bold py-1 mb-1 shadow-sm action-btn" disabled
                                     style="font-size: 0.75rem;" data-toggle="modal" data-target="#modalEditarLote">
                                     <i class="fas fa-edit mr-1"></i> Editar (<span id="contador-lote-edit">0</span>)
                                 </button>
 
+                                <!-- Botón 3: Eliminar Lote -->
                                 <button type="button" id="btn-tercer-bloque"
                                     class="btn btn-danger btn-sm font-weight-bold py-1 shadow-sm action-btn" disabled
                                     style="font-size: 0.75rem;" data-toggle="modal" data-target="#modalEliminarMasivo">
@@ -431,8 +627,12 @@
                         </button>
                     </div>
                     <div class="modal-body bg-light">
-                        <p class="small text-muted mb-3">Seleccione las instancias evaluativas que desea habilitar y
-                            configure las observaciones globales.</p>
+                        <p class="small text-muted mb-3">
+                            Seleccione las instancias evaluativas que desea habilitar y configure las observaciones globales
+                            para las materias marcadas.
+                        </p>
+
+                        <!-- Select de Instancia Sugerida -->
                         <div class="form-group mb-3">
                             <label class="small font-weight-bold text-dark mb-1">Instancia Sugerida para el Lote:</label>
                             <select name="instancia_sugerida" id="instancia_sugerida_lote"
@@ -447,11 +647,13 @@
                                 <option value="2T">Segunda Instancia / Turno (2T)</option>
                             </select>
                         </div>
+
+                        <!-- Campo Observaciones -->
                         <div class="form-group mb-0">
                             <label class="small font-weight-bold text-dark mb-1">Observaciones Globales /
                                 Comentarios:</label>
                             <textarea name="observaciones_sugeridas" id="observaciones_sugeridas" class="form-control form-control-sm"
-                                rows="3" placeholder="Instrucción general..."></textarea>
+                                rows="3" placeholder="Ingrese alguna instrucción general para este lote..."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer bg-white py-2">
@@ -480,10 +682,12 @@
                         </button>
                     </div>
                     <div class="modal-body bg-light">
-                        <p class="small text-muted mb-3">Indique qué instancia evaluativa desea modificar:</p>
+                        <p class="small text-muted mb-3">
+                            Indique qué instancia evaluativa desea modificar de las materias seleccionadas:
+                        </p>
                         <div class="form-group mb-0">
                             <label class="small font-weight-bold text-dark mb-1">Instancia:</label>
-                            <select name="instancia_a_editar" id="instancia_sugerida_edicion"
+                            <select name="instancia_sugerida" id="instancia_sugerida_edicion"
                                 class="form-control form-control-sm" required>
                                 <option value="">-- Seleccione la instancia --</option>
                                 <option value="TP1">Trabajo Práctico 1 (TP1)</option>
@@ -509,7 +713,7 @@
 
     </form>
 
-    <!-- ================= MODAL DE ELIMINACIÓN MASIVA ================= -->
+    <!-- Modal de Confirmación de Eliminación Masiva (Independiente) -->
     <div class="modal fade" id="modalEliminarMasivo" tabindex="-1" role="dialog"
         aria-labelledby="modalEliminarMasivoLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -531,15 +735,13 @@
                     <div class="modal-body py-3">
                         <p class="mb-2 text-center">¿Está seguro de enviar a la papelera los exámenes seleccionados?</p>
 
+                        <!-- Selector de Instancia a Eliminar de forma Masiva -->
                         <div class="form-group mb-3">
                             <label class="small font-weight-bold text-dark mb-1">Instancia a Eliminar:</label>
                             <select name="instancia_a_eliminar" id="instancia_a_eliminar"
                                 class="form-control form-control-sm" required>
                                 <option value="">-- Seleccionar Instancia --</option>
                                 <option value="TODAS">Todas las instancias (P1, P2, EF, 2T)</option>
-                                <option value="TP1">Trabajo Práctico 1 (TP1)</option>
-                                <option value="TP2">Trabajo Práctico 2 (TP2)</option>
-                                <option value="TP3">Trabajo Práctico 3 (TP3)</option>
                                 <option value="P1">Primer Parcial (P1)</option>
                                 <option value="P2">Segundo Parcial (P2)</option>
                                 <option value="EF">Examen Final (EF)</option>
@@ -554,7 +756,9 @@
                     </div>
 
                     <div class="modal-footer bg-light py-2 px-3">
-                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i> Cancelar
+                        </button>
                         <button type="submit" class="btn btn-danger btn-sm font-weight-bold px-3 shadow-sm">
                             <i class="fas fa-trash-alt mr-1"></i> Sí, eliminar lote
                         </button>
@@ -569,7 +773,7 @@
     <script>
         $(function() {
             // =========================================================================
-            // 0. RESTAURAR FILTROS DESDE EL LOCALSTORAGE AL CARGAR
+            // 0. RESTAURAR FILTROS DESDE EL LOCALSTORAGE AL CARGAR LA PÁGINA
             // =========================================================================
             var pId = localStorage.getItem('filtro_periodo');
             var cId = localStorage.getItem('filtro_carrera');
@@ -605,6 +809,7 @@
                 hayFiltrosActivos = true;
             }
 
+            // Si hay filtros guardados, abrimos el panel automáticamente y filtramos la tabla
             if (hayFiltrosActivos) {
                 var panelFiltros = $('#panel-filtros');
                 panelFiltros.removeClass('d-none').addClass('col-md-3 px-1');
@@ -612,17 +817,19 @@
                 $('#btn-toggle-filtros').find('.txt-btn-filtros').text('Ocultar Filtros');
                 $('#btn-toggle-filtros').removeClass('btn-primary').addClass('btn-outline-primary');
                 recalcularAnchoTabla();
-                aplicarFiltrosDinamicos();
+                aplicarFiltrosDinamicos(); // Aplica el ocultamiento de filas
             }
 
             // =========================================================================
-            // 1. CONTROL DE PANELES LATERALES
+            // 1. CONTROL DE PANELES LATERALES (FILTROS Y LOTE)
             // =========================================================================
             $('#btn-toggle-filtros').on('click', function() {
                 var panelFiltros = $('#panel-filtros');
                 var contenido = panelFiltros.find('.contenido-lateral');
                 var txtSpan = $(this).find('.txt-btn-filtros');
-                if (!panelFiltros.hasClass('d-none')) {
+                var estaOculto = panelFiltros.hasClass('d-none');
+
+                if (!estaOculto) {
                     contenido.hide();
                     panelFiltros.removeClass('col-md-3 px-1').addClass('d-none');
                     txtSpan.text('Mostrar Filtros');
@@ -640,7 +847,9 @@
                 var panelLote = $('#panel-seleccion');
                 var contenido = panelLote.find('.contenido-lateral');
                 var txtSpan = $(this).find('.txt-btn-lote');
-                if (!panelLote.hasClass('d-none')) {
+                var estaOculto = panelLote.hasClass('d-none');
+
+                if (!estaOculto) {
                     contenido.hide();
                     panelLote.removeClass('col-md-3 px-1').addClass('d-none');
                     txtSpan.text('Mostrar Lote');
@@ -658,8 +867,9 @@
                 var anchoCentral = 12;
                 if (!$('#panel-filtros').hasClass('d-none')) anchoCentral -= 3;
                 if (!$('#panel-seleccion').hasClass('d-none')) anchoCentral -= 3;
-                $('#panel-tabla').removeClass('col-md-5 col-md-6 col-md-7 col-md-9 col-md-10 col-md-12').addClass(
-                    'col-md-' + anchoCentral);
+
+                $('#panel-tabla').removeClass('col-md-5 col-md-6 col-md-7 col-md-9 col-md-10 col-md-12')
+                    .addClass('col-md-' + anchoCentral);
             }
 
             // =========================================================================
@@ -667,6 +877,7 @@
             // =========================================================================
             $('#btn-ejecutar-programacion-lote').on('click', function(e) {
                 e.preventDefault();
+
                 var instancia = $('#instancia_sugerida_lote').val();
                 var observaciones = $('#observaciones_sugeridas').val();
 
@@ -718,7 +929,7 @@
             });
 
             // =========================================================================
-            // 3. ELIMINACIÓN MASIVA
+            // 3. ELIMINACIÓN MASIVA (POST / DELETE independiente)
             // =========================================================================
             $('#btn-tercer-bloque').on('click', function() {
                 var seleccionadosCount = $('.oferta-checkbox:checked').length;
@@ -739,7 +950,7 @@
             });
 
             // =========================================================================
-            // 4. FILTRADO DINÁMICO Y LOCALSTORAGE
+            // 4. FILTRADO DINÁMICO Y GUARDADO EN LOCALSTORAGE
             // =========================================================================
             function aplicarFiltrosDinamicos() {
                 var pId = $('#filtro-periodo').val();
@@ -749,12 +960,14 @@
                 var paId = $('#filtro-paralelo').val();
                 var txt = $('#filtro-busqueda').val().toLowerCase().trim();
 
+                // Guardar estado actual en localStorage para que persista al cambiar de vista y volver
                 localStorage.setItem('filtro_periodo', pId);
                 localStorage.setItem('filtro_carrera', cId);
                 localStorage.setItem('filtro_grado', gId);
                 localStorage.setItem('filtro_turno', tId);
                 localStorage.setItem('filtro_paralelo', paId);
-                localStorage.setItem('filtro_busqueda', $('#filtro-busqueda').val());
+                localStorage.setItem('filtro_busqueda', $('#filtro-busqueda')
+            .val()); // Guardar con mayúsculas/minúsculas originales
 
                 $('.oferta-row').each(function() {
                     var row = $(this);
@@ -771,8 +984,8 @@
                 });
             }
 
-            $('#filtro-periodo, #filtro-carrera, #filtro-grado, #filtro-turno, #filtro-paralelo').on('change',
-                aplicarFiltrosDinamicos);
+            $('#filtro-periodo, #filtro-carrera, #filtro-grado, #filtro-turno, #filtro-paralelo')
+                .on('change', aplicarFiltrosDinamicos);
             $('#filtro-busqueda').on('keyup', aplicarFiltrosDinamicos);
 
             $('#btn-limpiar-filtros').on('click', function() {
@@ -780,6 +993,7 @@
                     '');
                 $('#filtro-busqueda').val('');
 
+                // Limpiar localStorage
                 localStorage.removeItem('filtro_periodo');
                 localStorage.removeItem('filtro_carrera');
                 localStorage.removeItem('filtro_grado');
@@ -791,7 +1005,7 @@
             });
 
             // =========================================================================
-            // 5. CONTROL INTELIGENTE DE INSTANCIAS REGISTRADAS
+            // 5. CONTROL INTELIGENTE DE INSTANCIAS REGISTRADAS EN MODALES
             // =========================================================================
             $('#btn-abrir-modal-lote').on('click', function() {
                 $('#instancia_sugerida_lote option').prop('disabled', false);

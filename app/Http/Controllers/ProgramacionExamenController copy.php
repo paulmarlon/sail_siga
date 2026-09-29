@@ -26,6 +26,7 @@ class ProgramacionExamenController extends Controller
         $instanciaFiltro = $request->get('instancia');
         $busqueda = $request->get('busqueda');
 
+        // Consulta base partiendo de OfertaAcademica
         $query = OfertaAcademica::with([
             'pensum.materia',
             'pensum.carrera',
@@ -88,7 +89,6 @@ class ProgramacionExamenController extends Controller
             'paralelos'
         ));
     }
-
     public function create(Request $request)
     {
         $ids = [];
@@ -108,8 +108,10 @@ class ProgramacionExamenController extends Controller
         ])->whereIn('id', array_filter($ids))->get();
 
         $listaPersonal = Personal::with('persona')->get();
+
         $ofertaSeleccionadaId = $request->get('oferta_id');
 
+        // Capturamos la instancia, observaciones y la fecha sugerida (con la fecha de hoy por defecto)
         $instanciaSugerida = $request->get('instancia_sugerida', 'P1');
         $observacionesSugeridas = $request->get('observaciones_sugeridas');
         $fechaSugerida = $request->get('fecha_sugerida', now()->format('Y-m-d\TH:i'));
@@ -134,6 +136,8 @@ class ProgramacionExamenController extends Controller
     {
         if ($request->has('programaciones')) {
             foreach ($request->programaciones as $data) {
+                // Usamos updateOrCreate para buscar si ya existe la oferta y la instancia.
+                // Si existe, la actualiza; si no, la crea.
                 ProgramacionExamen::updateOrCreate(
                     [
                         'oferta_id' => $data['oferta_id'],
@@ -157,6 +161,7 @@ class ProgramacionExamenController extends Controller
             'instancia' => 'required|string',
         ]);
 
+        // También aplicamos updateOrCreate en el modo individual por seguridad
         ProgramacionExamen::updateOrCreate(
             [
                 'oferta_id' => $request->oferta_id,
@@ -263,7 +268,7 @@ class ProgramacionExamenController extends Controller
 
             if ($bloqueadasCount > 0) {
                 return redirect()->route('admin.programacion-examenes.index')
-                    ->with('error', 'No se puede procesar el lote: uno o más exámenes seleccionados se encuentran BLOQUEADOS.');
+                    ->with('error', 'No se puede procesar el lote: uno o más exámenes seleccionados se encuentran BLOQUEADOS (notas cerradas o auditadas).');
             }
 
             $examenesAEliminar = $query->get();
@@ -289,7 +294,7 @@ class ProgramacionExamenController extends Controller
             }
 
             return redirect()->route('admin.programacion-examenes.index')
-                ->with('success', 'El lote de exámenes seleccionado fue enviado a la papelera correctamente.');
+                ->with('success', 'El lote de exámenes seleccionado fue enviado a la papelera correctamente con registro de auditoría.');
         } catch (\Exception $e) {
             return redirect()->route('admin.programacion-examenes.index')
                 ->with('error', 'Ocurrió un error al procesar la eliminación masiva: ' . $e->getMessage());
@@ -328,7 +333,7 @@ class ProgramacionExamenController extends Controller
     {
         if ($programacionExamen->bloqueado) {
             return redirect()->route('admin.programacion-examenes.index')
-                ->with('error', 'No se puede eliminar la programación porque se encuentra BLOQUEADA.');
+                ->with('error', 'No se puede eliminar la programación porque se encuentra BLOQUEADA (notas cerradas o auditadas).');
         }
 
         $clientIp = $request->ip();

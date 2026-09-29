@@ -1,4 +1,12 @@
 @extends('adminlte::page')
+@section('css')
+    <style>
+        /* Efecto de transición suave estilo Gemini */
+        .oferta-item {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+@stop
 
 @section('title', 'Actualización Masiva por Grupos')
 
@@ -100,14 +108,17 @@
                         </h6>
                     </div>
                     <div class="card-body p-2 d-flex flex-column flex-grow-1 overflow-hidden">
-                        <!-- Filtros Avanzados (Idénticos al create) -->
+                        <!-- Filtros Avanzados -->
                         <div class="form-row mb-2">
                             <div class="col-12 mb-1">
                                 <select id="filtro-carrera" class="form-control form-control-sm"
                                     style="font-size: 0.75rem;">
                                     <option value="">-- Filtrar por Carrera --</option>
                                     @foreach ($carreras as $car)
-                                        <option value="{{ strtolower($car->nombre) }}">{{ $car->nombre }}</option>
+                                        <option value="{{ strtolower($car->nombre) }}"
+                                            {{ $filtroCarreraId == $car->id ? 'selected' : '' }}>
+                                            {{ $car->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -115,7 +126,10 @@
                                 <select id="filtro-grado" class="form-control form-control-sm" style="font-size: 0.75rem;">
                                     <option value="">-- Grado / Semestre --</option>
                                     @foreach ($grados as $gra)
-                                        <option value="{{ strtolower($gra->nombre) }}">{{ $gra->nombre }}</option>
+                                        <option value="{{ strtolower($gra->nombre) }}"
+                                            {{ $filtroGradoId == $gra->id ? 'selected' : '' }}>
+                                            {{ $gra->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -124,8 +138,10 @@
                                     style="font-size: 0.75rem;">
                                     <option value="">-- Periodo --</option>
                                     @foreach ($periodos as $per)
-                                        <option value="{{ strtolower(trim($per->nombre)) }}">
-                                            {{ $per->nombre_completo ?? $per->nombre }}</option>
+                                        <option value="{{ strtolower(trim($per->nombre)) }}"
+                                            {{ $filtroPeriodoId == $per->id ? 'selected' : '' }}>
+                                            {{ $per->nombre_completo ?? $per->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -133,7 +149,10 @@
                                 <select id="filtro-turno" class="form-control form-control-sm" style="font-size: 0.72rem;">
                                     <option value="">-- Turno --</option>
                                     @foreach ($turnos as $tur)
-                                        <option value="{{ strtolower($tur->nombre) }}">{{ $tur->nombre }}</option>
+                                        <option value="{{ strtolower($tur->nombre) }}"
+                                            {{ $filtroTurnoId == $tur->id ? 'selected' : '' }}>
+                                            {{ $tur->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -142,11 +161,14 @@
                                     style="font-size: 0.72rem;">
                                     <option value="">-- Paralelo --</option>
                                     @foreach ($paralelos as $par)
-                                        <option value="{{ strtolower($par->nombre) }}">{{ $par->nombre }}</option>
+                                        <option value="{{ strtolower($par->nombre) }}"
+                                            {{ $filtroParaleloId == $par->id ? 'selected' : '' }}>
+                                            {{ $par->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-4">
+                            <div class="col-4 mb-1">
                                 <button type="button" id="btn-limpiar-filtros"
                                     class="btn btn-xs btn-outline-secondary btn-block"
                                     style="font-size: 0.70rem;">Limpiar</button>
@@ -183,8 +205,9 @@
                                             style="font-size: 0.65rem;">{{ $siglaMateria }}</span>
                                         <strong class="text-dark">{{ $nombreMateria }}</strong>
                                         <span class="text-muted d-block" style="font-size: 0.65rem;">
-                                            {{ $nombreCarrera }} | {{ $nombreGrado }} | Per: {{ $nombrePeriodo }} | T:
-                                            {{ $nombreTurno }} | P: {{ $nombreParalelo }}
+                                            {{ $nombreCarrera }} | {{ $nombreGrado }} \vert{} Per: {{ $nombrePeriodo }}
+                                            | T:
+                                            {{ $nombreTurno }} \vert{} P: {{ $nombreParalelo }}
                                         </span>
                                     </label>
                                 </div>
@@ -243,7 +266,7 @@
                 </div>
             </div>
 
-        </div>
+        </div> <!-- Cierre correcto de la fila principal (row) -->
     </form>
 @stop
 
@@ -264,6 +287,9 @@
             const checkboxesOfertas = document.querySelectorAll('.oferta-checkbox');
             const contenedorSeleccionados = document.getElementById('lista-seleccionados-container');
             const placeholderSinEstudiantes = document.getElementById('sin-estudiantes-seleccionados');
+
+            // Contenedores para el efecto Gemini de materias
+            const contenedorListaOriginal = document.getElementById('lista-ofertas-container');
             const contenedorMateriasSel = document.getElementById('lista-materias-seleccionadas-container');
             const placeholderSinMaterias = document.getElementById('sin-materias-seleccionadas');
 
@@ -302,38 +328,35 @@
                 }
             }
 
-            // Actualizar resumen de materias seleccionadas en Columna 4
+            // Actualización con Efecto Gemini (Mover elementos entre columnas)
             function actualizarResumenMaterias() {
-                let seleccionadas = [];
+                let seleccionadasCount = 0;
+
                 checkboxesOfertas.forEach(chk => {
+                    const itemPadre = chk.closest('.oferta-item');
                     if (chk.checked) {
-                        const itemPadre = chk.closest('.oferta-item');
-                        const textoEtiqueta = itemPadre.querySelector('strong').innerText;
-                        const badgeSigla = itemPadre.querySelector('.badge').innerText;
-                        seleccionadas.push({
-                            sigla: badgeSigla,
-                            nombre: textoEtiqueta
-                        });
+                        seleccionadasCount++;
+                        // Si está marcado y sigue en la izquierda, lo movemos a la derecha
+                        if (itemPadre.parentElement !== contenedorMateriasSel) {
+                            contenedorMateriasSel.appendChild(itemPadre);
+                        }
+                    } else {
+                        // Si se desmarcó y está en la derecha, lo devolvemos a la izquierda
+                        if (itemPadre.parentElement === contenedorMateriasSel) {
+                            contenedorListaOriginal.appendChild(itemPadre);
+                        }
                     }
                 });
 
                 document.getElementById('resumen-materias-txt').innerHTML =
-                    `Materias: <b class="text-primary">${seleccionadas.length}</b>`;
+                    `Materias: <b class="text-primary">${seleccionadasCount}</b>`;
 
-                if (seleccionadas.length === 0) {
+                if (seleccionadasCount === 0) {
                     placeholderSinMaterias.classList.remove('d-none');
                     contenedorMateriasSel.classList.add('d-none');
-                    contenedorMateriasSel.innerHTML = '';
                 } else {
                     placeholderSinMaterias.classList.add('d-none');
                     contenedorMateriasSel.classList.remove('d-none');
-                    let html = '';
-                    seleccionadas.forEach(mat => {
-                        html += `<div class="py-1 px-1 mb-1 bg-white border rounded small text-dark">
-                                    <span class="badge badge-info">${mat.sigla}</span> <span>${mat.nombre}</span>
-                               </div>`;
-                    });
-                    contenedorMateriasSel.innerHTML = html;
                 }
             }
 
@@ -362,7 +385,8 @@
                 const tur = filtroTurno.value.toLowerCase().trim();
                 const par = filtroParalelo.value.toLowerCase().trim();
 
-                document.querySelectorAll('.oferta-item').forEach(item => {
+                // Solo filtramos las materias que siguen en la lista original de la izquierda
+                contenedorListaOriginal.querySelectorAll('.oferta-item').forEach(item => {
                     const itemCar = item.getAttribute('data-carrera').toLowerCase().trim();
                     const itemGra = item.getAttribute('data-grado').toLowerCase().trim();
                     const itemPer = item.getAttribute('data-periodo').toLowerCase().trim();
@@ -395,8 +419,14 @@
                     filtroParalelo.value = '';
                     aplicarFiltrosOferta();
 
-                    // Opcional: desmarcar materias al limpiar filtros si se desea
-                    checkboxesOfertas.forEach(chk => chk.checked = false);
+                    checkboxesOfertas.forEach(chk => {
+                        chk.checked = false;
+                        // Al desmarcar por limpiar, regresan a la izquierda
+                        const itemPadre = chk.closest('.oferta-item');
+                        if (itemPadre.parentElement === contenedorMateriasSel) {
+                            contenedorListaOriginal.appendChild(itemPadre);
+                        }
+                    });
                     actualizarResumenMaterias();
                 });
             }
@@ -412,8 +442,11 @@
                         checkbox.checked = true;
                     }
                 });
-                actualizarResumenEstudiantes(); // Refresca la Columna 2 con todo el lote
+                actualizarResumenEstudiantes();
             }
+
+            // Aplicar filtros al cargar la vista por primera vez de forma correcta
+            aplicarFiltrosOferta();
         });
     </script>
 @stop

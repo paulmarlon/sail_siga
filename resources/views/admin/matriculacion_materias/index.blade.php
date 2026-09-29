@@ -328,21 +328,24 @@
                 }
             });
 
-            // Validación al enviar el formulario para exigir al menos un filtro activo
-            $('#form-filtros').on('submit', function(e) {
-                var periodo = $('#periodo_id').val();
-                var carrera = $('#carrera_id').val();
-                var grado = $('#grado_id').val();
-                var turno = $('#turno_id').val();
-                var paralelo = $('#paralelo_id').val();
-                var busqueda = $('#busqueda').val().trim();
-
-                if (!periodo && !carrera && !grado && !turno && !paralelo && !busqueda) {
-                    e.preventDefault();
-                    alert('Por favor, selecciona al menos un filtro o ingresa un criterio de búsqueda.');
-                    $('#periodo_id').focus();
-                }
+            // =========================================================================
+            // FILTRADO DINÁMICO AUTOMÁTICO (Envío de formulario al cambiar selects)
+            // =========================================================================
+            $('#carrera_id, #grado_id, #periodo_id, #turno_id, #paralelo_id').on('change', function() {
+                $('#form-filtros').submit();
             });
+
+            // Para el campo de texto (busqueda), usamos un delay (debounce) para no recargar en cada letra
+            let timerBusqueda;
+            $('#busqueda').on('keyup', function() {
+                clearTimeout(timerBusqueda);
+                timerBusqueda = setTimeout(function() {
+                    $('#form-filtros').submit();
+                }, 10); // Espera 600ms después de que el usuario deje de escribir para enviar
+            });
+
+            // Convertimos el botón "Filtrar" en redundante u oculto si deseas, pero lo dejamos por compatibilidad
+            // Si prefieres, el botón de filtrar ya pasa a segundo plano porque todo es automático.
         });
     </script>
 @stop

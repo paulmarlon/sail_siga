@@ -12,8 +12,29 @@
         }
 
         /* ==========================================
-               SELECT INSTANCIA (Colores más firmes y visibles)
-               ========================================== */
+                   SELECT INSTANCIA (Colores más firmes y visibles)
+                   ========================================== */
+        .select-instancia-tp1 {
+            background-color: #e2d9f3 !important;
+            /* Lila claro / TP1 */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        .select-instancia-tp2 {
+            background-color: #d4edda !important;
+            /* Verde muy claro / TP2 */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
+        .select-instancia-tp3 {
+            background-color: #d1ecf1 !important;
+            /* Celeste claro / TP3 */
+            color: #212529 !important;
+            font-weight: 600;
+        }
+
         .select-instancia-p1 {
             background-color: #f5c6cb !important;
             /* Rojo / Danger más intenso */
@@ -35,16 +56,9 @@
             font-weight: 600;
         }
 
-        .select-instancia-2t {
-            background-color: #bee5eb !important;
-            /* Azul / Info más intenso */
-            color: #212529 !important;
-            font-weight: 600;
-        }
-
         /* ==========================================
-               SELECT MODALIDAD (Colores más firmes y visibles)
-               ========================================== */
+                   SELECT MODALIDAD (Colores más firmes y visibles)
+                   ========================================== */
         .select-modalidad-directa {
             background-color: #c3e6cb !important;
             /* Verde más intenso */
@@ -152,14 +166,20 @@
                                     $examenExistente = $oferta->programacionesExamen->first();
 
                                     // Instancia actual y su clase de color inicial
-                                    $instanciaActual = optional($examenExistente)->instancia ?? 'P1';
-                                    $claseInstancia = 'select-instancia-p1';
-                                    if ($instanciaActual === 'P2') {
+                                    $instanciaActual =
+                                        optional($examenExistente)->instancia ?? ($instanciaSugerida ?? 'TP1');
+                                    $claseInstancia = 'select-instancia-tp1';
+
+                                    if ($instanciaActual === 'TP2') {
+                                        $claseInstancia = 'select-instancia-tp2';
+                                    } elseif ($instanciaActual === 'TP3') {
+                                        $claseInstancia = 'select-instancia-tp3';
+                                    } elseif ($instanciaActual === 'P1') {
+                                        $claseInstancia = 'select-instancia-p1';
+                                    } elseif ($instanciaActual === 'P2') {
                                         $claseInstancia = 'select-instancia-p2';
                                     } elseif ($instanciaActual === 'EF') {
                                         $claseInstancia = 'select-instancia-ef';
-                                    } elseif ($instanciaActual === '2T') {
-                                        $claseInstancia = 'select-instancia-2t';
                                     }
 
                                     // Modalidad actual y su clase de color inicial
@@ -198,14 +218,18 @@
                                         <select name="programaciones[{{ $index }}][instancia]"
                                             class="form-control form-control-sm select-instancia-dinamico {{ $claseInstancia }}"
                                             style="font-size: 0.75rem;" required>
-                                            <option value="P1" {{ $instanciaActual == 'P1' ? 'selected' : '' }}>Primer
-                                                Parcial</option>
-                                            <option value="P2" {{ $instanciaActual == 'P2' ? 'selected' : '' }}>Segundo
-                                                Parcial</option>
-                                            <option value="EF" {{ $instanciaActual == 'EF' ? 'selected' : '' }}>Examen
-                                                Final</option>
-                                            <option value="2T" {{ $instanciaActual == '2T' ? 'selected' : '' }}>Segunda
-                                                Instancia</option>
+                                            <option value="TP1" {{ $instanciaActual == 'TP1' ? 'selected' : '' }}>TP1
+                                            </option>
+                                            <option value="TP2" {{ $instanciaActual == 'TP2' ? 'selected' : '' }}>TP2
+                                            </option>
+                                            <option value="TP3" {{ $instanciaActual == 'TP3' ? 'selected' : '' }}>TP3
+                                            </option>
+                                            <option value="P1" {{ $instanciaActual == 'P1' ? 'selected' : '' }}>P1
+                                            </option>
+                                            <option value="P2" {{ $instanciaActual == 'P2' ? 'selected' : '' }}>P2
+                                            </option>
+                                            <option value="EF" {{ $instanciaActual == 'EF' ? 'selected' : '' }}>EF
+                                            </option>
                                         </select>
                                     </td>
 
@@ -314,16 +338,21 @@
             $(document).on('change', '.select-instancia-dinamico', function() {
                 var val = $(this).val();
                 $(this).removeClass(
-                    'select-instancia-p1 select-instancia-p2 select-instancia-ef select-instancia-2t');
+                    'select-instancia-tp1 select-instancia-tp2 select-instancia-tp3 select-instancia-p1 select-instancia-p2 select-instancia-ef'
+                );
 
-                if (val === 'P1') {
+                if (val === 'TP1') {
+                    $(this).addClass('select-instancia-tp1');
+                } else if (val === 'TP2') {
+                    $(this).addClass('select-instancia-tp2');
+                } else if (val === 'TP3') {
+                    $(this).addClass('select-instancia-tp3');
+                } else if (val === 'P1') {
                     $(this).addClass('select-instancia-p1');
                 } else if (val === 'P2') {
                     $(this).addClass('select-instancia-p2');
                 } else if (val === 'EF') {
                     $(this).addClass('select-instancia-ef');
-                } else if (val === '2T') {
-                    $(this).addClass('select-instancia-2t');
                 }
             });
 
@@ -331,7 +360,8 @@
             $(document).on('change', '.select-modalidad-dinamico', function() {
                 var val = $(this).val();
                 $(this).removeClass(
-                    'select-modalidad-directa select-modalidad-aciegas select-modalidad-dictada');
+                    'select-modalidad-directa select-modalidad-aciegas select-modalidad-dictada'
+                );
 
                 if (val === 'directa') {
                     $(this).addClass('select-modalidad-directa');

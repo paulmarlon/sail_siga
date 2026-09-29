@@ -5,15 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\MatriculacionMateria;
 use App\Models\Estudiante;
 use App\Models\OfertaAcademica;
-use App\Models\{Estado, Periodo, Turno, Paralelo, Gestion, Carrera, Grado};
+use App\Models\{Estado, Periodo, Turno, Paralelo, Gestion, Carrera, Grado, CalificacionParcial, CalificacionDetalle};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MatriculacionMateriaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $periodos  = Periodo::with('gestion')->orderBy('id', 'desc')->get();
@@ -118,9 +115,6 @@ class MatriculacionMateriaController extends Controller
         ));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $estudiantes = Estudiante::with('persona')->get();
@@ -147,10 +141,50 @@ class MatriculacionMateriaController extends Controller
             'ofertas'
         ));
     }
+    protected function inicializarCalificaciones(MatriculacionMateria $matriculacion)
+    {
+        // Cargamos la relación si no viene cargada
+        $matriculacion->loadMissing('oferta.pensum');
 
-    /**
-     * Store a newly created resource in storage.
-     */
+        $carreraId = optional($matriculacion->oferta->pensum)->carrera_id;
+        if (!$carreraId) return;
+
+        $configParciales = DB::table('configuracion_parcial_meta')
+            ->where('carrera_id', $carreraId)
+            ->get();
+
+        foreach ($configParciales as $cpm) {
+            $calificacionParcial = CalificacionParcial::firstOrCreate(
+                [
+                    'matriculacion_id' => $matriculacion->id,
+                    'nro_parcial'      => $cpm->nro_parcial,
+                ],
+                [
+                    'ponderacion_parcial' => $cpm->ponderacion_parcial,
+                    'estado_id'           => $matriculacion->estado_id,
+                ]
+            );
+
+            $configComponentes = DB::table('configuracion_componente_meta')
+                ->where('configuracion_parcial_id', $cpm->id)
+                ->get();
+
+            foreach ($configComponentes as $ccm) {
+                CalificacionDetalle::firstOrCreate(
+                    [
+                        'calificacion_parcial_id' => $calificacionParcial->id,
+                        'tipo_componente'         => $ccm->tipo_componente,
+                    ],
+                    [
+                        'ponderacion_componente' => $ccm->ponderacion_componente,
+                        'nota'                   => 0.00,
+                        'modalidad_origen'       => 'directa',
+                        'estado_id'              => $matriculacion->estado_id,
+                    ]
+                );
+            }
+        }
+    }
     public function store(Request $request)
     {
         $request->validate([
@@ -161,12 +195,50 @@ class MatriculacionMateriaController extends Controller
             'estado_id'        => 'required|exists:estados,id',
         ]);
 
+        // Aumentamos ligeramente el tiempo límite por seguridad para lotes masivos grandes
+        set_time_limit(120);
+
         try {
             DB::beginTransaction();
 
+            // 1. Precargamos todas las ofertas académicas con sus pensums para evitar consultas repetitivas N+1
+            $ofertas = OfertaAcademica::with('pensum')->whereIn('id', $request->oferta_ids)->get()->keyBy('id');
+
+            // 2. Extraemos los carrera_id directamente desde la relación del pensum de cada oferta seleccionada
+            $carreraIds = $ofertas->pluck('pensum.carrera_id')->unique()->filter();
+
+
+            $metasPorCarrera = [];
+            foreach ($carreraIds as $carreraId) {
+                $parciales = DB::table('configuracion_parcial_meta')
+                    ->where('carrera_id', $carreraId)
+                    ->get();
+
+                $estructuraParciales = [];
+                foreach ($parciales as $p) {
+                    $componentes = DB::table('configuracion_componente_meta')
+                        ->where('configuracion_parcial_id', $p->id)
+                        ->get();
+
+                    $estructuraParciales[] = [
+                        'parcial'     => $p,
+                        'componentes' => $componentes
+                    ];
+                }
+                $metasPorCarrera[$carreraId] = $estructuraParciales;
+            }
+
+            // 3. Procesamos el lote masivo con la información en memoria
             foreach ($request->estudiante_ids as $estudianteId) {
                 foreach ($request->oferta_ids as $ofertaId) {
-                    MatriculacionMateria::withTrashed()->updateOrCreate(
+                    $oferta = $ofertas->get($ofertaId);
+                    if (!$oferta || !$oferta->pensum) continue;
+
+                    // Obtenemos la carrera correctamente a través del pensum
+                    $carreraId = $oferta->pensum->carrera_id;
+
+                    // Creamos o restauramos la matriculación
+                    $matriculacion = MatriculacionMateria::withTrashed()->updateOrCreate(
                         [
                             'estudiante_id' => $estudianteId,
                             'oferta_id'     => $ofertaId,
@@ -177,6 +249,40 @@ class MatriculacionMateriaController extends Controller
                             'fecha_registro' => now(),
                         ]
                     );
+
+                    // 4. Inicializamos las calificaciones usando la estructura en memoria
+                    if ($carreraId && isset($metasPorCarrera[$carreraId])) {
+                        foreach ($metasPorCarrera[$carreraId] as $meta) {
+                            $cpm = $meta['parcial'];
+
+                            $calificacionParcial = CalificacionParcial::firstOrCreate(
+                                [
+                                    'matriculacion_id'         => $matriculacion->id,
+                                    'configuracion_parcial_id' => $cpm->id,
+                                    'nro_parcial'              => $cpm->nro_parcial,
+                                ],
+                                [
+                                    'ponderacion_parcial' => $cpm->ponderacion_parcial,
+                                    'estado_id'           => $request->estado_id,
+                                ]
+                            );
+
+                            foreach ($meta['componentes'] as $ccm) {
+                                CalificacionDetalle::firstOrCreate(
+                                    [
+                                        'calificacion_parcial_id' => $calificacionParcial->id,
+                                        'tipo_componente'         => $ccm->tipo_componente,
+                                    ],
+                                    [
+                                        'ponderacion_componente' => $ccm->ponderacion_componente,
+                                        'nota'                   => 0.00,
+                                        'modalidad_origen'       => 'directa',
+                                        'estado_id'              => $request->estado_id,
+                                    ]
+                                );
+                            }
+                        }
+                    }
                 }
             }
 
@@ -186,13 +292,15 @@ class MatriculacionMateriaController extends Controller
                 ->with('success', 'Matriculación masiva de bloques procesada correctamente.');
         } catch (\Exception $e) {
             DB::rollBack();
+            dd([
+                'error_mensaje' => $e->getMessage(),
+                'archivo'       => $e->getFile(),
+                'linea'         => $e->getLine(),
+                'traza'         => $e->getTraceAsString()
+            ]);
             return back()->with('error', 'Ocurrió un error al procesar el lote: ' . $e->getMessage())->withInput();
         }
     }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(int $estudianteId, int $periodoId)
     {
         $estudiante = Estudiante::with('persona')->findOrFail($estudianteId);
@@ -226,10 +334,6 @@ class MatriculacionMateriaController extends Controller
             'ofertas'
         ));
     }
-
-    /**
-     * Almacenar una única materia de forma quirúrgica desde la vista de detalle.
-     */
     public function storeSingle(Request $request)
     {
         $request->validate([
@@ -266,10 +370,6 @@ class MatriculacionMateriaController extends Controller
         return redirect()->route('admin.matriculacion-materias.show', [$request->estudiante_id, $periodoIdRedirect])
             ->with('success', 'Materia añadida correctamente a la carga académica.');
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(MatriculacionMateria $matriculacionMateria)
     {
         $estudiantes = Estudiante::with('persona')->get();
@@ -278,10 +378,6 @@ class MatriculacionMateriaController extends Controller
 
         return view('admin.matriculacion_materias.edit', compact('matriculacionMateria', 'estudiantes', 'ofertas', 'estados'));
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, MatriculacionMateria $matriculacionMateria)
     {
         $request->validate([
@@ -299,9 +395,6 @@ class MatriculacionMateriaController extends Controller
         return redirect()->route('admin.matriculacion-materias.index')
             ->with('success', 'Matriculación actualizada correctamente.');
     }
-    /**
-     * Muestra la vista de actualización masiva por grupos.
-     */
     public function editGroup(Request $request)
     {
         $estudiantes = Estudiante::with('persona')->get();
@@ -355,13 +448,9 @@ class MatriculacionMateriaController extends Controller
             'filtroGradoId',
             'filtroPeriodoId',
             'filtroTurnoId',
-            'filtroParaleloId'
+            'filtroParaleloId' // <--- Asegúrate de incluir estas variables aquí
         ));
     }
-
-    /**
-     * Procesa la actualización masiva por grupo en paralelo.
-     */
     public function updateGroup(Request $request)
     {
         $request->validate([
@@ -370,27 +459,58 @@ class MatriculacionMateriaController extends Controller
             'estado_id'        => 'required|exists:estados,id',
         ]);
 
+        set_time_limit(120);
+
         try {
             DB::beginTransaction();
 
+            // 1. Precargamos las ofertas y sus pensums UNA SOLA VEZ fuera del ciclo ⚡
+            $ofertas = OfertaAcademica::with('pensum')->whereIn('id', $request->oferta_ids)->get()->keyBy('id');
+            $pensumIds = $ofertas->pluck('pensum.carrera_id')->unique(); // Ojo, filtramos por pensums afectados
+
+            // 2. Extraemos las estructuras de calificaciones (Parciales y Componentes) por Carrera
+            $carreraIds = $ofertas->pluck('pensum.carrera_id')->unique()->filter();
+            $metasPorCarrera = [];
+            foreach ($carreraIds as $carreraId) {
+                $parciales = DB::table('configuracion_parcial_meta')
+                    ->where('carrera_id', $carreraId)
+                    ->get();
+
+                $estructuraParciales = [];
+                foreach ($parciales as $p) {
+                    $componentes = DB::table('configuracion_componente_meta')
+                        ->where('configuracion_parcial_id', $p->id)
+                        ->get();
+
+                    $estructuraParciales[] = [
+                        'parcial'     => $p,
+                        'componentes' => $componentes
+                    ];
+                }
+                $metasPorCarrera[$carreraId] = $estructuraParciales;
+            }
+
             foreach ($request->estudiante_ids as $estudianteId) {
 
-                // 1. Identificar a qué "pensums" o bloque académico pertenecen las materias que estás enviando
-                $nuevasOfertas = OfertaAcademica::whereIn('id', $request->oferta_ids)->get();
-                $pensumIds = $nuevasOfertas->pluck('pensum_id')->unique();
+                // 3. Obtenemos los pensums de las ofertas seleccionadas para este bloque
+                $pensumIdsPorOferta = $ofertas->pluck('pensum_id')->unique();
 
-                // 2. ELIMINAR EXCESOS (Si antes tenía 13 y ahora solo seleccionaste 12 del mismo bloque,
-                // borramos las que ya no vienen en la lista del formulario)
+                // 4. ELIMINAR EXCESOS: Borramos las materias de esos pensums que el usuario desmarcó
                 MatriculacionMateria::where('estudiante_id', $estudianteId)
-                    ->whereHas('oferta', function ($query) use ($pensumIds) {
-                        $query->whereIn('pensum_id', $pensumIds);
+                    ->whereHas('oferta', function ($query) use ($pensumIdsPorOferta) {
+                        $query->whereIn('pensum_id', $pensumIdsPorOferta);
                     })
-                    ->whereNotIn('oferta_id', $request->oferta_ids) // <- La clave: borra lo que ya no está seleccionado
+                    ->whereNotIn('oferta_id', $request->oferta_ids)
                     ->delete();
 
-                // 3. ACTUALIZAR O CREAR las materias seleccionadas (ahora serán exactamente las 12 que elegiste)
+                // 5. ACTUALIZAR O CREAR: Registramos o actualizamos las materias seleccionadas
                 foreach ($request->oferta_ids as $ofertaId) {
-                    MatriculacionMateria::withTrashed()->updateOrCreate(
+                    $oferta = $ofertas->get($ofertaId);
+                    if (!$oferta || !$oferta->pensum) continue;
+
+                    $carreraId = $oferta->pensum->carrera_id;
+
+                    $matriculacion = MatriculacionMateria::withTrashed()->updateOrCreate(
                         [
                             'estudiante_id' => $estudianteId,
                             'oferta_id'     => $ofertaId,
@@ -401,21 +521,51 @@ class MatriculacionMateriaController extends Controller
                             'fecha_registro' => now(),
                         ]
                     );
+
+                    // 6. INICIALIZAR CALIFICACIONES (Garantiza que si es nueva, tenga sus parciales listos)
+                    if ($carreraId && isset($metasPorCarrera[$carreraId])) {
+                        foreach ($metasPorCarrera[$carreraId] as $meta) {
+                            $cpm = $meta['parcial'];
+
+                            $calificacionParcial = CalificacionParcial::firstOrCreate(
+                                [
+                                    'matriculacion_id'         => $matriculacion->id,
+                                    'configuracion_parcial_id' => $cpm->id,
+                                    'nro_parcial'              => $cpm->nro_parcial,
+                                ],
+                                [
+                                    'ponderacion_parcial' => $cpm->ponderacion_parcial,
+                                    'estado_id'           => $request->estado_id,
+                                ]
+                            );
+
+                            foreach ($meta['componentes'] as $ccm) {
+                                CalificacionDetalle::firstOrCreate(
+                                    [
+                                        'calificacion_parcial_id' => $calificacionParcial->id,
+                                        'tipo_componente'         => $ccm->tipo_componente,
+                                    ],
+                                    [
+                                        'ponderacion_componente' => $ccm->ponderacion_componente,
+                                        'nota'                   => 0.00,
+                                        'modalidad_origen'       => 'directa',
+                                        'estado_id'              => $request->estado_id,
+                                    ]
+                                );
+                            }
+                        }
+                    }
                 }
             }
 
             DB::commit();
             return redirect()->route('admin.matriculacion-materias.index')
-                ->with('success', 'Actualización y sincronización de grupo realizada con éxito.');
+                ->with('success', 'Actualización, sincronización de grupo y calificaciones realizada con éxito.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Ocurrió un error al actualizar el grupo: ' . $e->getMessage());
         }
     }
-
-    /**
-     * Remove the specified resource from storage (Soft Delete).
-     */
     public function destroy(MatriculacionMateria $matriculacionMateria)
     {
         $matriculacionMateria->delete();
@@ -423,10 +573,6 @@ class MatriculacionMateriaController extends Controller
         return redirect()->route('admin.matriculacion-materias.index')
             ->with('success', 'Matriculación enviada a la papelera correctamente.');
     }
-
-    /**
-     * Display a listing of soft deleted resources (Papelera).
-     */
     public function papelera(Request $request)
     {
         $matriculacionesEliminadas = MatriculacionMateria::onlyTrashed()
@@ -436,10 +582,6 @@ class MatriculacionMateriaController extends Controller
 
         return view('admin.matriculacion_materias.papelera', compact('matriculacionesEliminadas'));
     }
-
-    /**
-     * Restore the specified soft deleted resource.
-     */
     public function restaurar(string $id)
     {
         $matriculacion = MatriculacionMateria::onlyTrashed()->findOrFail($id);
@@ -448,10 +590,6 @@ class MatriculacionMateriaController extends Controller
         return redirect()->route('admin.matriculacion-materias.papelera')
             ->with('success', 'Matriculación restaurada con éxito.');
     }
-
-    /**
-     * Destruir permanentemente (Force Delete).
-     */
     public function fuerzaDestruccion(int $id)
     {
         $matriculacion = MatriculacionMateria::onlyTrashed()->findOrFail($id);
@@ -460,10 +598,6 @@ class MatriculacionMateriaController extends Controller
         return redirect()->route('admin.matriculacion-materias.papelera')
             ->with('success', 'El registro ha sido eliminado permanentemente de la base de datos.');
     }
-
-    /**
-     * Procesar retiro de materia (Cambio de estado o baja lógica).
-     */
     public function procesarRetiro(Request $request, MatriculacionMateria $matriculacionMateria)
     {
         $request->validate([

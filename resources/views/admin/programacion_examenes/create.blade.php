@@ -80,19 +80,19 @@
                                             <select name="programaciones[{{ $index }}][instancia]"
                                                 class="form-control form-control-sm" required>
                                                 <option value="TP1" {{ $instanciaDefecto == 'TP1' ? 'selected' : '' }}>
-                                                    Trabajo Práctico 1 (TP1)</option>
+                                                    TP1</option>
                                                 <option value="TP2" {{ $instanciaDefecto == 'TP2' ? 'selected' : '' }}>
-                                                    Trabajo Práctico 2 (TP2)</option>
+                                                    TP2</option>
                                                 <option value="TP3" {{ $instanciaDefecto == 'TP3' ? 'selected' : '' }}>
-                                                    Trabajo Práctico 3 (TP3)</option>
+                                                    TP3</option>
                                                 <option value="P1" {{ $instanciaDefecto == 'P1' ? 'selected' : '' }}>
-                                                    Primer Parcial (P1)</option>
+                                                    P1</option>
                                                 <option value="P2" {{ $instanciaDefecto == 'P2' ? 'selected' : '' }}>
-                                                    Segundo Parcial (P2)</option>
+                                                    P2</option>
                                                 <option value="EF" {{ $instanciaDefecto == 'EF' ? 'selected' : '' }}>
-                                                    Examen Final (EF)</option>
+                                                    EF</option>
                                                 <option value="2T" {{ $instanciaDefecto == '2T' ? 'selected' : '' }}>
-                                                    Segunda Instancia (2T)</option>
+                                                    2T</option>
                                             </select>
                                         </td>
                                         <td class="align-middle py-1">
@@ -258,8 +258,7 @@
                                                     Primer Parcial</option>
                                                 <option value="P2" {{ $instanciaDefecto == 'P2' ? 'selected' : '' }}>
                                                     Segundo Parcial</option>
-                                                <option value="EF"
-                                                    {{ $instanciaDefector == 'EF' || $instanciaDefecto == 'EF' ? 'selected' : '' }}>
+                                                <option value="EF" {{ $instanciaDefecto == 'EF' ? 'selected' : '' }}>
                                                     Examen Final</option>
                                                 <option value="2T" {{ $instanciaDefecto == '2T' ? 'selected' : '' }}>
                                                     Segunda Instancia (2T)</option>
@@ -386,23 +385,20 @@
 
 @section('js')
     <script>
-        // Función para cambiar el color del select según la modalidad seleccionada
         function actualizarColorSelect(selectElement) {
             const val = $(selectElement).val();
             $(selectElement).removeClass('bg-success bg-secondary bg-warning bg-purple text-white text-dark');
 
-            // Aplicar clases de fondo personalizadas de AdminLTE/Bootstrap
             if (val === 'directa') {
                 $(selectElement).addClass('bg-success text-white');
             } else if (val === 'a_ciegas') {
-                $(selectElement).css('background-color', '#6f42c1').addClass('text-white'); // Color morado/purple
+                $(selectElement).css('background-color', '#6f42c1').addClass('text-white');
             } else if (val === 'dictada') {
                 $(selectElement).addClass('bg-warning text-dark');
             }
         }
 
         $(document).ready(function() {
-            // Inicialización de Select2
             $('.select2-responsable').select2({
                 theme: 'bootstrap4',
                 width: '100%',
@@ -410,7 +406,6 @@
                 allowClear: true
             });
 
-            // Inicializar colores de los selects de modalidad ya renderizados
             $('.select-modalidad').each(function() {
                 actualizarColorSelect(this);
             });

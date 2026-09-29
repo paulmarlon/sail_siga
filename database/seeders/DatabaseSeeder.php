@@ -248,6 +248,7 @@ class DatabaseSeeder extends Seeder
             OfertaDocenteHistorialSeeder::class,
             InscripcionCarreraSeeder::class,
             MatriculacionMateriaSeeder::class,
+            CalificacionSeeder::class,
         ]);
     }
 }

@@ -394,6 +394,14 @@
                 const par = filtroParalelo.value.toLowerCase().trim();
 
                 document.querySelectorAll('.oferta-item').forEach(item => {
+                    const chk = item.querySelector('.oferta-checkbox');
+
+                    // Si ya está seleccionada, la ocultamos de la columna 3 (efecto traslado)
+                    if (chk.checked) {
+                        item.style.display = 'none';
+                        return;
+                    }
+
                     const itemCar = item.getAttribute('data-carrera').toLowerCase().trim();
                     const itemGra = item.getAttribute('data-grado').toLowerCase().trim();
                     const itemPer = item.getAttribute('data-periodo').toLowerCase().trim();
@@ -424,28 +432,35 @@
                 filtroPeriodo.value = '';
                 filtroTurno.value = '';
                 filtroParalelo.value = '';
-                aplicarFiltrosOferta();
 
                 // Deseleccionar todas las materias al hacer click en limpiar
                 checkboxesOfertas.forEach(chk => chk.checked = false);
+                aplicarFiltrosOferta();
                 actualizarResumenMaterias();
             });
 
-            // 5. Actualizar contador y lista visual de materias seleccionadas en Columna 4
+            // 5. Actualizar contador, ocultar de origen y mostrar en Columna 4 con botón de remover
             const contenedorMateriasSel = document.getElementById('lista-materias-seleccionadas-container');
             const placeholderSinMaterias = document.getElementById('sin-materias-seleccionadas');
 
             function actualizarResumenMaterias() {
                 let seleccionadas = [];
                 checkboxesOfertas.forEach(chk => {
+                    const itemPadre = chk.closest('.oferta-item');
                     if (chk.checked) {
-                        const itemPadre = chk.closest('.oferta-item');
+                        // Ocultar de la columna 3 al seleccionarla
+                        itemPadre.style.display = 'none';
+
                         const textoEtiqueta = itemPadre.querySelector('strong').innerText;
                         const badgeSigla = itemPadre.querySelector('.badge').innerText;
                         seleccionadas.push({
+                            id: chk.value,
                             sigla: badgeSigla,
                             nombre: textoEtiqueta
                         });
+                    } else {
+                        // Si se desmarca, evaluamos si debe volver a mostrarse según los filtros actuales
+                        // (O simplemente volvemos a aplicar los filtros para que reaparezca si cumple)
                     }
                 });
 
@@ -461,20 +476,44 @@
                     contenedorMateriasSel.classList.remove('d-none');
                     let html = '';
                     seleccionadas.forEach(mat => {
-                        html += `<div class="py-1 px-1 mb-1 bg-white border rounded small text-dark">
-                                    <span class="badge badge-info">${mat.sigla}</span> <span>${mat.nombre}</span>
+                        html += `<div class="py-1 px-2 mb-1 bg-white border rounded small text-dark d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge badge-info">${mat.sigla}</span>
+                                        <span>${mat.nombre}</span>
+                                    </div>
+                                    <button type="button" class="btn btn-xs text-danger p-0 ml-1 btn-quitar-materia" data-id="${mat.id}" title="Quitar materia">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
                                </div>`;
                     });
                     contenedorMateriasSel.innerHTML = html;
+
+                    // Agregar evento a los botones de "X" para desmarcar desde la Columna 4
+                    document.querySelectorAll('.btn-quitar-materia').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const ofertaId = this.getAttribute('data-id');
+                            const chkOriginal = document.getElementById(`oferta_chk_${ofertaId}`);
+                            if (chkOriginal) {
+                                chkOriginal.checked = false;
+                                aplicarFiltrosOferta
+                            (); // Revalida filtros para mostrarla de nuevo en origen
+                                actualizarResumenMaterias(); // Actualiza la columna 4
+                            }
+                        });
+                    });
                 }
             }
 
             checkboxesOfertas.forEach(chk => {
-                chk.addEventListener('change', actualizarResumenMaterias);
+                chk.addEventListener('change', function() {
+                    aplicarFiltrosOferta();
+                    actualizarResumenMaterias();
+                });
             });
 
             // Inicializar contadores al cargar por si hay valores previos
             actualizarResumenEstudiantes();
+            aplicarFiltrosOferta();
             actualizarResumenMaterias();
         });
     </script>
